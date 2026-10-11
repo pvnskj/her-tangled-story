@@ -27,7 +27,7 @@ window.addEventListener("resize", () => {
 // ---------- world, player, npcs ----------
 const world = buildWorld(scene);
 const player = new Player(scene, world);
-camera.position.set(CONFIG.SPAWN.x, 13.5, CONFIG.SPAWN.z + 11.5);
+camera.position.set(CONFIG.SPAWN.x, 11, CONFIG.SPAWN.z + 17);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene);
 
 const project = (x, y, z) => {
@@ -392,6 +392,7 @@ function animate() {
   }
 
   UI.updateDialogue(dt, project);
+  if (UI.isMapOpen()) UI.drawMap(ZONES, CLUES, found, p.x, p.z);
   renderer.render(scene, camera);
 }
 animate();

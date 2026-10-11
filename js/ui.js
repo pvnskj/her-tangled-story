@@ -34,6 +34,59 @@ export const UI = {
       if (this.onModalClose) this.onModalClose();
     });
     el("finale-replay").addEventListener("click", () => location.reload());
+    el("map-toggle").addEventListener("click", () => this.openMap());
+    el("map-close").addEventListener("click", () => this.closeMap());
+  },
+
+  // ---------- world map ----------
+  _mapOpen: false,
+  openMap() {
+    el("map-overlay").classList.remove("hidden");
+    this._mapOpen = true;
+  },
+  closeMap() {
+    el("map-overlay").classList.add("hidden");
+    this._mapOpen = false;
+  },
+  isMapOpen() { return this._mapOpen; },
+  drawMap(zones, clues, found, px, pz) {
+    const cv = el("map-canvas");
+    const g = cv.getContext("2d");
+    const S = cv.width, C = S / 2, R = S / 2 - 10, B = 114;
+    const mx = (x) => C + (x / B) * R, mz = (z) => C + (z / B) * R;
+    g.clearRect(0, 0, S, S);
+    const bg = g.createRadialGradient(C, C, 10, C, C, R);
+    bg.addColorStop(0, "#2d2350"); bg.addColorStop(1, "#161130");
+    g.fillStyle = bg;
+    g.beginPath(); g.arc(C, C, R, 0, 7); g.fill();
+    g.strokeStyle = "rgba(245,214,123,0.22)"; g.lineWidth = 1;
+    g.beginPath(); g.arc(C, C, R * 0.66, 0, 7); g.stroke();
+    g.beginPath(); g.arc(C, C, R * 0.33, 0, 7); g.stroke();
+    // lake hint
+    g.fillStyle = "rgba(95,145,225,0.4)";
+    g.beginPath(); g.ellipse(mx(-80), mz(20), 28 * (R / B), 22 * (R / B), 0, 0, 7); g.fill();
+    // zones with per-zone clue progress
+    g.textAlign = "center";
+    for (const zn of zones) {
+      const zx = mx(zn.x), zy = mz(zn.z);
+      const total = clues.filter((c) => c.zone === zn.id).length;
+      const got = clues.filter((c) => c.zone === zn.id && found.has(c.id)).length;
+      const done = total > 0 && got === total;
+      g.fillStyle = done ? "#ffd76a" : "rgba(245,214,123,0.9)";
+      g.beginPath(); g.arc(zx, zy, done ? 9 : 7, 0, 7); g.fill();
+      g.strokeStyle = "#7a5a20"; g.lineWidth = 2; g.stroke();
+      g.fillStyle = "#f7ecd4"; g.font = "11px Georgia";
+      g.fillText(zn.name, zx, zy - 14);
+      g.fillStyle = done ? "#ffd76a" : "rgba(247,236,212,0.8)"; g.font = "10px Georgia";
+      g.fillText(`${got}/${total}`, zx, zy + 22);
+    }
+    // her live marker (pulsing)
+    const pulse = 6 + Math.sin(performance.now() * 0.006) * 2;
+    g.fillStyle = "#ff6a9a";
+    g.beginPath(); g.arc(mx(px), mz(pz), pulse, 0, 7); g.fill();
+    g.strokeStyle = "#fff"; g.lineWidth = 2; g.stroke();
+    g.fillStyle = "#fff"; g.font = "bold 9px Georgia";
+    g.fillText("YOU", mx(px), mz(pz) - pulse - 6);
   },
 
   // ---------- joystick (touch + mouse) ----------

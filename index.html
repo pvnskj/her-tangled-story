@@ -21,6 +21,7 @@
   <!-- HUD -->
   <div id="hud" class="hidden">
     <div id="clue-counter">✨ Clues <span id="found-count">0</span> / 33</div>
+    <button id="map-toggle" aria-label="open map">🗺️</button>
     <button id="sound-toggle" aria-label="toggle sound">🔊</button>
   </div>
   <div id="zone-banner"></div>
@@ -60,6 +61,15 @@
       <div id="finale-frame"></div>
       <p id="finale-message"></p>
       <button id="finale-replay">Relive the adventure ↺</button>
+    </div>
+  </div>
+
+  <!-- world map overlay -->
+  <div id="map-overlay" class="modal hidden">
+    <div class="panel map-panel">
+      <div id="map-head">🗺️ Valley Map</div>
+      <canvas id="map-canvas" width="340" height="340"></canvas>
+      <button id="map-close">Close ✕</button>
     </div>
   </div>
 

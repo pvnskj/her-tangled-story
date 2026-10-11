@@ -125,17 +125,46 @@ export function buildNPCs(scene) {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), mat(0xffffff));
       eye.position.set(ex, 0.58, 0.42 + ez * 0.1); g.add(eye);
     });
+    // "!" + sparkle shown when it senses a hidden clue nearby
+    const exc = document.createElement("canvas"); exc.width = exc.height = 64;
+    {
+      const c2 = exc.getContext("2d");
+      c2.font = "bold 46px Georgia"; c2.textAlign = "center"; c2.textBaseline = "middle";
+      c2.lineWidth = 9; c2.strokeStyle = "#7a4a00"; c2.strokeText("!", 32, 34);
+      c2.fillStyle = "#ffe98a"; c2.fillText("!", 32, 34);
+    }
+    const exTex = new THREE.CanvasTexture(exc); exTex.colorSpace = THREE.SRGBColorSpace;
+    const exclaim = new THREE.Sprite(new THREE.SpriteMaterial({ map: exTex, transparent: true, depthWrite: false }));
+    exclaim.scale.setScalar(1.1); exclaim.position.y = 1.7; exclaim.visible = false; g.add(exclaim);
+    const spc = document.createElement("canvas"); spc.width = spc.height = 64;
+    {
+      const c2 = spc.getContext("2d");
+      const gr = c2.createRadialGradient(32, 32, 2, 32, 32, 30);
+      gr.addColorStop(0, "rgba(255,250,200,1)"); gr.addColorStop(1, "rgba(255,200,90,0)");
+      c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64);
+    }
+    const spTex = new THREE.CanvasTexture(spc); spTex.colorSpace = THREE.SRGBColorSpace;
+    const spark = new THREE.Sprite(new THREE.SpriteMaterial({ map: spTex, transparent: true,
+      blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.9 }));
+    spark.scale.setScalar(1.6); spark.position.y = 0.7; spark.visible = false; g.add(spark);
     g.position.set(2, 0, -80);
     scene.add(g);
-    return { group: g, excited: false, hop: 0 };
+    return { group: g, excited: false, hop: 0, exclaim, spark };
   })();
 
   function update(dt, t, playerPos) {
     // named: gentle sway
     for (const n of npcs) {
       if (n.kind === "named" || n.kind === "thug") {
-        n.group.position.y = Math.abs(Math.sin(t * 2.2 + n.phase)) * (n.kind === "thug" ? 0.16 : 0.06);
-        n.group.rotation.y += Math.sin(t * 0.6 + n.phase) * 0.002;
+        if (n.kind === "thug") {
+          // mid-song: hearty rocking side to side
+          n.group.position.y = Math.abs(Math.sin(t * 2.6 + n.phase)) * 0.22;
+          n.group.rotation.z = Math.sin(t * 2.6 + n.phase) * 0.1;
+          n.group.rotation.y += Math.sin(t * 0.8 + n.phase) * 0.004;
+        } else {
+          n.group.position.y = Math.abs(Math.sin(t * 2.2 + n.phase)) * 0.06;
+          n.group.rotation.y += Math.sin(t * 0.6 + n.phase) * 0.002;
+        }
       } else if (n.kind === "wanderer") {
         // stroll between waypoints
         const dx = n.wp.x - n.group.position.x, dz = n.wp.z - n.group.position.z;
@@ -179,7 +208,7 @@ export function buildNPCs(scene) {
       const flap = Math.sin(t * 10 + b.a) * 0.6;
       b.wl.rotation.y = flap; b.wr.rotation.y = -flap;
     }
-    // chameleon follows + hops when excited
+    // chameleon follows + hops when excited (obvious hot/cold helper)
     {
       const c = chameleon.group;
       const tx = playerPos.x - 1.6, tz = playerPos.z + 1.2;
@@ -190,8 +219,18 @@ export function buildNPCs(scene) {
         c.position.z += (dz / d) * Math.min(sp * dt, d);
         c.rotation.y = Math.atan2(dx, dz);
       }
-      chameleon.hop += dt * (chameleon.excited ? 14 : 6);
-      c.position.y = Math.abs(Math.sin(chameleon.hop)) * (chameleon.excited ? 0.55 : 0.12);
+      chameleon.hop += dt * (chameleon.excited ? 15 : 6);
+      const exc = chameleon.excited;
+      c.position.y = Math.abs(Math.sin(chameleon.hop)) * (exc ? 0.7 : 0.12);
+      const pulse = exc ? 1 + Math.sin(t * 9) * 0.12 : 1;
+      c.scale.setScalar(pulse);
+      chameleon.exclaim.visible = exc;
+      chameleon.spark.visible = exc;
+      if (exc) {
+        chameleon.exclaim.position.y = 1.7 + Math.sin(t * 7) * 0.14;
+        chameleon.spark.material.opacity = 0.5 + Math.sin(t * 11) * 0.4;
+        chameleon.spark.scale.setScalar(1.3 + Math.sin(t * 11) * 0.5);
+      }
     }
   }
 

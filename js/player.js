@@ -81,9 +81,17 @@ export class Player {
     const p = this.group.position;
     // pull back on narrow (portrait phone) screens so more world is visible
     const wide = 1 + Math.max(0, 1 - camera.aspect) * 0.55;
-    const target = new THREE.Vector3(p.x, 13.5 * wide, p.z + 11.5 * wide);
+    // look-ahead: shift the frame toward her movement direction so landmarks
+    // ahead of her stay visible — she "sees what the world is"
+    const mx = this.moveVec.x, mz = this.moveVec.z;
+    const ml = Math.hypot(mx, mz);
+    const lead = ml > 0.05 ? Math.min(1, ml) : 0;
+    const lx = lead ? (mx / ml) * 5.5 * lead : 0;
+    const lz = lead ? (mz / ml) * 5.5 * lead : 0;
+    // low vista pitch (~25°) so the horizon, sky and landmarks read
+    const target = new THREE.Vector3(p.x + lx, 11 * wide, p.z + lz + 17 * wide);
     camera.position.lerp(target, 1 - Math.pow(0.0015, dt));
-    camera.lookAt(p.x, 1.6, p.z);
+    camera.lookAt(p.x + lx * 0.7, 3.5, p.z + lz * 0.7);
   }
 
   teleport(x, z) {

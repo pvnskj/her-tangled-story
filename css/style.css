@@ -28,7 +28,7 @@ body {
   padding: 8px 18px; font-size: 17px; color: var(--gold); letter-spacing: 0.5px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.5);
 }
-#sound-toggle {
+#sound-toggle, #map-toggle {
   pointer-events: auto; background: var(--panel); border: 1px solid var(--gold);
   border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer; color: #fff;
 }
@@ -107,6 +107,17 @@ body.touch #joystick.started { display: block; }
 #photo-caption { margin: 14px 0 6px; font-size: 16px; font-style: italic; }
 #finale-message { font-size: 17px; line-height: 1.7; white-space: pre-wrap; margin: 14px 0 8px; }
 .panel.finale { border-color: #d9a441; box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 90px rgba(245,214,123,.3); }
+
+/* ---------- world map ---------- */
+.map-panel { max-width: 400px; }
+#map-head { font-size: 22px; color: var(--gold); margin-bottom: 10px; letter-spacing: 1px; }
+#map-canvas {
+  width: min(78vw, 340px); height: min(78vw, 340px);
+  border-radius: 50%; border: 2px solid var(--gold);
+  box-shadow: 0 0 40px rgba(245,214,123,.25), inset 0 0 60px rgba(0,0,0,.5);
+  touch-action: none;
+}
+#map-close { margin-top: 12px; }
 
 @media (max-width: 390px) {
   .panel h1 { font-size: 28px; }
