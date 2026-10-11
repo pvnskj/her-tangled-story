@@ -27,7 +27,8 @@ export function buildWorld(scene) {
   const addCollider = (x, z, r) => colliders.push({ x, z, r });
   // registry of animated bits the per-frame update() drives
   const worldAnims = { mist: [], swayCanopy: null, petals: null, streaks: [], flags: [],
-                       waterfallTex: null, lanterns: null, lanternGlowPts: null, fireflies: null, fireflyBase: null };
+                       waterfallTex: null, lanterns: null, lanternGlowPts: null, fireflies: null, fireflyBase: null,
+                       flicker: [], rippleTex2: null, moonPath: null };
 
   // ---------- dusk sky, fog, lights (luminous Kinkade dusk — never black) ----------
   scene.background = null;
@@ -236,7 +237,7 @@ export function buildWorld(scene) {
       [95,-32],[72,-52],[85,-15],[80,40],[98,40],[90,45],[0,90],[0,-95]];
     const clearOf = (x, z, d) => avoid.every(([ax, az]) => (x-ax)**2 + (z-az)**2 > d*d);
     let guard = 0;
-    while (treeSpots.length < 70 && guard++ < 3000) {
+    while (treeSpots.length < 95 && guard++ < 4000) {
       const x = 55 + rand() * 50, z = -65 + rand() * 50;
       if (!clearOf(x, z, 4)) continue;
       if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 16)) continue;
@@ -246,7 +247,7 @@ export function buildWorld(scene) {
     }
     // scattered trees elsewhere
     guard = 0;
-    while (treeSpots.length < 96 && guard++ < 3000) {
+    while (treeSpots.length < 121 && guard++ < 4000) {
       const x = -110 + rand() * 220, z = -110 + rand() * 220;
       if (Math.hypot(x - 80, z + 40) < 52) continue;
       if (Math.hypot(x, z - 90) < 30) continue;
@@ -257,39 +258,52 @@ export function buildWorld(scene) {
       if (!clearOf(x, z, 3)) continue;
       treeSpots.push([x, z]);
     }
+    // hero trees: hand-placed, larger — frame the tower and the lake shore
+    // (kept clear of clue spots, the dock, and walking lines)
+    const heroes = [[-16,-68,1.6],[18,-70,1.45],[-20,-98,1.7],[16,-102,1.35],
+                    [-52,4,1.4],[-48,36,1.5],[-104,44,1.45],[-108,-6,1.55]];
+    const heroStart = treeSpots.length;
+    for (const [hx, hz, hs] of heroes) treeSpots.push([hx, hz, hs]);
     const trunkG = new THREE.CylinderGeometry(0.45, 0.65, 3, 7);
     const folG = new THREE.IcosahedronGeometry(2.4, 0);
     const folG2 = new THREE.IcosahedronGeometry(1.5, 0);
+    const folG3 = new THREE.IcosahedronGeometry(1.0, 0);
     const trunks = new THREE.InstancedMesh(trunkG, mat(0x6a4a30), treeSpots.length);
     const canA = new THREE.InstancedMesh(folG, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
     const canB = new THREE.InstancedMesh(folG2, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
+    const canC = new THREE.InstancedMesh(folG3, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
     const d = new THREE.Object3D(), col = new THREE.Color();
+    const duskShadow = new THREE.Color(0x4a3a6e), goldKiss = new THREE.Color(0xd8a850);
     const swayData = [];
-    treeSpots.forEach(([x, z], i) => {
-      const s = 0.8 + rand() * 0.7, ph = rand() * 6;
+    treeSpots.forEach(([x, z, hs], i) => {
+      const s = (hs || 1) * (0.8 + rand() * 0.7), ph = rand() * 6;
       d.position.set(x, 1.5 * s, z); d.scale.setScalar(s); d.rotation.y = rand() * 6; d.updateMatrix();
       trunks.setMatrixAt(i, d.matrix);
       d.position.set(x, 4.6 * s, z); d.updateMatrix();
       canA.setMatrixAt(i, d.matrix);
       d.position.set(x + 0.9 * s, 6.3 * s, z - 0.5 * s); d.updateMatrix();
       canB.setMatrixAt(i, d.matrix);
-      // greens with occasional flowering pink / autumn gold
+      d.position.set(x - 0.5 * s, 7.7 * s, z + 0.4 * s); d.updateMatrix();
+      canC.setMatrixAt(i, d.matrix);
+      // dusk-graded canopy: cool purple-shadowed underside, sun-kissed gold crown
       const r = rand();
       if (r < 0.12) col.setHSL(0.93 + rand() * 0.04, 0.55, 0.55 + rand() * 0.1);
       else if (r < 0.24) col.setHSL(0.11 + rand() * 0.03, 0.6, 0.42 + rand() * 0.08);
       else col.setHSL(0.29 + rand() * 0.07, 0.5, 0.3 + rand() * 0.14);
-      canA.setColorAt(i, col);
-      canB.setColorAt(i, col.clone().offsetHSL(0, 0, 0.06));
+      canA.setColorAt(i, col.clone().lerp(duskShadow, 0.38).offsetHSL(0, 0, -0.03));
+      canB.setColorAt(i, col.clone());
+      canC.setColorAt(i, col.clone().lerp(goldKiss, 0.38).offsetHSL(0, 0.04, 0.06));
       swayData.push({ x, z, s, ph });
     });
-    scene.add(trunks, canA, canB);
-    worldAnims.swayCanopy = { canA, canB, swayData, dummy: new THREE.Object3D() };
-    treeSpots.slice(0, 70).forEach(([x, z]) => addCollider(x, z, 0.9));
+    scene.add(trunks, canA, canB, canC);
+    worldAnims.swayCanopy = { canA, canB, canC, swayData, dummy: new THREE.Object3D() };
+    treeSpots.slice(0, 95).forEach(([x, z]) => addCollider(x, z, 0.9));
+    for (let i = heroStart; i < treeSpots.length; i++) addCollider(treeSpots[i][0], treeSpots[i][1], 1.2);
   }
 
   // ---------- flowers (instanced) ----------
   {
-    const n = 420, g = new THREE.ConeGeometry(0.16, 0.55, 5);
+    const n = 650, g = new THREE.ConeGeometry(0.16, 0.55, 5);
     const m = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ roughness: 1, emissive: 0x1a1210 }), n);
     const d = new THREE.Object3D(), col = new THREE.Color();
     const palette = [0xff9ecf, 0xc39bff, 0xffffff, 0xffd94d, 0xff8a7a];
@@ -330,6 +344,32 @@ export function buildWorld(scene) {
     scene.add(m);
   }
 
+  // ---------- grass tufts (instanced, dusk greens) ----------
+  {
+    const n = 700, g = new THREE.ConeGeometry(0.16, 0.8, 5);
+    g.translate(0, 0.4, 0);
+    const m = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ roughness: 1 }), n);
+    const d = new THREE.Object3D(), col = new THREE.Color();
+    let placed = 0, guard = 0;
+    while (placed < n && guard++ < 9000) {
+      const x = -112 + rand() * 224, z = -112 + rand() * 224;
+      if (((x + 80) / 30) ** 2 + ((z - 20) / 24) ** 2 < 1.15) continue; // lake
+      if (((x - 85) / 10) ** 2 + ((z + 15) / 8) ** 2 < 1.3) continue;  // pond
+      if (Math.hypot(x, z - 90) < 24) continue;   // village clearing
+      if (Math.hypot(x + 45, z + 60) < 18) continue; // festival clearing
+      if (Math.hypot(x, z + 95) < 15) continue;  // tower
+      if (Math.hypot(x - 85, z - 45) < 15) continue; // tavern
+      const s = 0.7 + rand() * 1.3;
+      d.position.set(x, 0, z); d.scale.set(s, s * (0.8 + rand() * 0.6), s);
+      d.rotation.set((rand() - 0.5) * 0.25, rand() * 6, (rand() - 0.5) * 0.25);
+      d.updateMatrix(); m.setMatrixAt(placed, d.matrix);
+      m.setColorAt(placed, col.setHSL(0.26 + rand() * 0.09, 0.45, 0.28 + rand() * 0.16));
+      placed++;
+    }
+    m.count = placed;
+    scene.add(m);
+  }
+
   // ---------- Tavern (Snuggly Duckling) ----------
   {
     box(12, 6, 9, 0x7a5a38, 90, 3, 45);                       // hut
@@ -343,9 +383,12 @@ export function buildWorld(scene) {
     });
     box(2.2, 3.6, 0.5, 0x3a2a1a, 84, 1.8, 45);                // door faces west
     cyl(1, 1.1, 2.2, 0x6a5a48, 97, 1.1, 53, 10);              // rain barrel
-    addGlow(90, 3.4, 40.9, 4.5, 0xffc46a, 0.5);
-    addGlow(90, 3.4, 49.1, 4.5, 0xffc46a, 0.5);
-    addGlow(83.6, 2, 45, 4, 0xffb060, 0.4);                   // doorway
+    const tg1 = addGlow(90, 3.4, 40.9, 7, 0xffc46a, 0.7);
+    const tg2 = addGlow(90, 3.4, 49.1, 7, 0xffc46a, 0.7);
+    const tg3 = addGlow(83.6, 2, 45, 6, 0xffb060, 0.6);                   // doorway
+    worldAnims.flicker.push({ glow: tg1, pool: null, ph: rand() * 6, gb: 0.7, pb: 0 });
+    worldAnims.flicker.push({ glow: tg2, pool: null, ph: rand() * 6, gb: 0.7, pb: 0 });
+    worldAnims.flicker.push({ glow: tg3, pool: null, ph: rand() * 6, gb: 0.6, pb: 0 });
     addPool(80, 45, 22, 0.35);
     addCollider(90, 45, 8.5);
 
@@ -450,18 +493,54 @@ export function buildWorld(scene) {
     {
       const g = rc.getContext("2d");
       g.clearRect(0, 0, 128, 128);
-      for (let i = 0; i < 40; i++) {
-        g.fillStyle = "rgba(255,200,130," + (0.05 + rand() * 0.12).toFixed(2) + ")";
-        g.fillRect(rand() * 128, rand() * 128, 8 + rand() * 22, 1.5 + rand() * 2);
+      // long soft glints
+      for (let i = 0; i < 110; i++) {
+        g.fillStyle = "rgba(255,205,135," + (0.06 + rand() * 0.16).toFixed(2) + ")";
+        g.fillRect(rand() * 128, rand() * 128, 6 + rand() * 20, 1 + rand() * 2);
+      }
+      // tiny bright sparkles
+      for (let i = 0; i < 90; i++) {
+        g.fillStyle = "rgba(255,235,200," + (0.15 + rand() * 0.3).toFixed(2) + ")";
+        const s = 1 + rand() * 1.6;
+        g.fillRect(rand() * 128, rand() * 128, s, s);
       }
     }
     const rtex = new THREE.CanvasTexture(rc);
     rtex.wrapS = rtex.wrapT = THREE.RepeatWrapping; rtex.colorSpace = THREE.SRGBColorSpace;
     const ripple = new THREE.Mesh(new THREE.PlaneGeometry(56, 44),
-      new THREE.MeshBasicMaterial({ map: rtex, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ map: rtex, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
     ripple.rotation.x = -Math.PI / 2; ripple.position.set(-80, 0.14, 20);
     scene.add(ripple);
     worldAnims.rippleTex = rtex;
+    // second, finer sparkle layer drifting the other way — water depth
+    const rtex2 = rtex.clone(); rtex2.needsUpdate = true;
+    const ripple2 = new THREE.Mesh(new THREE.PlaneGeometry(40, 32),
+      new THREE.MeshBasicMaterial({ map: rtex2, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+    ripple2.rotation.x = -Math.PI / 2; ripple2.rotation.z = 0.7; ripple2.position.set(-80, 0.18, 20);
+    scene.add(ripple2);
+    worldAnims.rippleTex2 = rtex2;
+    // moonlight sparkle path: a luminous road across the water toward the moon
+    {
+      const mc = document.createElement("canvas"); mc.width = 64; mc.height = 256;
+      const g = mc.getContext("2d");
+      const vg = g.createLinearGradient(0, 256, 0, 0);
+      vg.addColorStop(0, "rgba(255,220,160,0)");
+      vg.addColorStop(0.35, "rgba(255,215,150,0.35)");
+      vg.addColorStop(0.75, "rgba(255,225,170,0.75)");
+      vg.addColorStop(1, "rgba(255,240,200,0.95)");
+      g.fillStyle = vg; g.fillRect(0, 0, 64, 256);
+      g.globalCompositeOperation = "destination-in";
+      const hg = g.createLinearGradient(0, 0, 64, 0);
+      hg.addColorStop(0, "rgba(0,0,0,0)"); hg.addColorStop(0.5, "rgba(0,0,0,1)"); hg.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = hg; g.fillRect(0, 0, 64, 256);
+      const mtex = new THREE.CanvasTexture(mc); mtex.colorSpace = THREE.SRGBColorSpace;
+      const moonPath = new THREE.Mesh(new THREE.PlaneGeometry(13, 26),
+        new THREE.MeshBasicMaterial({ map: mtex, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+      moonPath.rotation.set(-Math.PI / 2, 0, 0.239); // aimed at the moon
+      moonPath.position.set(-82, 0.12, 12);
+      scene.add(moonPath);
+      worldAnims.moonPath = moonPath;
+    }
     addGlow(-80, 3, 20, 42, 0xff9a50, 0.22); // broad warm shimmer over the lake
     addPool(-56, 20, 18, 0.3);               // dock lamplight
   }
@@ -470,6 +549,33 @@ export function buildWorld(scene) {
     for (let i = 0; i < 7; i++) box(2.6, 0.25, 4.4, 0x8a6a48, -48 - i * 3, 0.35, 20);
     [[-48, 18.2], [-48, 21.8], [-63, 18.2], [-63, 21.8]].forEach(([px, pz]) =>
       cyl(0.25, 0.25, 1.6, 0x5a4228, px, 0, pz, 8));
+  }
+  // lantern posts along the lake's east/south shore — their reflections shimmer below
+  // (positions hug the shoreline ellipse; kept clear of clues, the dock, and the fisher)
+  {
+    const orbM = new THREE.MeshBasicMaterial({ color: 0xffd98a });
+    const postM = mat(0x4a3826);
+    const posts = [
+      { px: -50.6, pz: 5.8,  sx: -60, sz: 5.8 },   // north-east shore
+      { px: -50.6, pz: 34.2, sx: -60, sz: 34.2 },  // south-east shore
+      { px: -63.3, pz: 0.4,  sx: -69, sz: 0.4 },   // north shore
+    ];
+    for (const { px, pz, sx, sz } of posts) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 4.6, 8), postM);
+      post.position.set(px, 2.3, pz); scene.add(post);
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), orbM);
+      orb.position.set(px, 5, pz); scene.add(orb);
+      const gl = addGlow(px, 5, pz, 8, 0xffb060, 0.8);
+      const pool = addPool(px, pz, 13, 0.35);
+      worldAnims.flicker.push({ glow: gl, pool, ph: rand() * 6, gb: 0.8, pb: 0.35 });
+      // reflection: vertical warm streak floating on the water toward the lake
+      const st = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffa050,
+        transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
+      st.position.set(sx, 0.5, sz); st.scale.set(2.4, 6.5, 1);
+      scene.add(st);
+      worldAnims.streaks.push({ m: st, ph: rand() * 6 });
+      addCollider(px, pz, 0.6);
+    }
   }
 
   // ---------- boat ----------
@@ -505,6 +611,10 @@ export function buildWorld(scene) {
       const l = new THREE.Mesh(new THREE.SphereGeometry(0.65, 10, 8),
         new THREE.MeshBasicMaterial({ color: 0xffc46a }));
       l.position.set(px, 5.8, pz); scene.add(l); poleTops.push(l);
+      // star treatment: big soft halo + warm pool on the grass + live flicker
+      const gl = addGlow(px, 5.8, pz, 9, 0xffb060, 0.85);
+      const pool = addPool(px, pz, 15, 0.32);
+      worldAnims.flicker.push({ glow: gl, pool, ph: rand() * 6, gb: 0.85, pb: 0.32 });
       addCollider(px, pz, 0.8);
     });
     // bunting strings between poles
@@ -564,9 +674,10 @@ export function buildWorld(scene) {
     worldAnims.fireflies = fireflies; worldAnims.fireflyBase = fireflyBase;
   }
 
-  // ---------- floating lanterns (continuously rising, glowing) ----------
+  // ---------- floating sky lanterns (the iconic Tangled image) ----------
+  // concentrated over the festival clearing + the lake, a few drifting elsewhere
   {
-    const n = 70;
+    const n = 32;
     const bodyG = new THREE.CylinderGeometry(0.42, 0.5, 0.95, 8);
     const bodyM = new THREE.MeshBasicMaterial({ color: 0xffc06a, fog: false });
     const inst = new THREE.InstancedMesh(bodyG, bodyM, n);
@@ -574,12 +685,20 @@ export function buildWorld(scene) {
     const gg = new THREE.BufferGeometry();
     gg.setAttribute("position", new THREE.BufferAttribute(gp, 3));
     const glowPts = new THREE.Points(gg, new THREE.PointsMaterial({
-      map: glowTex, color: 0xffb050, size: 5, transparent: true, opacity: 0.7,
+      map: glowTex, color: 0xffb050, size: 6.5, transparent: true, opacity: 0.75,
       blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
     const data = [];
+    const homes = [
+      { x: -45, z: -60, r: 30, w: 13 },  // festival clearing
+      { x: -80, z: 20,  r: 34, w: 9 },   // the lake
+    ];
     for (let i = 0; i < n; i++) {
-      data.push({ x: -115 + rand() * 230, z: -115 + rand() * 230,
-                  y: rand() * 40, sp: 0.9 + rand() * 1.5, ph: rand() * 6, sw: 1 + rand() * 2.2 });
+      let hx, hz, hr;
+      if (i < 22) { const h = homes[i % 2]; hx = h.x; hz = h.z; hr = h.r; }
+      else { hx = 0; hz = 0; hr = 220; } // a few wanderers over the whole valley
+      const x = hx + (rand() - 0.5) * hr, z = hz + (rand() - 0.5) * hr;
+      data.push({ x, z, hx, hz, hr, y: 1.5 + rand() * 30,
+                  sp: 0.9 + rand() * 1.5, ph: rand() * 6, sw: 1 + rand() * 2.2 });
     }
     scene.add(inst, glowPts);
     worldAnims.lanterns = { inst, glowPts, data, dummy: new THREE.Object3D() };
@@ -619,20 +738,26 @@ export function buildWorld(scene) {
 
   // ---------- per-frame animation (everything alive) ----------
   function update(dt, t) {
-    // rising lanterns: climb, sway, respawn at the bottom
+    // rising lanterns: climb, sway, fade out at the top, respawn over home turf
     {
       const { inst, glowPts, data, dummy } = worldAnims.lanterns;
       const gp = glowPts.geometry.attributes.position;
       for (let i = 0; i < data.length; i++) {
         const L = data[i];
         L.y += L.sp * dt;
-        if (L.y > 44) { L.y = 1.5; L.x = -115 + Math.random() * 230; L.z = -115 + Math.random() * 230; }
+        if (L.y > 44) {
+          L.y = 1.5 + Math.random() * 3;
+          L.x = L.hx + (Math.random() - 0.5) * L.hr;
+          L.z = L.hz + (Math.random() - 0.5) * L.hr;
+        }
         const sx = L.x + Math.sin(t * 0.5 + L.ph) * L.sw;
         const sz = L.z + Math.cos(t * 0.4 + L.ph) * L.sw;
+        const fade = L.y > 36 ? Math.max(0, 1 - (L.y - 36) / 8) : 1;
         dummy.position.set(sx, L.y, sz);
         dummy.rotation.y = t * 0.3 + L.ph;
+        dummy.scale.setScalar(Math.max(0.001, fade));
         dummy.updateMatrix(); inst.setMatrixAt(i, dummy.matrix);
-        gp.array[i*3] = sx; gp.array[i*3+1] = L.y; gp.array[i*3+2] = sz;
+        gp.array[i*3] = sx; gp.array[i*3+1] = fade > 0 ? L.y : -10; gp.array[i*3+2] = sz;
       }
       inst.instanceMatrix.needsUpdate = true;
       gp.needsUpdate = true;
@@ -663,9 +788,9 @@ export function buildWorld(scene) {
       }
       p.needsUpdate = true;
     }
-    // tree canopies sway in the breeze
+    // tree canopies sway in the breeze (crown sways most)
     {
-      const { canA, canB, swayData, dummy } = worldAnims.swayCanopy;
+      const { canA, canB, canC, swayData, dummy } = worldAnims.swayCanopy;
       for (let i = 0; i < swayData.length; i++) {
         const s = swayData[i];
         const ox = Math.sin(t * 1.1 + s.ph) * 0.22 * s.s;
@@ -675,9 +800,12 @@ export function buildWorld(scene) {
         canA.setMatrixAt(i, dummy.matrix);
         dummy.position.set(s.x + 0.9 * s.s + ox * 1.3, 6.3 * s.s, s.z - 0.5 * s.s + oz * 1.3); dummy.updateMatrix();
         canB.setMatrixAt(i, dummy.matrix);
+        dummy.position.set(s.x - 0.5 * s.s + ox * 1.7, 7.7 * s.s, s.z + 0.4 * s.s + oz * 1.7); dummy.updateMatrix();
+        canC.setMatrixAt(i, dummy.matrix);
       }
       canA.instanceMatrix.needsUpdate = true;
       canB.instanceMatrix.needsUpdate = true;
+      canC.instanceMatrix.needsUpdate = true;
     }
     // waterfall flows
     if (worldAnims.waterfallTex) worldAnims.waterfallTex.offset.y -= dt * 0.9;
@@ -691,6 +819,15 @@ export function buildWorld(scene) {
       s.m.material.opacity = 0.45 + Math.sin(t * 1.8 + s.ph) * 0.25;
     }
     if (worldAnims.rippleTex) { worldAnims.rippleTex.offset.x = t * 0.02; worldAnims.rippleTex.offset.y = Math.sin(t * 0.4) * 0.05; }
+    // second ripple layer drifts against the first; the moonlight road breathes
+    if (worldAnims.rippleTex2) { worldAnims.rippleTex2.offset.x = -t * 0.013; worldAnims.rippleTex2.offset.y = Math.cos(t * 0.3) * 0.06; }
+    if (worldAnims.moonPath) worldAnims.moonPath.material.opacity = 0.42 + Math.sin(t * 0.9) * 0.1;
+    // lantern flicker: warm candle-like breathing on every lantern halo + pool
+    for (const f of worldAnims.flicker) {
+      const fl = 0.9 + 0.1 * Math.sin(t * 9 + f.ph) * Math.sin(t * 5.3 + f.ph * 1.7);
+      f.glow.material.opacity = f.gb * fl;
+      if (f.pool) f.pool.material.opacity = f.pb * (0.92 + 0.08 * Math.sin(t * 7 + f.ph));
+    }
     // bunting flags flutter
     for (const f of worldAnims.flags) {
       f.m.rotation.x = Math.sin(t * 2.4 + f.ph) * 0.3;
