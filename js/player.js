@@ -29,6 +29,15 @@ export class Player {
     this.moving = false;
     this.bobT = 0;
     this.lookSm = null; // smoothed look-at target for buttery camera
+    // drag-to-look offsets (radians): yaw/pitch added around the follow target
+    this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
+  }
+
+  // called from the canvas drag handler: dx/dy are pointer pixels
+  addLook(dx, dy) {
+    this.orbit.yaw -= dx * 0.0052;
+    this.orbit.pitch += dy * 0.0052;
+    this.orbit.lastDrag = performance.now() / 1000;
   }
 
   setInput(x, z) { this.moveVec.x = x; this.moveVec.z = z; }
@@ -118,6 +127,26 @@ export class Player {
     const biasZ = portrait ? 0 : -4;
     if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x, lookH, p.z + biasZ);
     this.lookSm.lerp(new THREE.Vector3(p.x + lx * 0.7, lookH, p.z + lz * 0.7 + biasZ), 1 - Math.pow(0.004, dt));
+    // drag-to-look: rotate the camera offset around the smoothed target.
+    // idle 5s and it eases back to the curated framing (tower/sky in frame).
+    const nowS = performance.now() / 1000;
+    if (nowS - this.orbit.lastDrag > 5) {
+      const e = 1 - Math.pow(0.05, dt);
+      this.orbit.yaw *= (1 - e);
+      this.orbit.pitch *= (1 - e);
+    }
+    {
+      const off = camera.position.clone().sub(this.lookSm);
+      const L = Math.max(1, off.length());
+      const basePitch = Math.asin(THREE.MathUtils.clamp(off.y / L, -1, 1));
+      const baseYaw = Math.atan2(off.x, off.z);
+      const D = THREE.MathUtils.degToRad;
+      // clamp total elevation: 15° (low, looking up at the tower) .. 75° (high diorama)
+      const pitch = THREE.MathUtils.clamp(basePitch + this.orbit.pitch, D(15), D(75));
+      const yaw = baseYaw + this.orbit.yaw;
+      off.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(L);
+      camera.position.copy(this.lookSm).add(off);
+    }
     camera.lookAt(this.lookSm);
   }
 

@@ -152,6 +152,16 @@ export function buildNPCs(scene) {
     return { group: g, excited: false, hop: 0, exclaim, spark };
   })();
 
+  function facePlayer(n, dt, playerPos, maxD) {
+    const dx = playerPos.x - n.group.position.x, dz = playerPos.z - n.group.position.z;
+    if (Math.hypot(dx, dz) > maxD) return;
+    const target = Math.atan2(dx, dz);
+    let diff = target - n.group.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    n.group.rotation.y += diff * Math.min(1, dt * 6);
+  }
+
   function update(dt, t, playerPos) {
     // named: gentle sway
     for (const n of npcs) {
@@ -160,17 +170,18 @@ export function buildNPCs(scene) {
           // mid-song: hearty rocking side to side
           n.group.position.y = Math.abs(Math.sin(t * 2.6 + n.phase)) * 0.22;
           n.group.rotation.z = Math.sin(t * 2.6 + n.phase) * 0.1;
-          n.group.rotation.y += Math.sin(t * 0.8 + n.phase) * 0.004;
         } else {
           n.group.position.y = Math.abs(Math.sin(t * 2.2 + n.phase)) * 0.06;
           n.group.rotation.y += Math.sin(t * 0.6 + n.phase) * 0.002;
         }
+        facePlayer(n, dt, playerPos, 9); // turn to greet her when she's near
       } else if (n.kind === "wanderer") {
         // stroll between waypoints
         const dx = n.wp.x - n.group.position.x, dz = n.wp.z - n.group.position.z;
         const d = Math.hypot(dx, dz);
         if (d < 1) {
           n.wait += dt;
+          facePlayer(n, dt, playerPos, 9); // chat while waiting
           if (n.wait > 2 + (n.phase % 2)) {
             n.wp = { x: -22 + Math.random() * 44, z: 76 + Math.random() * 30 }; n.wait = 0;
           }

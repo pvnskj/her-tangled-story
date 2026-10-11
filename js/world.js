@@ -32,7 +32,7 @@ export function buildWorld(scene) {
 
   // ---------- dusk sky, fog, lights (luminous Kinkade dusk — never black) ----------
   scene.background = null;
-  scene.fog = new THREE.Fog(0x453063, 80, 260);
+  scene.fog = new THREE.Fog(0x54407a, 110, 330);
 
   // shared radial glow texture (lanterns, windows, moon, light pools, mist)
   function radialTex(stops) {
@@ -77,8 +77,8 @@ export function buildWorld(scene) {
 
   // strong ambient (the world must stay clearly readable) + low warm sun
   // dusk grade: cool fill + warm key, total kept moderate for mood
-  scene.add(new THREE.HemisphereLight(0x9a7ff0, 0x46543c, 1.5));
-  const sun = new THREE.DirectionalLight(0xffbe78, 1.35);
+  scene.add(new THREE.HemisphereLight(0x9a7ff0, 0x46543c, 1.62));
+  const sun = new THREE.DirectionalLight(0xffc182, 1.42);
   sun.position.set(-80, 55, 60);
   // soft diorama shadows: modest shadow camera that main.js keeps centered on her
   sun.castShadow = true;
@@ -228,6 +228,45 @@ export function buildWorld(scene) {
       scene.add(m);
       worldAnims.mist.push({ s: m, ph: rand() * 6, bx: m.position.x });
     }
+  }
+
+  // ---------- horse (tower meadow) — stylized, alive ----------
+  {
+    const g = new THREE.Group();
+    const brown = mat(0x8a5a30), dark = mat(0x6a4224);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.1, 2.3), brown);
+    body.position.y = 1.55; g.add(body);
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.75, 8, 6), brown);
+    belly.scale.set(0.8, 0.75, 1.5); belly.position.y = 1.5; g.add(belly);
+    [[-0.42, -0.82], [0.42, -0.82], [-0.42, 0.82], [0.42, 0.82]].forEach(([x, z]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.1, 1.5, 6), dark);
+      leg.position.set(x, 0.75, z); g.add(leg);
+      const hoof = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.14, 0.18, 6), mat(0x3a2a1a));
+      hoof.position.set(x, 0.09, z); g.add(hoof);
+    });
+    // neck+head on a pivot so it can graze
+    const neckG = new THREE.Group(); neckG.position.set(0, 1.95, 1.05); g.add(neckG);
+    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.52, 1.15, 0.55), brown);
+    neck.position.y = 0.42; neck.rotation.x = 0.3; neckG.add(neck);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.52, 0.95), brown);
+    head.position.set(0, 1.02, 0.42); neckG.add(head);
+    const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.36, 0.4), dark);
+    muzzle.position.set(0, 0.92, 0.9); neckG.add(muzzle);
+    const mane = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.0, 0.34), dark);
+    mane.position.set(0, 0.55, -0.28); neckG.add(mane);
+    const ears = [];
+    [[-0.16], [0.16]].forEach(([x]) => {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 5), dark);
+      ear.position.set(x, 1.36, 0.28); neckG.add(ear); ears.push(ear);
+    });
+    // tail on a pivot for swishing
+    const tailG = new THREE.Group(); tailG.position.set(0, 1.85, -1.15); g.add(tailG);
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.04, 1.2, 6), dark);
+    tail.position.y = -0.55; tailG.add(tail);
+    g.position.set(14, 0, -70); g.rotation.y = -0.6;
+    scene.add(g);
+    addCollider(14, -70, 1.5);
+    worldAnims.horse = { group: g, neckG, tailG, ears, grazeT: rand() * 9, earT: 2 + rand() * 3, twitch: 0 };
   }
 
   // ---------- trees (instanced) ----------
@@ -464,7 +503,7 @@ export function buildWorld(scene) {
   {
     const mkWater = (rx, rz, x, z) => {
       const m = new THREE.Mesh(new THREE.CircleGeometry(1, 44),
-        new THREE.MeshStandardMaterial({ color: 0x2f5a9e, emissive: 0x0e1e3a, transparent: true, opacity: 0.85, roughness: 0.15, metalness: 0.5 }));
+        new THREE.MeshStandardMaterial({ color: 0x265086, emissive: 0x0c1c36, transparent: true, opacity: 0.88, roughness: 0.15, metalness: 0.5 }));
       m.rotation.x = -Math.PI / 2; m.scale.set(rx, rz, 1); m.position.set(x, 0.06, z);
       scene.add(m); waters.push({ x, z, rx, rz }); return m;
     };
@@ -493,13 +532,13 @@ export function buildWorld(scene) {
     {
       const g = rc.getContext("2d");
       g.clearRect(0, 0, 128, 128);
-      // long soft glints
-      for (let i = 0; i < 110; i++) {
-        g.fillStyle = "rgba(255,205,135," + (0.06 + rand() * 0.16).toFixed(2) + ")";
-        g.fillRect(rand() * 128, rand() * 128, 6 + rand() * 20, 1 + rand() * 2);
+      // fine soft glints — small and dim so they read as sparkle, not scratches
+      for (let i = 0; i < 150; i++) {
+        g.fillStyle = "rgba(255,205,135," + (0.04 + rand() * 0.08).toFixed(2) + ")";
+        g.fillRect(rand() * 128, rand() * 128, 3 + rand() * 5, 1);
       }
       // tiny bright sparkles
-      for (let i = 0; i < 90; i++) {
+      for (let i = 0; i < 150; i++) {
         g.fillStyle = "rgba(255,235,200," + (0.15 + rand() * 0.3).toFixed(2) + ")";
         const s = 1 + rand() * 1.6;
         g.fillRect(rand() * 128, rand() * 128, s, s);
@@ -508,14 +547,14 @@ export function buildWorld(scene) {
     const rtex = new THREE.CanvasTexture(rc);
     rtex.wrapS = rtex.wrapT = THREE.RepeatWrapping; rtex.colorSpace = THREE.SRGBColorSpace;
     const ripple = new THREE.Mesh(new THREE.PlaneGeometry(56, 44),
-      new THREE.MeshBasicMaterial({ map: rtex, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ map: rtex, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false }));
     ripple.rotation.x = -Math.PI / 2; ripple.position.set(-80, 0.14, 20);
     scene.add(ripple);
     worldAnims.rippleTex = rtex;
     // second, finer sparkle layer drifting the other way — water depth
     const rtex2 = rtex.clone(); rtex2.needsUpdate = true;
     const ripple2 = new THREE.Mesh(new THREE.PlaneGeometry(40, 32),
-      new THREE.MeshBasicMaterial({ map: rtex2, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ map: rtex2, transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending, depthWrite: false }));
     ripple2.rotation.x = -Math.PI / 2; ripple2.rotation.z = 0.7; ripple2.position.set(-80, 0.18, 20);
     scene.add(ripple2);
     worldAnims.rippleTex2 = rtex2;
@@ -579,7 +618,7 @@ export function buildWorld(scene) {
   }
 
   // ---------- boat ----------
-  const boat = { group: new THREE.Group(), from: V3(-62, 0.35, 20), to: V3(-80, 0.35, 44), t: 0, riding: false };
+  const boat = { group: new THREE.Group(), from: V3(-58, 0.35, 15), to: V3(-80, 0.35, 44), t: 0, riding: false };
   {
     const g = boat.group;
     const hull = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.9, 1.9), mat(0x7a5230));
@@ -650,7 +689,7 @@ export function buildWorld(scene) {
   // ---------- fireflies ----------
   let fireflies, fireflyBase;
   {
-    const n = 200, pos = new Float32Array(n * 3);
+    const n = 400, pos = new Float32Array(n * 3);
     fireflyBase = new Float32Array(n * 3);
     const spots = [
       [55, -65, 50, 50],   // forest
@@ -668,7 +707,7 @@ export function buildWorld(scene) {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     fireflies = new THREE.Points(g, new THREE.PointsMaterial({
-      map: mistTex, color: 0xffe98a, size: 0.55, transparent: true, opacity: 0.95,
+      map: mistTex, color: 0xffe98a, size: 0.8, transparent: true, opacity: 1,
       blending: THREE.AdditiveBlending, depthWrite: false }));
     scene.add(fireflies);
     worldAnims.fireflies = fireflies; worldAnims.fireflyBase = fireflyBase;
@@ -689,16 +728,20 @@ export function buildWorld(scene) {
       blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
     const data = [];
     const homes = [
+      { x: -80, z: 20,  r: 34, w: 9 },   // the lake — the main release
       { x: -45, z: -60, r: 30, w: 13 },  // festival clearing
-      { x: -80, z: 20,  r: 34, w: 9 },   // the lake
     ];
     for (let i = 0; i < n; i++) {
-      let hx, hz, hr;
-      if (i < 22) { const h = homes[i % 2]; hx = h.x; hz = h.z; hr = h.r; }
-      else { hx = 0; hz = 0; hr = 220; } // a few wanderers over the whole valley
+      let hx, hz, hr, home;
+      if (i < 26) { const h = homes[(i % 10) < 7 ? 0 : 1]; hx = h.x; hz = h.z; hr = h.r; home = (i % 10) < 7 ? 0 : 1; }
+      else { hx = 0; hz = 0; hr = 220; home = -1; } // a few wanderers over the whole valley
       const x = hx + (rand() - 0.5) * hr, z = hz + (rand() - 0.5) * hr;
-      data.push({ x, z, hx, hz, hr, y: 1.5 + rand() * 30,
-                  sp: 0.9 + rand() * 1.5, ph: rand() * 6, sw: 1 + rand() * 2.2 });
+      // lake lanterns stay low and drift over the water (visible in-frame);
+      // festival ones climb high into the sky
+      const maxY = home === 0 ? 15 : 44;
+      data.push({ x, z, hx, hz, hr, home, maxY, y: 1.5 + rand() * (home === 0 ? 8 : 30),
+                  sp: home === 0 ? 0.4 + rand() * 0.5 : 0.9 + rand() * 1.5,
+                  ph: rand() * 6, sw: 1 + rand() * 2.2 });
     }
     scene.add(inst, glowPts);
     worldAnims.lanterns = { inst, glowPts, data, dummy: new THREE.Object3D() };
@@ -739,20 +782,27 @@ export function buildWorld(scene) {
   // ---------- per-frame animation (everything alive) ----------
   function update(dt, t) {
     // rising lanterns: climb, sway, fade out at the top, respawn over home turf
+    // (lanternBoost: while she's rowing the boat, the lake release intensifies)
     {
       const { inst, glowPts, data, dummy } = worldAnims.lanterns;
       const gp = glowPts.geometry.attributes.position;
+      const boost = worldAnims.lanternBoost ? 1.9 : 1;
       for (let i = 0; i < data.length; i++) {
         const L = data[i];
-        L.y += L.sp * dt;
-        if (L.y > 44) {
+        L.y += L.sp * boost * dt;
+        if (L.y > L.maxY) {
           L.y = 1.5 + Math.random() * 3;
-          L.x = L.hx + (Math.random() - 0.5) * L.hr;
-          L.z = L.hz + (Math.random() - 0.5) * L.hr;
+          if (boost > 1 && L.home !== -1) L.home = 0; // the Tangled moment: all over the lake
+          if (L.home === 0) L.maxY = 15;
+          const hx = L.home === -1 ? 0 : (L.home === 0 ? -80 : -45);
+          const hz = L.home === -1 ? 0 : (L.home === 0 ? 20 : -60);
+          const hr = L.home === -1 ? 220 : (L.home === 0 ? 34 : 30);
+          L.x = hx + (Math.random() - 0.5) * hr;
+          L.z = hz + (Math.random() - 0.5) * hr;
         }
         const sx = L.x + Math.sin(t * 0.5 + L.ph) * L.sw;
         const sz = L.z + Math.cos(t * 0.4 + L.ph) * L.sw;
-        const fade = L.y > 36 ? Math.max(0, 1 - (L.y - 36) / 8) : 1;
+        const fade = L.y > L.maxY - 8 ? Math.max(0, 1 - (L.y - (L.maxY - 8)) / 8) : 1;
         dummy.position.set(sx, L.y, sz);
         dummy.rotation.y = t * 0.3 + L.ph;
         dummy.scale.setScalar(Math.max(0.001, fade));
@@ -773,6 +823,26 @@ export function buildWorld(scene) {
       }
       p.needsUpdate = true;
       worldAnims.fireflies.material.opacity = 0.75 + Math.sin(t * 2.3) * 0.2;
+    }
+    // horse: graze cycle + tail swish + ear twitches — alive, not a statue
+    {
+      const h = worldAnims.horse;
+      if (h) {
+        h.grazeT += dt;
+        const cyc = h.grazeT % 10;
+        const target = cyc < 4.5 ? 0.95 : 0; // head down grazing, then up alert
+        h.neckG.rotation.x += (target - h.neckG.rotation.x) * Math.min(1, dt * 1.6);
+        h.tailG.rotation.x = Math.sin(t * 1.9) * 0.4;
+        h.tailG.rotation.z = Math.sin(t * 1.3 + 1) * 0.25;
+        h.earT -= dt;
+        if (h.earT <= 0) { h.earT = 2.5 + Math.random() * 4; h.twitch = 0.4; }
+        if (h.twitch > 0) {
+          h.twitch -= dt;
+          h.ears[1].rotation.z = Math.sin(t * 45) * 0.35;
+        } else h.ears[1].rotation.z = 0;
+        // weight shift: subtle body rock while grazing
+        h.group.rotation.z = Math.sin(t * 0.9) * 0.015;
+      }
     }
     // petals fall and swirl
     {
@@ -859,5 +929,7 @@ export function buildWorld(scene) {
     return best;
   }
 
-  return { colliders, waters, dockRect, boat, zoneAt, update, sun };
+  return { colliders, waters, dockRect, boat, zoneAt, update, sun,
+           setLanternBoost: (b) => { worldAnims.lanternBoost = b; },
+           lanternDebug: () => worldAnims.lanterns ? worldAnims.lanterns.data.slice(0, 8).map((L) => ({ x: +L.x.toFixed(1), y: +L.y.toFixed(1), z: +L.z.toFixed(1), home: L.home, maxY: L.maxY })) : null };
 }

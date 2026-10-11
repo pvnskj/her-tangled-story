@@ -135,6 +135,13 @@ for (const clue of CLUES) {
 for (const n of npcs) {
   if (n.kind === "named" || n.kind === "wanderer" || n.kind === "thug") {
     n.group.userData.interact = { kind: "npc", npc: n };
+    // generous invisible tap target — phone taps are fiddly, meshes are thin
+    const hit = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.5, 1.5, 3.8, 6),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+    );
+    hit.position.y = 1.9;
+    n.group.add(hit);
     hitMeshes.push(n.group);
   }
 }
@@ -213,49 +220,87 @@ function interactWith(target) {
   }
 }
 
-// ---------- boat ride ----------
+// ---------- boat ride (free rowing on the lake) ----------
+const BOAT_PARK = { x: -58, z: 15 }; // beside the dock, visible on approach
+function boatNearShore() {
+  const b = world.boat.group.position;
+  if (Math.hypot(b.x - BOAT_PARK.x, b.z - BOAT_PARK.z) < 8) return true;
+  const w = world.waters[0]; // the lake ellipse
+  const nx = (b.x - w.x) / w.rx, nz = (b.z - w.z) / w.rz;
+  return (nx * nx + nz * nz) > 0.70; // close to the water's rim
+}
 function tapBoat() {
   const clue26 = CLUES.find((c) => c.id === 26);
   if (!found.has(26)) { discover(clue26); return; }
-  if (world.boat.riding || modalOpen) return;
-  UI.blip();
-  world.boat.riding = true;
-  world.boat.t = 0;
-  player.riding = true;
-  // from/to endpoints are maintained by updateBoat on arrival (ping-pong)
-  UI.banner(world.boat.to.z > 30 ? "Across the lake…" : "Back to the dock…");
+  if (modalOpen) return;
+  const p = player.group.position, b = world.boat.group.position;
+  if (!player.riding) {
+    if (Math.hypot(p.x - b.x, p.z - b.z) > 9) return;
+    UI.blip();
+    player.riding = true; world.boat.riding = true;
+    player.sprite.position.y = 1.0; // seated in the hull
+    UI.banner("Rowing the lake ⛵ — hop out near the shore");
+  } else if (boatNearShore()) {
+    UI.blip();
+    player.riding = false; world.boat.riding = false;
+    player.sprite.position.y = 1.8;
+    // step onto the nearest dry land: just outside the lake ellipse
+    const w = world.waters[0];
+    let nx = (b.x - w.x) / w.rx, nz = (b.z - w.z) / w.rz;
+    const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+    player.group.position.set(w.x + nx * (w.rx + 2.4), 0, w.z + nz * (w.rz + 2.4));
+    player.svel.set(0, 0, 0);
+    UI.banner("Back on dry land ✨");
+  }
 }
-function updateBoat(dt) {
+function updateBoat(dt, t) {
   const b = world.boat;
   if (!b.riding) return;
-  b.t += dt / CONFIG.BOAT_RIDE_TIME;
-  const k = Math.min(1, b.t);
-  const e = k * k * (3 - 2 * k); // smoothstep
-  b.group.position.lerpVectors(b.from, b.to, e);
-  b.group.position.y = 0.35 + Math.sin(e * Math.PI * 6) * 0.08;
-  b.group.rotation.y = Math.atan2(b.to.x - b.from.x, b.to.z - b.from.z);
-  player.group.position.set(b.group.position.x, 0.9, b.group.position.z);
-  if (k >= 1) {
-    b.riding = false;
-    player.riding = false;
-    player.group.position.set(b.to.x, 0, b.to.z + 2.5);
-    // keep endpoints as-arrived for the next tap (ping-pong handled at tap)
-    const arrived = b.to.clone();
-    b.from.copy(arrived);
-    // recompute the "other side": dock vs far shore
-    if (Math.abs(arrived.x + 62) < 1 && Math.abs(arrived.z - 20) < 1) {
-      b.to.set(-80, 0.35, 44);
-    } else {
-      b.to.set(-62, 0.35, 20);
-    }
+  const ix = player.moveVec.x, iz = player.moveVec.z;
+  const len = Math.hypot(ix, iz);
+  const sp = 7.5 * Math.min(1, len);
+  if (len > 0.05) {
+    const nx = ix / Math.max(1, len), nz = iz / Math.max(1, len);
+    b.group.position.x += nx * sp * dt;
+    b.group.position.z += nz * sp * dt;
+    const targetRot = Math.atan2(nx, nz);
+    let dr = targetRot - b.group.rotation.y;
+    while (dr > Math.PI) dr -= Math.PI * 2;
+    while (dr < -Math.PI) dr += Math.PI * 2;
+    b.group.rotation.y += dr * Math.min(1, dt * 5);
   }
+  // stay on the lake: clamp inside the ellipse with a small margin
+  const w = world.waters[0];
+  const ex = (b.group.position.x - w.x) / (w.rx - 2.5), ez = (b.group.position.z - w.z) / (w.rz - 2.5);
+  const e2 = ex * ex + ez * ez;
+  if (e2 > 1) {
+    const l = Math.sqrt(e2);
+    b.group.position.x = w.x + (ex / l) * (w.rx - 2.5);
+    b.group.position.z = w.z + (ez / l) * (w.rz - 2.5);
+  }
+  b.group.position.y = 0.35 + Math.sin(t * 2.2) * 0.09;
+  b.group.rotation.z = Math.sin(t * 1.6) * 0.03;
+  player.group.position.set(b.group.position.x, 0.9, b.group.position.z);
 }
 
 // ---------- input: tap + keys ----------
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let downInfo = null;
-canvas.addEventListener("pointerdown", (e) => { downInfo = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+// drag-to-look: pointer drag anywhere on the canvas (joystick is a separate
+// element, so it never reaches here) orbits/pitches the follow camera
+let lookDrag = false, lastLX = 0, lastLY = 0;
+canvas.addEventListener("pointerdown", (e) => {
+  downInfo = { x: e.clientX, y: e.clientY, t: performance.now() };
+  lookDrag = false; lastLX = e.clientX; lastLY = e.clientY;
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!downInfo) return;
+  const dx = e.clientX - lastLX, dy = e.clientY - lastLY;
+  lastLX = e.clientX; lastLY = e.clientY;
+  if (Math.hypot(e.clientX - downInfo.x, e.clientY - downInfo.y) > 12) lookDrag = true;
+  if (lookDrag && !modalOpen) player.addLook(dx, dy);
+});
 canvas.addEventListener("pointerup", (e) => {
   if (!downInfo) return;
   const moved = Math.hypot(e.clientX - downInfo.x, e.clientY - downInfo.y);
@@ -276,9 +321,21 @@ const keys = {};
 window.addEventListener("keydown", (e) => {
   keys[e.code] = true;
   if (e.code === "KeyE" && !modalOpen) {
-    // discover nearest in-range undiscovered clue
     const p = player.group.position;
-    let best = null, bd = 1e9;
+    // nearest interactive villager first, then clues
+    let bn = null, bd = 1e9;
+    for (const n of npcs) {
+      if (n.kind !== "named" && n.kind !== "wanderer" && n.kind !== "thug") continue;
+      const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
+      if (d < CONFIG.INTERACT_RADIUS + 2 && d < bd) { bd = d; bn = n; }
+    }
+    if (bn) { interactWith({ kind: "npc", npc: bn }); return; }
+    if (player.riding) { tapBoat(); return; } // E hops out near shore
+    const bp = world.boat.group.position;
+    if (Math.hypot(p.x - bp.x, p.z - bp.z) < 9) { tapBoat(); return; }
+    // discover nearest in-range undiscovered clue
+    let best = null;
+    bd = 1e9;
     for (const clue of CLUES) {
       if (found.has(clue.id)) continue;
       const d = Math.hypot(p.x - clue.x, p.z - clue.z);
@@ -317,6 +374,43 @@ if (DEBUG) {
     boatRiding: () => world.boat.riding,
     zoneAt: (x, z) => { const zn = world.zoneAt(x, z); return zn ? zn.id + " / " + zn.name : "valley"; },
     bannerText: () => document.getElementById("zone-banner").textContent,
+    lanternDebug: () => world.lanternDebug(),
+    npcScreen: (idx) => { const n = npcs[idx]; const s = project(n.group.position.x, n.group.position.y + n.headY, n.group.position.z); return { x: Math.round(s.x), y: Math.round(s.y), name: n.name, kind: n.kind }; },
+    npcCount: () => npcs.length,
+    hitCount: () => hitMeshes.length,
+    orbit: () => ({ ...player.orbit }),
+    proj: (x, y, z) => { const s = project(x, y, z); return { x: Math.round(s.x), y: Math.round(s.y) }; },
+    tapTest: (cx, cy) => {
+      pointer.set((cx / window.innerWidth) * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(hitMeshes, true);
+      return hits.slice(0, 4).map((h) => {
+        let o = h.object, path = [];
+        while (o && path.length < 5) { path.push(o.type + (o.userData.interact ? "[I]" : "")); o = o.parent; }
+        return { d: +h.distance.toFixed(1), path: path.join("<") };
+      });
+    },
+    rayDebug: (cx, cy) => {
+      pointer.set((cx / window.innerWidth) * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const n = npcs[0];
+      const direct = raycaster.intersectObject(n.group, true);
+      const head = new THREE.Vector3();
+      n.group.children[1].getWorldPosition(head);
+      const toHead = head.clone().sub(raycaster.ray.origin);
+      const dist = toHead.length();
+      const angle = raycaster.ray.direction.angleTo(toHead.normalize());
+      return {
+        directHits: direct.length,
+        groupChildren: n.group.children.length,
+        groupVisible: n.group.visible,
+        headWorld: head.toArray().map((v) => +v.toFixed(1)),
+        rayOrigin: raycaster.ray.origin.toArray().map((v) => +v.toFixed(1)),
+        angleDeg: +(angle * 180 / Math.PI).toFixed(2),
+        headAngularSizeDeg: +((0.34 / dist) * 180 / Math.PI).toFixed(2),
+        camPos: camera.position.toArray().map((v) => +v.toFixed(1)),
+      };
+    },
   };
 }
 
@@ -345,8 +439,9 @@ function animate() {
   player.setInput(jx, jz);
 
   player.update(dt);
-  updateBoat(dt);
+  updateBoat(dt, t);
   world.update(dt, t);
+  world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
   player.updateCamera(camera, dt);
 
@@ -364,6 +459,42 @@ function animate() {
   const p = player.group.position;
   const sense = nearestUndiscovered(p, CONFIG.CHAMELEON_SENSE);
   chameleon.excited = !!sense;
+
+  // interaction prompts: boat board/hop-out, villager talk
+  // (the prompt pill itself is tappable — the reliable phone interaction)
+  {
+    const pr = document.getElementById("interact-prompt");
+    let text = null, wx = 0, wy = 0, wz = 0, target = null;
+    const bp = world.boat.group.position;
+    const bd = Math.hypot(p.x - bp.x, p.z - bp.z);
+    if (player.riding) {
+      if (boatNearShore()) { text = "⛵ Tap to hop out"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" }; }
+    } else if (bd < 9) {
+      text = "⛵ Tap to board"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" };
+    } else {
+      let bn = null, bnd = 1e9;
+      for (const n of npcs) {
+        if (n.kind !== "named" && n.kind !== "wanderer" && n.kind !== "thug") continue;
+        const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
+        if (d < CONFIG.PROMPT_RADIUS && d < bnd) { bnd = d; bn = n; }
+      }
+      if (bn) {
+        text = `💬 Talk to ${bn.name}`;
+        wx = bn.group.position.x; wy = bn.group.position.y + bn.headY + 1.5; wz = bn.group.position.z;
+        target = { kind: "npc", npc: bn };
+      }
+    }
+    if (text && !modalOpen && !UI.isMapOpen()) {
+      const s = project(wx, wy, wz);
+      // keep the pill on-screen even when its target is at the frame edge
+      const cx = Math.max(70, Math.min(window.innerWidth - 70, s.x));
+      const cy = Math.max(90, Math.min(window.innerHeight - 120, s.y));
+      pr.textContent = text;
+      pr.style.left = cx + "px"; pr.style.top = cy + "px";
+      pr.classList.remove("hidden");
+      pr.onclick = () => { if (target) interactWith(target); };
+    } else { pr.classList.add("hidden"); pr.onclick = null; }
+  }
 
   // keep the sun's shadow camera centered on her as she roams
   world.sun.position.set(p.x - 40, 55, p.z + 30);
