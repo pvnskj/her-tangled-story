@@ -76,10 +76,18 @@ export function buildWorld(scene) {
 
   // strong ambient (the world must stay clearly readable) + low warm sun
   // dusk grade: cool fill + warm key, total kept moderate for mood
-  scene.add(new THREE.HemisphereLight(0x7a5fd0, 0x2f3d2a, 0.75));
-  const sun = new THREE.DirectionalLight(0xffbe78, 0.9);
+  scene.add(new THREE.HemisphereLight(0x8a6fe0, 0x3a4a34, 0.95));
+  const sun = new THREE.DirectionalLight(0xffbe78, 1.05);
   sun.position.set(-80, 55, 60);
+  // soft diorama shadows: modest shadow camera that main.js keeps centered on her
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -45; sun.shadow.camera.right = 45;
+  sun.shadow.camera.top = 45; sun.shadow.camera.bottom = -45;
+  sun.shadow.camera.near = 10; sun.shadow.camera.far = 220;
+  sun.shadow.bias = -0.0015; sun.shadow.normalBias = 0.6;
   scene.add(sun);
+  scene.add(sun.target);
   // a few warm accent lights at key landmarks (distance-limited)
   const pl = (c, i, x, y, z, d) => {
     const L = new THREE.PointLight(c, i, d, 2); L.position.set(x, y, z); scene.add(L);
@@ -120,7 +128,8 @@ export function buildWorld(scene) {
     const p = geo.attributes.position;
     const colors = new Float32Array(p.count * 3);
     const cGrass = new THREE.Color(0x3d6b40), cDry = new THREE.Color(0x5d7040),
-          cDark = new THREE.Color(0x2c5233), cSand = new THREE.Color(0x8a7658), tmp = new THREE.Color();
+          cDark = new THREE.Color(0x2c5233), cSand = new THREE.Color(0x8a7658),
+          cMist = new THREE.Color(0x2a1e46), tmp = new THREE.Color();
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
       const n = Math.sin(x * 0.35) * Math.cos(z * 0.3) + Math.sin(x * 0.08 + z * 0.11);
@@ -129,10 +138,20 @@ export function buildWorld(scene) {
       const ldx = (x + 80) / 30, ldz = (z - 20) / 24;
       const ld = ldx * ldx + ldz * ldz;
       if (ld < 1.7) tmp.lerp(cSand, Math.max(0, 1 - ld / 1.7) * 0.65);
+      // diorama edge: dissolve the rim into mist so it feels like a tiny world
+      const edge = Math.max(Math.abs(x), Math.abs(z));
+      if (edge > 100) tmp.lerp(cMist, Math.min(1, (edge - 100) / 20));
       colors[i*3] = tmp.r; colors[i*3+1] = tmp.g; colors[i*3+2] = tmp.b;
     }
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 })));
+    const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }));
+    ground.receiveShadow = true;
+    scene.add(ground);
+    // diorama plinth: the world sits like a miniature on a dusky base
+    const plinth = new THREE.Mesh(
+      new THREE.CylinderGeometry(168, 178, 12, 48),
+      new THREE.MeshStandardMaterial({ color: 0x241f38, roughness: 1 }));
+    plinth.position.y = -6.4; scene.add(plinth);
   }
 
   const mat = (c, e = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, emissive: e });
@@ -703,5 +722,5 @@ export function buildWorld(scene) {
     return best;
   }
 
-  return { colliders, waters, dockRect, boat, zoneAt, update };
+  return { colliders, waters, dockRect, boat, zoneAt, update, sun };
 }

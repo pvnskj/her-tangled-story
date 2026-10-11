@@ -14,9 +14,11 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 700);
+const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 700);
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -27,8 +29,16 @@ window.addEventListener("resize", () => {
 // ---------- world, player, npcs ----------
 const world = buildWorld(scene);
 const player = new Player(scene, world);
-camera.position.set(CONFIG.SPAWN.x, 11, CONFIG.SPAWN.z + 17);
+camera.position.set(CONFIG.SPAWN.x, 17.5, CONFIG.SPAWN.z + 13.5);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene);
+
+// soft diorama shadows: solid meshes cast, transparent ones don't
+scene.traverse((o) => {
+  if (!o.isMesh) return;
+  const transparent = o.material && o.material.transparent;
+  o.castShadow = !transparent;
+  o.receiveShadow = true;
+});
 
 const project = (x, y, z) => {
   const v = new THREE.Vector3(x, y, z).project(camera);
@@ -47,15 +57,8 @@ function sparkleTexture(inner = "rgba(255,240,180,1)", outer = "rgba(255,180,60,
 const sparkTex = sparkleTexture();
 const sparkTexBig = sparkleTexture("rgba(255,250,210,1)", "rgba(255,190,80,0)");
 
-function exclaimTexture() {
-  const c = document.createElement("canvas"); c.width = c.height = 64;
-  const g = c.getContext("2d");
-  g.font = "bold 48px Georgia"; g.textAlign = "center"; g.textBaseline = "middle";
-  g.lineWidth = 8; g.strokeStyle = "#7a4a00"; g.strokeText("!", 32, 34);
-  g.fillStyle = "#ffe98a"; g.fillText("!", 32, 34);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-const exclaimTex = exclaimTexture();
+// (the chameleon companion carries its own excited "!" + sparkle when it
+// senses a hidden memory nearby — the guide, not game chrome)
 
 function makeCritter(kind) {
   const g = new THREE.Group();
@@ -131,12 +134,6 @@ for (const n of npcs) {
 }
 world.boat.group.userData.interact = { kind: "boat" };
 hitMeshes.push(world.boat.group);
-
-// "!" prompt sprite (shared)
-const promptSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: exclaimTex, transparent: true, depthWrite: false }));
-promptSprite.scale.setScalar(1.3);
-promptSprite.visible = false;
-scene.add(promptSprite);
 
 // debug markers
 if (DEBUG) {
@@ -357,27 +354,14 @@ function animate() {
     if (u.crit) { u.crit.position.y = Math.abs(Math.sin(t * 4)) * 0.15; u.crit.rotation.y = Math.sin(t * 0.8) * 0.6; }
   }
 
-  // "!" prompt above nearest in-range undiscovered clue / hint-giver
+  // chameleon hot/cold — its own excited hops + sparkle guide her
   const p = player.group.position;
-  const near = nearestUndiscovered(p, CONFIG.PROMPT_RADIUS);
-  let px = null, py = 0, pz = 0;
-  if (near && !modalOpen) {
-    const c = near.clue;
-    if (c.kind === "villager") {
-      const n = npcs.find((x) => x.clueId === c.id);
-      if (n) { const hw = npcHeadWorld(n); px = hw.x; py = hw.y + 0.7; pz = hw.z; }
-    } else { px = c.x; py = 2.6; pz = c.z; }
-  }
-  if (px !== null) {
-    promptSprite.visible = true;
-    promptSprite.position.set(px, py + Math.sin(t * 5) * 0.15, pz);
-  } else {
-    promptSprite.visible = false;
-  }
-
-  // chameleon hot/cold
   const sense = nearestUndiscovered(p, CONFIG.CHAMELEON_SENSE);
   chameleon.excited = !!sense;
+
+  // keep the sun's shadow camera centered on her as she roams
+  world.sun.position.set(p.x - 40, 55, p.z + 30);
+  world.sun.target.position.set(p.x, 0, p.z);
 
   // zone banner
   zoneCheckT += dt;

@@ -25,8 +25,10 @@ export class Player {
     this.vel = new THREE.Vector3();
     this.riding = false;
     this.moveVec = { x: 0, z: 0 };
+    this.svel = new THREE.Vector3(); // smoothed velocity — the "delightful" in the movement
     this.moving = false;
     this.bobT = 0;
+    this.lookSm = null; // smoothed look-at target for buttery camera
   }
 
   setInput(x, z) { this.moveVec.x = x; this.moveVec.z = z; }
@@ -40,21 +42,35 @@ export class Player {
   }
 
   update(dt) {
-    if (this.riding) return; // boat drives
+    if (this.riding) { // boat drives; bleed off any leftover glide
+      this.svel.multiplyScalar(Math.max(0, 1 - dt * 4));
+      return;
+    }
     const { x: ix, z: iz } = this.moveVec;
     const len = Math.hypot(ix, iz);
-    this.moving = len > 0.08;
+    // desired velocity (analog from joystick, digital from keys)
+    const nx = len > 1e-4 ? ix / Math.max(1, len) : 0;
+    const nz = len > 1e-4 ? iz / Math.max(1, len) : 0;
+    const sp = CONFIG.PLAYER_SPEED * Math.min(1, len);
+    // smooth acceleration / gentle glide to a stop — playful, not mechanical
+    const k = 1 - Math.pow(len > 0.05 ? 0.0008 : 0.02, dt);
+    this.svel.x += (nx * sp - this.svel.x) * k;
+    this.svel.z += (nz * sp - this.svel.z) * k;
+    const spd = Math.hypot(this.svel.x, this.svel.z);
+    this.moving = spd > 0.6;
     const prev = this.group.position.clone();
 
     if (this.moving) {
-      const nx = ix / Math.max(1, len), nz = iz / Math.max(1, len);
-      const sp = CONFIG.PLAYER_SPEED * Math.min(1, len);
-      this.group.position.x += nx * sp * dt;
-      this.group.position.z += nz * sp * dt;
-      this.bobT += dt * 11;
-      this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * 0.14;
+      this.group.position.x += this.svel.x * dt;
+      this.group.position.z += this.svel.z * dt;
+      this.bobT += dt * (7 + spd * 0.5);
+      this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * (0.08 + spd * 0.008);
+      // subtle lean into lateral movement (screen-space tilt)
+      const lean = Math.max(-0.09, Math.min(0.09, -this.svel.x * 0.006));
+      this.sprite.material.rotation += (lean - this.sprite.material.rotation) * Math.min(1, dt * 8);
     } else {
       this.sprite.position.y = 1.8 + Math.sin(performance.now() * 0.002) * 0.03;
+      this.sprite.material.rotation *= Math.max(0, 1 - dt * 6);
     }
 
     const p = this.group.position;
@@ -88,14 +104,19 @@ export class Player {
     const lead = ml > 0.05 ? Math.min(1, ml) : 0;
     const lx = lead ? (mx / ml) * 5.5 * lead : 0;
     const lz = lead ? (mz / ml) * 5.5 * lead : 0;
-    // low vista pitch (~25°) so the horizon, sky and landmarks read
-    const target = new THREE.Vector3(p.x + lx, 11 * wide, p.z + lz + 17 * wide);
+    // bruno-simon-style high diorama angle (~53° down): the world reads as a
+    // tiny luminous miniature she walks through
+    const target = new THREE.Vector3(p.x + lx, 17.5 * wide, p.z + lz + 13.5 * wide);
     camera.position.lerp(target, 1 - Math.pow(0.0015, dt));
-    camera.lookAt(p.x + lx * 0.7, 3.5, p.z + lz * 0.7);
+    // smoothed look-at target: buttery, no jitter
+    if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x, 1.5, p.z);
+    this.lookSm.lerp(new THREE.Vector3(p.x + lx * 0.7, 1.5, p.z + lz * 0.7), 1 - Math.pow(0.004, dt));
+    camera.lookAt(this.lookSm);
   }
 
   teleport(x, z) {
     this.group.position.set(x, 0, z);
+    this.svel.set(0, 0, 0);
     this.riding = false;
   }
 }

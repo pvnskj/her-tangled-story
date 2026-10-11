@@ -15,6 +15,16 @@ body {
   -webkit-user-select: none;
 }
 #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#vignette {
+  position: fixed; inset: 0; z-index: 10; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(10, 6, 22, 0.38) 100%);
+}
+/* cohesive palette grade (warm gold -> rose -> deep blue), à la gradient-mapped materials */
+#grade {
+  position: fixed; inset: 0; z-index: 11; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,166,70,0.20) 0%, rgba(255,52,126,0.10) 48%, rgba(1,0,95,0.24) 100%);
+  mix-blend-mode: soft-light;
+}
 .hidden { display: none !important; }
 
 /* ---------- HUD ---------- */
@@ -24,9 +34,8 @@ body {
   pointer-events: none; z-index: 20;
 }
 #clue-counter {
-  background: var(--panel); border: 1px solid var(--gold); border-radius: 999px;
-  padding: 8px 18px; font-size: 17px; color: var(--gold); letter-spacing: 0.5px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  background: rgba(24, 14, 44, 0.55); border: 1px solid rgba(245,214,123,0.4); border-radius: 999px;
+  padding: 5px 14px; font-size: 14px; color: rgba(247,236,212,0.85); letter-spacing: 1px;
 }
 #sound-toggle, #map-toggle {
   pointer-events: auto; background: var(--panel); border: 1px solid var(--gold);
@@ -95,9 +104,28 @@ body.touch #joystick.started { display: block; }
 .controls-note { font-size: 13px; opacity: .7; margin-top: 14px; }
 
 #photo-head, #finale-head { color: var(--gold); font-size: 19px; margin-bottom: 12px; letter-spacing: .5px; }
+#photo-frame { position: relative; overflow: hidden; border-radius: 12px; }
 #photo-frame img, #finale-frame img {
   width: 100%; border-radius: 12px; border: 1px solid var(--gold); display: block;
   max-height: 46vh; object-fit: cover;
+}
+/* dreamy memory reveal: soft fade-in with a light shimmer sweep */
+#photo-frame.reveal img, #photo-frame.reveal .placeholder-card {
+  animation: memoryIn 1.1s ease-out both;
+}
+#photo-frame.reveal::after {
+  content: ""; position: absolute; inset: 0; border-radius: 12px; pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,244,200,0.35) 50%, transparent 60%);
+  background-size: 250% 100%; animation: memoryShimmer 1.6s ease-out both;
+}
+@keyframes memoryIn {
+  from { opacity: 0; transform: scale(0.96); filter: blur(6px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes memoryShimmer {
+  from { background-position: 120% 0; opacity: 0; }
+  25% { opacity: 1; }
+  to { background-position: -120% 0; opacity: 0; }
 }
 .placeholder-card {
   border: 2px dashed var(--gold); border-radius: 12px; padding: 44px 18px;

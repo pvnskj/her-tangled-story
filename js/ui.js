@@ -163,6 +163,10 @@ export const UI = {
       : `<div class="placeholder-card">✨ A new memory is on its way… ✨</div>`;
     el("photo-caption").textContent = clue.caption;
     el("photo-modal").classList.remove("hidden");
+    // retrigger the dreamy reveal animation each time
+    frame.classList.remove("reveal");
+    void frame.offsetWidth;
+    frame.classList.add("reveal");
   },
 
   finaleModal(photo, message) {
