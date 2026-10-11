@@ -1,12 +1,12 @@
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
 
 import * as THREE from "three";
-import { CONFIG, DEBUG } from "./config.js";
-import { CLUES } from "./clues.js";
-import { buildWorld, ZONES } from "./world.js";
-import { Player } from "./player.js";
-import { buildNPCs } from "./npcs.js";
-import { UI } from "./ui.js";
+import { CONFIG, DEBUG } from "./config.js?v=20261011c";
+import { CLUES } from "./clues.js?v=20261011c";
+import { buildWorld, ZONES } from "./world.js?v=20261011c";
+import { Player } from "./player.js?v=20261011c";
+import { buildNPCs } from "./npcs.js?v=20261011c";
+import { UI } from "./ui.js?v=20261011c";
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById("game");
