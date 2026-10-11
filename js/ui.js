@@ -65,6 +65,7 @@ export const UI = {
     base.addEventListener("touchend", (e) => {
       for (const t of e.changedTouches) if (t.identifier === active) reset();
     });
+    base.addEventListener("touchcancel", () => reset());
     base.addEventListener("mousedown", (e) => { active = "mouse"; setFromEvent(e.clientX, e.clientY); });
     window.addEventListener("mousemove", (e) => { if (active === "mouse") setFromEvent(e.clientX, e.clientY); });
     window.addEventListener("mouseup", () => { if (active === "mouse") reset(); });
