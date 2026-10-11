@@ -1,0 +1,115 @@
+/* Her Tangled Story — mobile-first UI */
+:root {
+  --gold: #f5d67b;
+  --deep: #160d28;
+  --panel: rgba(24, 14, 44, 0.92);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--deep);
+  color: #f7ecd4;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.hidden { display: none !important; }
+
+/* ---------- HUD ---------- */
+#hud {
+  position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 0; right: 0;
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  pointer-events: none; z-index: 20;
+}
+#clue-counter {
+  background: var(--panel); border: 1px solid var(--gold); border-radius: 999px;
+  padding: 8px 18px; font-size: 17px; color: var(--gold); letter-spacing: 0.5px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+#sound-toggle {
+  pointer-events: auto; background: var(--panel); border: 1px solid var(--gold);
+  border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer; color: #fff;
+}
+#zone-banner {
+  position: fixed; top: 64px; left: 0; right: 0; text-align: center; z-index: 20;
+  font-size: 26px; color: #fff; text-shadow: 0 2px 10px #000, 0 0 24px rgba(245,214,123,.6);
+  opacity: 0; transition: opacity 0.6s; pointer-events: none; letter-spacing: 1px;
+}
+#zone-banner.show { opacity: 1; }
+
+/* ---------- dialogue bubble ---------- */
+#dialogue {
+  position: fixed; z-index: 25; max-width: 240px; transform: translate(-50%, -110%);
+  background: #fffdf4; color: #3a2a1a; border-radius: 14px; padding: 10px 14px;
+  font-size: 15px; line-height: 1.35; border: 2px solid var(--gold);
+  box-shadow: 0 4px 16px rgba(0,0,0,.45); pointer-events: none;
+}
+#dialogue::after {
+  content: ""; position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%);
+  border: 10px solid transparent; border-top-color: var(--gold); border-bottom: 0;
+}
+#dialogue strong { display: block; color: #7a4fa3; margin-bottom: 2px; }
+
+/* ---------- joystick ---------- */
+#joystick {
+  position: fixed; left: 26px; bottom: calc(30px + env(safe-area-inset-bottom));
+  width: 128px; height: 128px; border-radius: 50%; z-index: 30;
+  background: rgba(255,255,255,0.08); border: 2px solid rgba(245,214,123,0.55);
+  display: none;
+}
+body.touch #joystick.started { display: block; }
+#stick {
+  position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe9a8, #d9a441);
+  transform: translate(-50%, -50%); box-shadow: 0 2px 10px rgba(0,0,0,.5);
+}
+#hint-tap {
+  position: fixed; bottom: calc(12px + env(safe-area-inset-bottom)); left: 0; right: 0;
+  text-align: center; font-size: 13px; color: rgba(247,236,212,.75); z-index: 15;
+  pointer-events: none; transition: opacity 1s;
+}
+
+/* ---------- overlays / modals ---------- */
+#start-overlay, .modal {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 5, 20, 0.72); backdrop-filter: blur(3px); padding: 18px;
+}
+.panel {
+  background: var(--panel); border: 2px solid var(--gold); border-radius: 20px;
+  padding: 28px 26px; max-width: 420px; width: 100%; text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 60px rgba(245,214,123,.12);
+  max-height: 92vh; overflow-y: auto;
+}
+.panel h1 { color: var(--gold); font-size: 34px; margin-bottom: 4px; letter-spacing: 1px; }
+.panel .sub { font-style: italic; opacity: .85; margin-bottom: 14px; }
+.panel p { line-height: 1.55; margin-bottom: 12px; font-size: 16px; }
+.panel button {
+  font-family: inherit; font-size: 18px; cursor: pointer;
+  background: linear-gradient(180deg, #ffe9a8, #d9a441); color: #3a2408;
+  border: none; border-radius: 999px; padding: 12px 34px; margin-top: 6px;
+  box-shadow: 0 3px 14px rgba(217,164,65,.45);
+}
+.panel button:active { transform: scale(0.96); }
+.controls-note { font-size: 13px; opacity: .7; margin-top: 14px; }
+
+#photo-head, #finale-head { color: var(--gold); font-size: 19px; margin-bottom: 12px; letter-spacing: .5px; }
+#photo-frame img, #finale-frame img {
+  width: 100%; border-radius: 12px; border: 1px solid var(--gold); display: block;
+  max-height: 46vh; object-fit: cover;
+}
+.placeholder-card {
+  border: 2px dashed var(--gold); border-radius: 12px; padding: 44px 18px;
+  font-size: 18px; font-style: italic; color: var(--gold);
+  background: radial-gradient(circle at 50% 30%, rgba(245,214,123,.14), transparent 70%);
+}
+#photo-caption { margin: 14px 0 6px; font-size: 16px; font-style: italic; }
+#finale-message { font-size: 17px; line-height: 1.7; white-space: pre-wrap; margin: 14px 0 8px; }
+.panel.finale { border-color: #d9a441; box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 90px rgba(245,214,123,.3); }
+
+@media (max-width: 390px) {
+  .panel h1 { font-size: 28px; }
+  #zone-banner { font-size: 22px; }
+  #clue-counter { font-size: 15px; padding: 7px 14px; }
+}

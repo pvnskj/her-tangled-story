@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Her Tangled Story — a 3D birthday adventure</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./js/vendor/three.module.js"
+  }
+}
+</script>
+<!-- Three.js r160 is vendored locally (js/vendor/three.module.js) so the game
+     runs fully offline from any static host. Pinned version, no build step. -->
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="clue-counter">✨ Clues <span id="found-count">0</span> / 33</div>
+    <button id="sound-toggle" aria-label="toggle sound">🔊</button>
+  </div>
+  <div id="zone-banner"></div>
+
+  <!-- dialogue bubble -->
+  <div id="dialogue" class="hidden"><strong id="dlg-name"></strong><span id="dlg-text"></span></div>
+
+  <!-- virtual joystick -->
+  <div id="joystick" class="hidden"><div id="stick"></div></div>
+  <div id="hint-tap">Tap glowing spots &amp; people to discover clues</div>
+
+  <!-- start overlay -->
+  <div id="start-overlay">
+    <div class="panel">
+      <h1>Her Tangled Story</h1>
+      <p class="sub">A 3D birthday adventure</p>
+      <p>Roam the valley. Talk to everyone.<br>Find all <strong>33 hidden memories</strong>.</p>
+      <button id="begin-btn">Begin ✨</button>
+      <p class="controls-note">📱 drag the joystick &nbsp;·&nbsp; ⌨️ WASD / arrow keys</p>
+    </div>
+  </div>
+
+  <!-- photo modal -->
+  <div id="photo-modal" class="modal hidden">
+    <div class="panel">
+      <div id="photo-head">Clue <span id="photo-num"></span> of 33</div>
+      <div id="photo-frame"></div>
+      <p id="photo-caption"></p>
+      <button id="photo-close">Keep exploring ✨</button>
+    </div>
+  </div>
+
+  <!-- finale modal -->
+  <div id="finale-modal" class="modal hidden">
+    <div class="panel finale">
+      <div id="finale-head">💜 The Final Memory 💜</div>
+      <div id="finale-frame"></div>
+      <p id="finale-message"></p>
+      <button id="finale-replay">Relive the adventure ↺</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
