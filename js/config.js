@@ -14,7 +14,7 @@ export const CONFIG = {
   PROMPT_RADIUS: 7,       // "!" prompt appears within this radius
   CHAMELEON_SENSE: 13,    // chameleon reacts to undiscovered clues this near
   BOAT_RIDE_TIME: 9,      // seconds for the scripted lake crossing
-  SPAWN: { x: 0, z: -82 },// where she starts (tower doorstep)
+  SPAWN: { x: 0, z: -58 },// where she starts — her tower, lanterns & sky in frame
 };
 
 export const DEBUG = new URLSearchParams(location.search).get("debug") === "1";

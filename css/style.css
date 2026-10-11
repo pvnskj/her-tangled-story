@@ -17,12 +17,12 @@ body {
 #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #vignette {
   position: fixed; inset: 0; z-index: 10; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(10, 6, 22, 0.38) 100%);
+  background: radial-gradient(ellipse at 50% 45%, transparent 58%, rgba(10, 6, 22, 0.30) 100%);
 }
 /* cohesive palette grade (warm gold -> rose -> deep blue), à la gradient-mapped materials */
 #grade {
   position: fixed; inset: 0; z-index: 11; pointer-events: none;
-  background: linear-gradient(180deg, rgba(255,166,70,0.20) 0%, rgba(255,52,126,0.10) 48%, rgba(1,0,95,0.24) 100%);
+  background: linear-gradient(180deg, rgba(255,166,70,0.18) 0%, rgba(255,52,126,0.08) 48%, rgba(24,10,70,0.15) 100%);
   mix-blend-mode: soft-light;
 }
 .hidden { display: none !important; }

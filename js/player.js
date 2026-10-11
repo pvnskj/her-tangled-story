@@ -104,13 +104,20 @@ export class Player {
     const lead = ml > 0.05 ? Math.min(1, ml) : 0;
     const lx = lead ? (mx / ml) * 5.5 * lead : 0;
     const lz = lead ? (mz / ml) * 5.5 * lead : 0;
-    // bruno-simon-style high diorama angle (~53° down): the world reads as a
-    // tiny luminous miniature she walks through
-    const target = new THREE.Vector3(p.x + lx, 17.5 * wide, p.z + lz + 13.5 * wide);
+    // bruno-simon-style high diorama angle (~47° down): the world reads as a
+    // tiny luminous miniature she walks through — shallow enough on phones
+    // that sky, landmarks and horizon stay in frame
+    const target = new THREE.Vector3(p.x + lx, 15.5 * wide, p.z + lz + 14.5 * wide);
     camera.position.lerp(target, 1 - Math.pow(0.0015, dt));
-    // smoothed look-at target: buttery, no jitter
-    if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x, 1.5, p.z);
-    this.lookSm.lerp(new THREE.Vector3(p.x + lx * 0.7, 1.5, p.z + lz * 0.7), 1 - Math.pow(0.004, dt));
+    // smoothed look-at target: buttery, no jitter. Aimed a little high so
+    // landmarks and sky stay in frame — she "sees what the world is" from
+    // the very first frame. (Portrait keeps the framing that worked; desktop
+    // gets a slight forward bias toward her tower.)
+    const portrait = camera.aspect < 1;
+    const lookH = portrait ? 5 : 5.5;
+    const biasZ = portrait ? 0 : -4;
+    if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x, lookH, p.z + biasZ);
+    this.lookSm.lerp(new THREE.Vector3(p.x + lx * 0.7, lookH, p.z + lz * 0.7 + biasZ), 1 - Math.pow(0.004, dt));
     camera.lookAt(this.lookSm);
   }
 

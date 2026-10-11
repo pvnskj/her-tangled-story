@@ -31,7 +31,7 @@ export function buildWorld(scene) {
 
   // ---------- dusk sky, fog, lights (luminous Kinkade dusk — never black) ----------
   scene.background = null;
-  scene.fog = new THREE.Fog(0x2a1e46, 80, 260);
+  scene.fog = new THREE.Fog(0x453063, 80, 260);
 
   // shared radial glow texture (lanterns, windows, moon, light pools, mist)
   function radialTex(stops) {
@@ -76,8 +76,8 @@ export function buildWorld(scene) {
 
   // strong ambient (the world must stay clearly readable) + low warm sun
   // dusk grade: cool fill + warm key, total kept moderate for mood
-  scene.add(new THREE.HemisphereLight(0x8a6fe0, 0x3a4a34, 0.95));
-  const sun = new THREE.DirectionalLight(0xffbe78, 1.05);
+  scene.add(new THREE.HemisphereLight(0x9a7ff0, 0x46543c, 1.5));
+  const sun = new THREE.DirectionalLight(0xffbe78, 1.35);
   sun.position.set(-80, 55, 60);
   // soft diorama shadows: modest shadow camera that main.js keeps centered on her
   sun.castShadow = true;
@@ -127,9 +127,9 @@ export function buildWorld(scene) {
     geo.rotateX(-Math.PI / 2);
     const p = geo.attributes.position;
     const colors = new Float32Array(p.count * 3);
-    const cGrass = new THREE.Color(0x3d6b40), cDry = new THREE.Color(0x5d7040),
-          cDark = new THREE.Color(0x2c5233), cSand = new THREE.Color(0x8a7658),
-          cMist = new THREE.Color(0x2a1e46), tmp = new THREE.Color();
+    const cGrass = new THREE.Color(0x5c9154), cDry = new THREE.Color(0x8f8f5a),
+          cDark = new THREE.Color(0x3f6b40), cSand = new THREE.Color(0x9a8563),
+          cMist = new THREE.Color(0x453063), tmp = new THREE.Color();
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
       const n = Math.sin(x * 0.35) * Math.cos(z * 0.3) + Math.sin(x * 0.08 + z * 0.11);

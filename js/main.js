@@ -20,16 +20,22 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 700);
 
-window.addEventListener("resize", () => {
+// widen the lens on narrow portrait phones so tall landmarks (her tower)
+// and the horizon stay in frame — desktop keeps the tighter diorama look
+const fitCamera = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
+  camera.fov = camera.aspect < 1 ? Math.min(60, 48 + (1 - camera.aspect) * 24) : 48;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+};
+fitCamera();
+
+window.addEventListener("resize", fitCamera);
 
 // ---------- world, player, npcs ----------
 const world = buildWorld(scene);
 const player = new Player(scene, world);
-camera.position.set(CONFIG.SPAWN.x, 17.5, CONFIG.SPAWN.z + 13.5);
+camera.position.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene);
 
 // soft diorama shadows: solid meshes cast, transparent ones don't
