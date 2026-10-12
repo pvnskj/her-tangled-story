@@ -60,8 +60,9 @@ export function buildNPCs(scene) {
   }
 
   // village wanderers
-  const wanderCols = [0x7fbf6a, 0xd86a9a, 0x6a9fd8, 0xd8c05a, 0x9a6ad8, 0x5ab8a8, 0xc97a4a, 0x8a9a5a];
-  for (let i = 0; i < 8; i++) {
+  const wanderCols = [0x7fbf6a, 0xd86a9a, 0x6a9fd8, 0xd8c05a, 0x9a6ad8, 0x5ab8a8, 0xc97a4a, 0x8a9a5a,
+                      0xd84a6a, 0x4ad8c8, 0x8a6ad8, 0xd8a04a, 0x6ad88a, 0xc86a9a, 0x9ad84a, 0x5a8ad8];
+  for (let i = 0; i < 16; i++) {
     const { group, headY } = personMesh(wanderCols[i]);
     const x = -22 + Math.random() * 44, z = 76 + Math.random() * 30;
     group.position.set(x, 0, z);

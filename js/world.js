@@ -325,8 +325,14 @@ export function buildWorld(scene) {
       d.position.set(x - 0.5 * s, 7.7 * s, z + 0.4 * s); d.updateMatrix();
       canC.setMatrixAt(i, d.matrix);
       // dusk-graded canopy: cool purple-shadowed underside, sun-kissed gold crown
+      // ~30% get Bruno-style autumn colors (orange, gold, red)
       const r = rand();
-      if (r < 0.12) col.setHSL(0.93 + rand() * 0.04, 0.55, 0.55 + rand() * 0.1);
+      const autumn = rand() < 0.3;
+      if (autumn) {
+        const warm = [0xd86a3a, 0xc9a53a, 0xa83a4a][Math.floor(rand() * 3)];
+        col.set(warm).offsetHSL((rand() - 0.5) * 0.03, 0, (rand() - 0.5) * 0.08);
+      }
+      else if (r < 0.12) col.setHSL(0.93 + rand() * 0.04, 0.55, 0.55 + rand() * 0.1);
       else if (r < 0.24) col.setHSL(0.11 + rand() * 0.03, 0.6, 0.42 + rand() * 0.08);
       else col.setHSL(0.29 + rand() * 0.07, 0.5, 0.3 + rand() * 0.14);
       canA.setColorAt(i, col.clone().lerp(duskShadow, 0.38).offsetHSL(0, 0, -0.03));
@@ -383,14 +389,23 @@ export function buildWorld(scene) {
     scene.add(m);
   }
 
-  // ---------- grass tufts (instanced, dusk greens) ----------
+  // ---------- grass blades (instanced carpet, Bruno-style density) ----------
   {
-    const n = 700, g = new THREE.ConeGeometry(0.16, 0.8, 5);
-    g.translate(0, 0.4, 0);
-    const m = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ roughness: 1 }), n);
+    // simple 3-vertex blade: two base verts, one tip vert with a slight bend
+    const bg = new THREE.BufferGeometry();
+    bg.setAttribute("position", new THREE.Float32BufferAttribute([
+      -0.14, 0, 0,
+       0.14, 0, 0,
+       0.04, 1.0, 0.08,
+    ], 3));
+    bg.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
+    bg.computeVertexNormals();
+    const n = 16000;
+    const m = new THREE.InstancedMesh(bg, new THREE.MeshStandardMaterial({
+      roughness: 1, side: THREE.DoubleSide }), n);
     const d = new THREE.Object3D(), col = new THREE.Color();
     let placed = 0, guard = 0;
-    while (placed < n && guard++ < 9000) {
+    while (placed < n && guard++ < 120000) {
       const x = -112 + rand() * 224, z = -112 + rand() * 224;
       if (((x + 80) / 30) ** 2 + ((z - 20) / 24) ** 2 < 1.15) continue; // lake
       if (((x - 85) / 10) ** 2 + ((z + 15) / 8) ** 2 < 1.3) continue;  // pond
@@ -398,11 +413,13 @@ export function buildWorld(scene) {
       if (Math.hypot(x + 45, z + 60) < 18) continue; // festival clearing
       if (Math.hypot(x, z + 95) < 15) continue;  // tower
       if (Math.hypot(x - 85, z - 45) < 15) continue; // tavern
-      const s = 0.7 + rand() * 1.3;
-      d.position.set(x, 0, z); d.scale.set(s, s * (0.8 + rand() * 0.6), s);
-      d.rotation.set((rand() - 0.5) * 0.25, rand() * 6, (rand() - 0.5) * 0.25);
+      const s = 0.8 + rand() * 1.4;
+      d.position.set(x, 0, z);
+      d.scale.set(s, s * (0.9 + rand() * 0.7), s);
+      d.rotation.y = rand() * 6;
       d.updateMatrix(); m.setMatrixAt(placed, d.matrix);
-      m.setColorAt(placed, col.setHSL(0.26 + rand() * 0.09, 0.45, 0.28 + rand() * 0.16));
+      // varied greens with warm yellow-green highlights
+      m.setColorAt(placed, col.setHSL(0.22 + rand() * 0.08, 0.5, 0.35 + rand() * 0.15));
       placed++;
     }
     m.count = placed;
@@ -478,6 +495,62 @@ export function buildWorld(scene) {
         box(0.22, 2.6, 0.22, 0x6a4a30, sx + px, 1.3, sz + pz));
       addCollider(sx, sz, 2.4);
     });
+    // food stalls with goods (Bruno-style market density)
+    const stallGoods = [
+      { x: -16, z: 92, awn: [0xc9566c, 0xf7ecd4], goods: "apples" },
+      { x: -2, z: 94, awn: [0x6a9fd8, 0xf7ecd4], goods: "bread" },
+      { x: 8, z: 96, awn: [0x7fbf6a, 0xf7ecd4], goods: "pies" },
+      { x: 18, z: 92, awn: [0xd8a05a, 0xf7ecd4], goods: "veg" },
+    ];
+    for (const st of stallGoods) {
+      const { x: sx, z: sz } = st;
+      // 4 wooden posts
+      [[-1.6, -1.1], [1.6, -1.1], [-1.6, 1.1], [1.6, 1.1]].forEach(([px, pz]) =>
+        box(0.22, 2.6, 0.22, 0x6a4a30, sx + px, 1.3, sz + pz));
+      // striped awning from alternating colored boxes
+      for (let i = 0; i < 6; i++) {
+        const awnBox = box(0.75, 0.12, 3.4, st.awn[i % 2], 0, 0, 0);
+        awnBox.position.set(sx - 1.875 + i * 0.75, 3.45 - (i % 2) * 0.06, sz);
+        awnBox.rotation.z = 0.1;
+      }
+      // counter
+      box(3.4, 1, 2.2, 0x8a6238, sx, 0.5, sz);
+      box(3.6, 0.15, 2.4, 0x9a7248, sx, 1.05, sz);
+      // goods on top
+      const gy = 1.35;
+      if (st.goods === "apples") {
+        for (let i = 0; i < 7; i++) {
+          const a = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 7),
+            mat(i % 3 ? 0xc93a3a : 0x7fbf3a));
+          a.position.set(sx - 1.1 + (i % 4) * 0.7, gy + Math.floor(i / 4) * 0.35, sz + (i % 2) * 0.5 - 0.25);
+          scene.add(a);
+        }
+      } else if (st.goods === "bread") {
+        for (let i = 0; i < 5; i++) {
+          const b = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.55, 8), mat(0xd8a05a));
+          b.rotation.z = Math.PI / 2; b.rotation.y = (i % 2) * 0.4;
+          b.position.set(sx - 1 + i * 0.55, gy, sz);
+          scene.add(b);
+        }
+      } else if (st.goods === "pies") {
+        for (let i = 0; i < 4; i++) {
+          const p = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.18, 10), mat(0xe8b86a));
+          p.position.set(sx - 0.9 + i * 0.65, gy, sz + ((i % 2) - 0.5) * 0.6);
+          scene.add(p);
+          const top = new THREE.Mesh(new THREE.SphereGeometry(0.16, 7, 6), mat(0xc9566c));
+          top.position.set(p.position.x, gy + 0.16, p.position.z);
+          scene.add(top);
+        }
+      } else { // veg
+        for (let i = 0; i < 6; i++) {
+          const v = new THREE.Mesh(new THREE.SphereGeometry(0.18, 7, 6),
+            mat([0x7fbf3a, 0xd86a3a, 0xe8d83a][i % 3]));
+          v.position.set(sx - 1.1 + (i % 3) * 0.75, gy, sz - 0.4 + Math.floor(i / 3) * 0.8);
+          scene.add(v);
+        }
+      }
+      addCollider(sx, sz, 2.4);
+    }
     // well
     cyl(1.8, 2, 1.6, 0x8a8a95, 0, 0.8, 90, 12);
     box(0.3, 2.6, 0.3, 0x6a4a30, -1.6, 2.4, 90); box(0.3, 2.6, 0.3, 0x6a4a30, 1.6, 2.4, 90);
@@ -672,8 +745,8 @@ export function buildWorld(scene) {
     addPool(-45, -65, 16, 0.3);   // stage glow
     // dancing crowd (simple low-poly figures)
     const danceRand = lcg(77);
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2, r = 3.4 + danceRand() * 1.4;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2, r = 3.4 + danceRand() * 2.2;
       const g = new THREE.Group();
       const bodyC = [0xc9566c, 0x6a9fd8, 0x7fbf6a, 0xd8a05a, 0x9a6ad8][i % 5];
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.55, 1.5, 8), mat(bodyC));
