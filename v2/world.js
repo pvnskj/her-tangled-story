@@ -22,7 +22,7 @@ function painting(parent,x,y,z,w,h,seed){
 function flower(parent,x,y,z,color=0xe9b4cc,scale=1){const g=new T.Group();g.position.set(x,y,z);g.scale.setScalar(scale);parent.add(g);line(g,[[0,0,0],[.02,.22,0],[0,.38,0]],.014,0x506a39);for(let k=0;k<5;k++){let a=k*Math.PI*.4;ell(g,[.085,.045,.055],color,Math.cos(a)*.066,.39,Math.sin(a)*.066);}ell(g,[.036,.035,.036],0xf3cc70,0,.415,0);return g;}
 export function buildWorld(scene,quality='balanced') {
   const rnd=random(),colliders=[{x:0,z:0,r:3.45}],animated=[],trees=[];
-  scene.background=new T.Color(0xbfdad8);scene.fog=new T.Fog(0xc8d9cc,42,115);
+  scene.background=new T.Color(0x9fd4e8);scene.fog=new T.Fog(0xbfe0ea,45,120);
   scene.add(new T.HemisphereLight(0xe6f4ed,0x687453,2.05));
   const sun=new T.DirectionalLight(0xffe4b5,3.2);sun.position.set(-18,34,13);sun.castShadow=true;sun.shadow.mapSize.setScalar(quality==='high'?2048:1024);sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=28;sun.shadow.camera.bottom=-20;sun.shadow.camera.near=.5;sun.shadow.camera.far=85;sun.shadow.normalBias=.025;sun.shadow.bias=-.00012;scene.add(sun);scene.add(sun.target);
   const floor=new T.PlaneGeometry(170,170,130,130);floor.rotateX(-Math.PI/2);const colors=[];const a=floor.attributes.position;
@@ -77,7 +77,7 @@ export function buildWorld(scene,quality='balanced') {
   // Low garden gate and stone stairs visually connect the landmark to the clearing.
   box(tower,1.35,2.7,.1,0x665442,0,1.4,3.07);for(let i=0;i<6;i++)box(tower,.014,2.55,.02,0x9b825b,-.55+i*.22,1.4,3.13);ell(tower,[.048,.048,.03],0xe2be6c,.38,1.28,3.17);
   // Original branch silhouettes and layered broadleaf crowns, shared geometry.
-  function tree(x,z,scale,seed,pal){const r=random(seed),g=new T.Group();pal=pal||[0x729467,0x5c825a,0x86a576,0x9ab47b];g.position.set(x,groundHeight(x,z),z);g.scale.setScalar(scale);scene.add(g);line(g,[[0,0,0],[.09,1.4,0],[-.12,2.5,.06],[.05,3.5,.1]],.17,0x6a5946);
+  function tree(x,z,scale,seed,pal){const r=random(seed),g=new T.Group();pal=pal||[0x7fae6a,0x6a9a5e,0x93bd7d,0xa8c98a];g.position.set(x,groundHeight(x,z),z);g.scale.setScalar(scale);scene.add(g);line(g,[[0,0,0],[.09,1.4,0],[-.12,2.5,.06],[.05,3.5,.1]],.17,0x6a5946);
     for(let k=0;k<6;k++){const ang=k*2.4;const end=[Math.sin(ang)*(1+r()*.5),3.0+r()*1.6,Math.cos(ang)*(1+r()*.5)];line(g,[[0,1.9+k*.12,0],[end[0]*.55,end[1]-.5,end[2]*.55],end],.075,0x6a5946);for(let j=0;j<3;j++){const o=ell(g,[.93+r()*.32,.55+r()*.25,.78+r()*.4],pal[(j+k)%4],end[0]+(r()-.5)*.9,end[1]+j*.12,end[2]+(r()-.5)*.9);o.rotation.set(r(),r(),r());}}
     for(let j=0;j<4;j++)line(g,[[0,.4,0],[Math.sin(j*1.6)*.45,.06,Math.cos(j*1.6)*.45],[Math.sin(j*1.6)*.7,.01,Math.cos(j*1.6)*.7]],.055,0x6a5946);trees.push(g);if(Math.abs(x)<24&&Math.abs(z)<24)colliders.push({x,z,r:.23*scale});return g;}
   [[-8,-5,2],[-10,3,1.8],[11,-8,2.3],[15,2,1.9],[-16,-12,2.5],[19,-15,2.8],[-20,7,2.2],[18,14,2],[-16,24,2.3],[25,24,2.4],[4,-15,1.7],[-22,-24,2.8],[26,-22,2.5]].forEach((p,i)=>tree(...p,30+i));
@@ -85,11 +85,11 @@ export function buildWorld(scene,quality='balanced') {
   const blossom=[0xf2b8d0,0xe89ec0,0xf7cfe2,0xdd92b8];
   [[16,9,2.1],[-13,3,1.9],[24,-4,2.3]].forEach((p,i)=>tree(p[0],p[1],p[2],300+i,blossom));
   // Instanced, tapered grass blades: one draw call, vertex wind, no frame allocations.
-  const grassG=new T.BufferGeometry();grassG.setAttribute('position',new T.Float32BufferAttribute([-.09,0,0,.09,0,0,-.055,.4,.015,.055,.4,.015,.06,.95,.06],3));grassG.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,0,.45,1,.45,.5,1],2));grassG.setIndex([0,1,2,1,3,2,2,3,4]);grassG.computeVertexNormals();
+  const grassG=new T.BufferGeometry();grassG.setAttribute('position',new T.Float32BufferAttribute([-.05,0,0,.05,0,0,-.03,.22,.008,.03,.22,.008,.035,.5,.035],3));grassG.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,0,.45,1,.45,.5,1],2));grassG.setIndex([0,1,2,1,3,2,2,3,4]);grassG.computeVertexNormals();
   const wind={value:0};const gm=mat(0x809b59,{side:T.DoubleSide});gm.onBeforeCompile=shader=>{shader.uniforms.uWind=wind;shader.vertexShader='uniform float uWind;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n float gust=.55+.45*sin(uWind*.45+instanceMatrix[3].x*.06+instanceMatrix[3].z*.04);\n transformed.x += sin(uWind*1.7+instanceMatrix[3].x*.4+instanceMatrix[3].z*.3)*pow(uv.y,2.0)*.24*gust;\n transformed.z += cos(uWind*1.15+instanceMatrix[3].z*.5+instanceMatrix[3].x*.2)*pow(uv.y,2.0)*.09*gust;');};
   const gc=quality==='low'?6000:quality==='high'?20000:12000,grass=new T.InstancedMesh(grassG,gm,gc);let gi=0;
   for(let i=0;i<gc*3&&gi<gc;i++){const x=(rnd()-.5)*62,z=(rnd()-.5)*62;if(Math.hypot(x,z)<3.5||Math.hypot(x-9,z+2)<3.3||Math.hypot(x+18,z-15)<8.7)continue;
-    if(z>4&&z<25&&Math.abs(x-(z<13?-1:(z-13)*.85-1))<1.25)continue;dummy.position.set(x,groundHeight(x,z),z);dummy.rotation.set(0,rnd()*6.28,0);dummy.scale.setScalar(.8+rnd()*1.1);dummy.updateMatrix();grass.setMatrixAt(gi,dummy.matrix);grass.setColorAt(gi,new T.Color().setHSL(.24+rnd()*.04,.48,.32+rnd()*.14));gi++;}grass.count=gi;grass.receiveShadow=true;scene.add(grass);
+    if(z>4&&z<25&&Math.abs(x-(z<13?-1:(z-13)*.85-1))<1.25)continue;dummy.position.set(x,groundHeight(x,z),z);dummy.rotation.set(0,rnd()*6.28,0);dummy.scale.setScalar(.7+rnd()*.7);dummy.updateMatrix();grass.setMatrixAt(gi,dummy.matrix);grass.setColorAt(gi,new T.Color().setHSL(.26+rnd()*.03,.55,.42+rnd()*.12));gi++;}grass.count=gi;grass.receiveShadow=true;scene.add(grass);
   // Flower heads and stems share instance buffers across the meadow.
   const petals=new T.InstancedMesh(new T.SphereGeometry(1,7,5),mat(0xffffff),1800),stems=new T.InstancedMesh(new T.CylinderGeometry(.008,.013,.3,4),mat(0x526e3a),360);let fi=0;
   for(let i=0;i<360;i++){const x=(rnd()-.5)*35,z=(rnd()-.5)*35;if(Math.hypot(x,z)<3.6)continue;const h=.18+rnd()*.24,y=groundHeight(x,z);dummy.position.set(x,y+h/2,z);dummy.rotation.set(0,0,0);dummy.scale.set(1,h/.3,1);dummy.updateMatrix();stems.setMatrixAt(fi,dummy.matrix);

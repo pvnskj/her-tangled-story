@@ -21,13 +21,13 @@ ball('Fitted bodice','purple','Spine',[0,1.08,0],[.22,.29,.145]);
 ball('Bodice inset','pink','Spine',[0,1.115,.123],[.13,.19,.039]);
 for(let i=0;i<5;i++) {part('Corset ribbon '+i,new T.CylinderGeometry(.009,.009,.21,5),'trim','Spine',[0,1.0+i*.043,.161],[1,1,1],[0,0,i%2?1.24:-1.24]);}
 ball('Neck','skin','Neck',[0,1.445,0],[.076,.13,.075]);
-ball('Face','skin','Head',[0,1.67,.016],[.255,.295,.223]);
-ball('Hair crown','gold','Head',[0,1.73,-.035],[.271,.27,.22]);
+ball('Face','skin','Head',[0,1.67,.016],[.31,.35,.27]);
+ball('Hair crown','gold','Head',[0,1.74,-.04],[.325,.325,.265]);
 for(const [side,s] of [['L',-1],['R',1]]) {
  ball('Ear'+side,'skin','Head',[s*.246,1.66,.012],[.048,.071,.041]);
- ball('Eye white'+side,'white','Head',[s*.092,1.699,.237],[.065,.077,.028]);
- ball('Iris'+side,'iris','Head',[s*.091,1.697,.258],[.036,.05,.014]);
- ball('Pupil'+side,'pupil','Head',[s*.091,1.697,.27],[.019,.034,.007]);
+ ball('Eye white'+side,'white','Head',[s*.11,1.70,.27],[.085,.10,.03]);
+ ball('Iris'+side,'iris','Head',[s*.109,1.698,.292],[.048,.066,.015]);
+ ball('Pupil'+side,'pupil','Head',[s*.109,1.698,.304],[.026,.045,.008]);
  ball('Catchlight'+side,'white','Head',[s*.091-.012,1.716,.276],[.011,.014,.006]);
  part('Brow'+side,new T.CapsuleGeometry(.012,.079,4,8),'shoe','Head',[s*.095,1.805,.227],[1,1,1],[0,0,s*1.3]);
  ball('Shoulder sleeve'+side,'pink','UpperArm'+side,[s*.248,1.294,0],[.109,.126,.112]);
