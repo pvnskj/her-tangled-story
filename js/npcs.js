@@ -59,17 +59,34 @@ export function buildNPCs(scene) {
       flavor: "The valley is full of memories — keep exploring!" });
   }
 
-  // village wanderers
+  // zone wanderers: 4 per zone across all six zones (24 total, never clustered)
+  const ZONE_HOMES = [
+    { x: -15, z: -70, r: 12 },  // tower meadow
+    { x: 70,  z: -30, r: 15 },  // forest trail
+    { x: 85,  z: 62,  r: 12 },  // tavern exterior
+    { x: 0,   z: 90,  r: 18 },  // village
+    { x: -45, z: 30,  r: 10 },  // lake shore
+    { x: -45, z: -35, r: 12 },  // festival approach
+  ];
+  function zoneWP(home) {
+    const a = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * home.r;
+    return { x: home.x + Math.cos(a) * rr, z: home.z + Math.sin(a) * rr };
+  }
   const wanderCols = [0x7fbf6a, 0xd86a9a, 0x6a9fd8, 0xd8c05a, 0x9a6ad8, 0x5ab8a8, 0xc97a4a, 0x8a9a5a,
-                      0xd84a6a, 0x4ad8c8, 0x8a6ad8, 0xd8a04a, 0x6ad88a, 0xc86a9a, 0x9ad84a, 0x5a8ad8];
-  for (let i = 0; i < 16; i++) {
-    const { group, headY } = personMesh(wanderCols[i]);
-    const x = -22 + Math.random() * 44, z = 76 + Math.random() * 30;
-    group.position.set(x, 0, z);
-    scene.add(group);
-    npcs.push({ name: "Villager", kind: "wanderer", group, headY,
-      flavor: FLAVOR[i % FLAVOR.length], phase: Math.random() * 6,
-      wp: { x: -22 + Math.random() * 44, z: 76 + Math.random() * 30 }, wait: 0 });
+                      0xd84a6a, 0x4ad8c8, 0x8a6ad8, 0xd8a04a, 0x6ad88a, 0xc86a9a, 0x9ad84a, 0x5a8ad8,
+                      0xe86a5a, 0x5ad8a8, 0xb86ad8, 0x8ad85a, 0xd88a6a, 0x6a8ad8, 0xa8d86a, 0xd86a8a];
+  let wi = 0;
+  for (const home of ZONE_HOMES) {
+    for (let k = 0; k < 4; k++) {
+      const { group, headY } = personMesh(wanderCols[wi % wanderCols.length]);
+      const p0 = zoneWP(home);
+      group.position.set(p0.x, 0, p0.z);
+      scene.add(group);
+      npcs.push({ name: "Villager", kind: "wanderer", group, headY,
+        flavor: FLAVOR[wi % FLAVOR.length], phase: Math.random() * 6,
+        home, wp: zoneWP(home), wait: 0 });
+      wi++;
+    }
   }
 
   // extra tavern thugs (seated, generic)
@@ -84,9 +101,16 @@ export function buildNPCs(scene) {
     npcs.push({ name: "Thug", kind: "thug", group, headY, flavor: "We dream big dreams at the Snuggly Duckling!", phase: Math.random() * 6 });
   }
 
-  // rabbits (forest hoppers)
+  // rabbits: 12 total — 5 along the main walking paths (unmissable), 7 in the forest
   const rabbits = [];
-  for (let i = 0; i < 6; i++) {
+  const rabbitSpots = [
+    [-20, -75],  // tower->festival path
+    [-60, -20],  // festival->lake path
+    [-40, 55],   // lake->village path
+    [40, 68],    // village->tavern path
+    [82, 0],     // tavern->forest path
+  ];
+  for (let i = 0; i < 12; i++) {
     const g = new THREE.Group();
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 7), mat(0xd8cfc0));
     body.scale.set(1, 0.85, 1.25); body.position.y = 0.4; g.add(body);
@@ -96,7 +120,13 @@ export function buildNPCs(scene) {
       const ear = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.5, 5), mat(0xc8bfb0));
       ear.position.set(ex, 1.1, 0.4); g.add(ear);
     });
-    const x = 60 + Math.random() * 40, z = -60 + Math.random() * 40;
+    let x, z;
+    if (i < rabbitSpots.length) {
+      [x, z] = rabbitSpots[i];
+      x += (Math.random() - 0.5) * 4; z += (Math.random() - 0.5) * 4;
+    } else {
+      x = 60 + Math.random() * 40; z = -60 + Math.random() * 40;
+    }
     g.position.set(x, 0, z);
     scene.add(g);
     rabbits.push({ group: g, hx: x, hz: z, tx: x, tz: z, hop: Math.random() * 6, wait: Math.random() * 2 });
@@ -111,6 +141,31 @@ export function buildNPCs(scene) {
     const wr = wl.clone(); wl.position.x = -0.55; wr.position.x = 0.55; g.add(wl, wr);
     scene.add(g);
     birds.push({ group: g, wl, wr, cx: -20 + i * 30, cz: -20 + (i % 2) * 60, r: 14 + i * 3, h: 16 + i * 1.5, a: Math.random() * 6, sp: 0.5 + Math.random() * 0.3 });
+  }
+  // perched birds: unmissable, sitting on stall awnings and lantern poles
+  const perched = [];
+  const perchSpots = [
+    [-16, 3.7, 92],   // village apple stall awning
+    [8, 3.7, 96],     // village pie stall awning
+    [-55, 6.1, -55],  // festival lantern pole
+    [-35, 6.1, -70],  // festival lantern pole
+  ];
+  for (const [px, py, pz] of perchSpots) {
+    const g = new THREE.Group();
+    const bmat = new THREE.MeshStandardMaterial({ color: 0xe8a05a, roughness: 0.9 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 7), bmat);
+    body.scale.set(1, 1.1, 1.3); body.position.y = 0.22; g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 7), bmat);
+    head.position.set(0, 0.48, 0.12); g.add(head);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 6),
+      new THREE.MeshStandardMaterial({ color: 0xd88a3a }));
+    beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.46, 0.28); g.add(beak);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.3, 6), bmat);
+    tail.rotation.x = -Math.PI / 2.4; tail.position.set(0, 0.2, -0.28); g.add(tail);
+    g.position.set(px, py, pz);
+    g.rotation.y = Math.random() * 6.28;
+    scene.add(g);
+    perched.push({ group: g, ph: Math.random() * 6 });
   }
 
   // chameleon companion — follows the player, hops when excited
@@ -184,7 +239,7 @@ export function buildNPCs(scene) {
           n.wait += dt;
           facePlayer(n, dt, playerPos, 9); // chat while waiting
           if (n.wait > 2 + (n.phase % 2)) {
-            n.wp = { x: -22 + Math.random() * 44, z: 76 + Math.random() * 30 }; n.wait = 0;
+            n.wp = zoneWP(n.home); n.wait = 0;
           }
         } else {
           n.group.position.x += (dx / d) * 1.6 * dt;
@@ -210,6 +265,11 @@ export function buildNPCs(scene) {
         r.group.position.y = Math.abs(Math.sin(r.hop)) * 0.45;
         r.group.rotation.y = Math.atan2(dx, dz);
       }
+    }
+    // perched birds: bob and look around
+    for (const p of perched) {
+      p.group.position.y += Math.sin(t * 3 + p.ph) * 0.0015;
+      p.group.rotation.y += Math.sin(t * 0.7 + p.ph) * 0.004;
     }
     // birds
     for (const b of birds) {

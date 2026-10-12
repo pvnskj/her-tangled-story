@@ -12,6 +12,29 @@ export const ZONES = [
   { id: "festival", name: "Lantern Festival",     x: -45, z: -60, r: 36 },
 ];
 
+// walking-path network: dirt strips connecting the six zones (also grass exclusions)
+const PATHS = [
+  [0, -90, -45, -60],    // tower -> festival
+  [-45, -60, -80, 20],   // festival -> lake
+  [-80, 20, 0, 90],      // lake -> village
+  [0, 90, 85, 45],       // village -> tavern
+  [85, 45, 80, -40],     // tavern -> forest
+  [80, -40, 0, -90],     // forest -> tower
+  [-45, -60, -45, -40],  // festival approach spur
+  [0, 90, 0, 65],        // village north gate spur
+];
+function distToSeg(px, pz, ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz;
+  let t = L2 ? ((px - ax) * dx + (pz - az) * dz) / L2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
+}
+function onPath(x, z, halfW) {
+  for (const [ax, az, bx, bz] of PATHS)
+    if (distToSeg(x, z, ax, az, bx, bz) < halfW) return true;
+  return false;
+}
+
 // deterministic RNG so the world is identical every visit
 function lcg(seed) {
   let s = seed >>> 0;
@@ -167,6 +190,62 @@ export function buildWorld(scene) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat(c));
     m.position.set(x, y, z); scene.add(m); return m;
   }
+  // reusable food stall: 4 posts + striped awning + counter + goods
+  function foodStall(sx, sz, awnCols, goods, ry = 0) {
+    const g = new THREE.Group(); g.position.set(sx, 0, sz); g.rotation.y = ry; scene.add(g);
+    const gb = (w, h, d, c, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c));
+      m.position.set(x, y, z); g.add(m); return m;
+    };
+    [[-1.6, -1.1], [1.6, -1.1], [-1.6, 1.1], [1.6, 1.1]].forEach(([px, pz]) =>
+      gb(0.22, 2.6, 0.22, 0x6a4a30, px, 1.3, pz));
+    for (let i = 0; i < 6; i++) {
+      const a = gb(0.75, 0.12, 3.4, awnCols[i % 2], -1.875 + i * 0.75, 3.45 - (i % 2) * 0.06, 0);
+      a.rotation.z = 0.1;
+    }
+    gb(3.4, 1, 2.2, 0x8a6238, 0, 0.5, 0);
+    gb(3.6, 0.15, 2.4, 0x9a7248, 0, 1.05, 0);
+    const gy = 1.35;
+    const gm = (geo, c, x, y, z) => {
+      const m = new THREE.Mesh(geo, mat(c)); m.position.set(x, y, z); g.add(m); return m;
+    };
+    if (goods === "apples") {
+      for (let i = 0; i < 7; i++)
+        gm(new THREE.SphereGeometry(0.2, 8, 7), i % 3 ? 0xc93a3a : 0x7fbf3a,
+           -1.1 + (i % 4) * 0.7, gy + Math.floor(i / 4) * 0.35, (i % 2) * 0.5 - 0.25);
+    } else if (goods === "bread") {
+      for (let i = 0; i < 5; i++) {
+        const b = gm(new THREE.CylinderGeometry(0.22, 0.22, 0.55, 8), 0xd8a05a, -1 + i * 0.55, gy, 0);
+        b.rotation.z = Math.PI / 2; b.rotation.y = (i % 2) * 0.4;
+      }
+    } else if (goods === "pies") {
+      for (let i = 0; i < 4; i++) {
+        const px = -0.9 + i * 0.65, pz = ((i % 2) - 0.5) * 0.6;
+        gm(new THREE.CylinderGeometry(0.32, 0.28, 0.18, 10), 0xe8b86a, px, gy, pz);
+        gm(new THREE.SphereGeometry(0.16, 7, 6), 0xc9566c, px, gy + 0.16, pz);
+      }
+    } else { // veg
+      for (let i = 0; i < 6; i++)
+        gm(new THREE.SphereGeometry(0.18, 7, 6), [0x7fbf3a, 0xd86a3a, 0xe8d83a][i % 3],
+           -1.1 + (i % 3) * 0.75, gy, -0.4 + Math.floor(i / 3) * 0.8);
+    }
+    addCollider(sx, sz, 2.4);
+  }
+  // reusable wooden bench: 2 legs + seat + backrest, faces +z of its group
+  function bench(bx, bz, ry) {
+    const g = new THREE.Group(); g.position.set(bx, 0, bz); g.rotation.y = ry; scene.add(g);
+    const bm = (w, h, d, c, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c));
+      m.position.set(x, y, z); g.add(m); return m;
+    };
+    bm(0.3, 0.75, 0.7, 0x6a4a30, -1.2, 0.375, 0); // legs
+    bm(0.3, 0.75, 0.7, 0x6a4a30, 1.2, 0.375, 0);
+    bm(3.0, 0.18, 0.85, 0x8a6238, 0, 0.84, 0);    // seat
+    bm(0.25, 1.0, 0.7, 0x6a4a30, -1.2, 1.3, -0.42); // backrest posts
+    bm(0.25, 1.0, 0.7, 0x6a4a30, 1.2, 1.3, -0.42);
+    bm(3.0, 0.5, 0.14, 0x8a6238, 0, 1.45, -0.42);  // backrest plank
+    addCollider(bx, bz, 1.5);
+  }
 
   // ---------- Tower Hill ----------
   {
@@ -230,7 +309,7 @@ export function buildWorld(scene) {
     }
   }
 
-  // ---------- horse (tower meadow) — stylized, alive ----------
+  // ---------- horse (village entrance) — stylized, alive ----------
   {
     const g = new THREE.Group();
     const brown = mat(0x8a5a30), dark = mat(0x6a4224);
@@ -263,9 +342,9 @@ export function buildWorld(scene) {
     const tailG = new THREE.Group(); tailG.position.set(0, 1.85, -1.15); g.add(tailG);
     const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.04, 1.2, 6), dark);
     tail.position.y = -0.55; tailG.add(tail);
-    g.position.set(14, 0, -70); g.rotation.y = -0.6;
+    g.position.set(-20, 0, 70); g.rotation.y = 0.8;
     scene.add(g);
-    addCollider(14, -70, 1.5);
+    addCollider(-20, 70, 1.5);
     worldAnims.horse = { group: g, neckG, tailG, ears, grazeT: rand() * 9, earT: 2 + rand() * 3, twitch: 0 };
   }
 
@@ -389,6 +468,20 @@ export function buildWorld(scene) {
     scene.add(m);
   }
 
+  // ---------- dirt walking paths (visible strips, grass exclusions) ----------
+  {
+    const pathMat = new THREE.MeshStandardMaterial({ color: 0x9a8563, roughness: 1 });
+    for (const [ax, az, bx, bz] of PATHS) {
+      const len = Math.hypot(bx - ax, bz - az);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 3.6), pathMat);
+      m.rotation.x = -Math.PI / 2;
+      m.rotation.z = -Math.atan2(bz - az, bx - ax);
+      m.position.set((ax + bx) / 2, 0.06, (az + bz) / 2);
+      m.receiveShadow = true;
+      scene.add(m);
+    }
+  }
+
   // ---------- grass blades (instanced carpet, Bruno-style density) ----------
   {
     // simple 3-vertex blade: two base verts, one tip vert with a slight bend
@@ -400,12 +493,14 @@ export function buildWorld(scene) {
     ], 3));
     bg.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
     bg.computeVertexNormals();
-    const n = 16000;
+    const isLow = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      (window.innerWidth < 500 && navigator.maxTouchPoints > 0);
+    const n = isLow ? 60000 : 160000;
     const m = new THREE.InstancedMesh(bg, new THREE.MeshStandardMaterial({
       roughness: 1, side: THREE.DoubleSide }), n);
     const d = new THREE.Object3D(), col = new THREE.Color();
     let placed = 0, guard = 0;
-    while (placed < n && guard++ < 120000) {
+    while (placed < n && guard++ < n * 4) {
       const x = -112 + rand() * 224, z = -112 + rand() * 224;
       if (((x + 80) / 30) ** 2 + ((z - 20) / 24) ** 2 < 1.15) continue; // lake
       if (((x - 85) / 10) ** 2 + ((z + 15) / 8) ** 2 < 1.3) continue;  // pond
@@ -413,6 +508,7 @@ export function buildWorld(scene) {
       if (Math.hypot(x + 45, z + 60) < 18) continue; // festival clearing
       if (Math.hypot(x, z + 95) < 15) continue;  // tower
       if (Math.hypot(x - 85, z - 45) < 15) continue; // tavern
+      if (onPath(x, z, 2.3)) continue; // keep dirt paths clear and readable
       const s = 0.8 + rand() * 1.4;
       d.position.set(x, 0, z);
       d.scale.set(s, s * (0.9 + rand() * 0.7), s);
@@ -484,6 +580,27 @@ export function buildWorld(scene) {
       addGlow(hx, 3, hz + 3.9, 3.6, 0xffc46a, 0.45);
       addCollider(hx, hz, 5.5);
     });
+    // six more houses: fill out the village (varied roofs, clear of clues/stalls/paths)
+    const newHouses = [
+      { x: -32, z: 95,  ry: 0.4,  wall: 0xd8c8a8, roof: 0x5a6a8a }, // slate blue
+      { x: 32,  z: 95,  ry: -0.35, wall: 0xe8d8b8, roof: 0xc96a3a }, // terracotta
+      { x: -28, z: 112, ry: -0.5, wall: 0xc8b898, roof: 0x8a6a3a }, // thatch brown
+      { x: 28,  z: 112, ry: 0.45, wall: 0xd8b8a8, roof: 0x5a6a8a }, // slate blue
+      { x: 0,   z: 115, ry: 0.1,  wall: 0xe8c8a8, roof: 0xc96a3a }, // terracotta
+      { x: -35, z: 80,  ry: 0.7,  wall: 0xb8c8d8, roof: 0x8a6a3a }, // thatch brown
+    ];
+    for (const h of newHouses) {
+      box(7, 4.5, 6, h.wall, h.x, 2.25, h.z, h.ry);
+      const nr = new THREE.Mesh(new THREE.ConeGeometry(5.6, 3.2, 4), mat(h.roof));
+      nr.position.set(h.x, 6.1, h.z); nr.rotation.y = Math.PI / 4 + h.ry; scene.add(nr);
+      const nw = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), glowMat(0xffc46a));
+      // window faces the village center
+      const wa = Math.atan2(0 - h.x, 90 - h.z);
+      nw.position.set(h.x + Math.sin(wa) * 3.05, 2.6, h.z + Math.cos(wa) * 3.05);
+      nw.rotation.y = wa; scene.add(nw);
+      addGlow(h.x + Math.sin(wa) * 3.4, 2.6, h.z + Math.cos(wa) * 3.4, 3.2, 0xffc46a, 0.4);
+      addCollider(h.x, h.z, 5);
+    }
     addPool(0, 92, 34, 0.32); // warm heart of the village
     // market stalls
     [[-12, 96], [-6, 98], [12, 94]].forEach(([sx, sz]) => {
@@ -496,61 +613,10 @@ export function buildWorld(scene) {
       addCollider(sx, sz, 2.4);
     });
     // food stalls with goods (Bruno-style market density)
-    const stallGoods = [
-      { x: -16, z: 92, awn: [0xc9566c, 0xf7ecd4], goods: "apples" },
-      { x: -2, z: 94, awn: [0x6a9fd8, 0xf7ecd4], goods: "bread" },
-      { x: 8, z: 96, awn: [0x7fbf6a, 0xf7ecd4], goods: "pies" },
-      { x: 18, z: 92, awn: [0xd8a05a, 0xf7ecd4], goods: "veg" },
-    ];
-    for (const st of stallGoods) {
-      const { x: sx, z: sz } = st;
-      // 4 wooden posts
-      [[-1.6, -1.1], [1.6, -1.1], [-1.6, 1.1], [1.6, 1.1]].forEach(([px, pz]) =>
-        box(0.22, 2.6, 0.22, 0x6a4a30, sx + px, 1.3, sz + pz));
-      // striped awning from alternating colored boxes
-      for (let i = 0; i < 6; i++) {
-        const awnBox = box(0.75, 0.12, 3.4, st.awn[i % 2], 0, 0, 0);
-        awnBox.position.set(sx - 1.875 + i * 0.75, 3.45 - (i % 2) * 0.06, sz);
-        awnBox.rotation.z = 0.1;
-      }
-      // counter
-      box(3.4, 1, 2.2, 0x8a6238, sx, 0.5, sz);
-      box(3.6, 0.15, 2.4, 0x9a7248, sx, 1.05, sz);
-      // goods on top
-      const gy = 1.35;
-      if (st.goods === "apples") {
-        for (let i = 0; i < 7; i++) {
-          const a = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 7),
-            mat(i % 3 ? 0xc93a3a : 0x7fbf3a));
-          a.position.set(sx - 1.1 + (i % 4) * 0.7, gy + Math.floor(i / 4) * 0.35, sz + (i % 2) * 0.5 - 0.25);
-          scene.add(a);
-        }
-      } else if (st.goods === "bread") {
-        for (let i = 0; i < 5; i++) {
-          const b = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.55, 8), mat(0xd8a05a));
-          b.rotation.z = Math.PI / 2; b.rotation.y = (i % 2) * 0.4;
-          b.position.set(sx - 1 + i * 0.55, gy, sz);
-          scene.add(b);
-        }
-      } else if (st.goods === "pies") {
-        for (let i = 0; i < 4; i++) {
-          const p = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.18, 10), mat(0xe8b86a));
-          p.position.set(sx - 0.9 + i * 0.65, gy, sz + ((i % 2) - 0.5) * 0.6);
-          scene.add(p);
-          const top = new THREE.Mesh(new THREE.SphereGeometry(0.16, 7, 6), mat(0xc9566c));
-          top.position.set(p.position.x, gy + 0.16, p.position.z);
-          scene.add(top);
-        }
-      } else { // veg
-        for (let i = 0; i < 6; i++) {
-          const v = new THREE.Mesh(new THREE.SphereGeometry(0.18, 7, 6),
-            mat([0x7fbf3a, 0xd86a3a, 0xe8d83a][i % 3]));
-          v.position.set(sx - 1.1 + (i % 3) * 0.75, gy, sz - 0.4 + Math.floor(i / 3) * 0.8);
-          scene.add(v);
-        }
-      }
-      addCollider(sx, sz, 2.4);
-    }
+    foodStall(-16, 92, [0xc9566c, 0xf7ecd4], "apples");
+    foodStall(-2, 94, [0x6a9fd8, 0xf7ecd4], "bread");
+    foodStall(8, 96, [0x7fbf6a, 0xf7ecd4], "pies");
+    foodStall(18, 92, [0xd8a05a, 0xf7ecd4], "veg");
     // well
     cyl(1.8, 2, 1.6, 0x8a8a95, 0, 0.8, 90, 12);
     box(0.3, 2.6, 0.3, 0x6a4a30, -1.6, 2.4, 90); box(0.3, 2.6, 0.3, 0x6a4a30, 1.6, 2.4, 90);
@@ -757,6 +823,13 @@ export function buildWorld(scene) {
       g.userData.phase = danceRand() * 6;
       scene.add(g); dancers.push(g);
     }
+    // audience benches: two arcs north of the dancers, all facing the stage (south)
+    bench(-52, -48, Math.PI); bench(-45, -47, Math.PI); bench(-38, -48, Math.PI);
+    bench(-54, -42, Math.PI); bench(-45, -41, Math.PI); bench(-36, -42, Math.PI);
+    // festival food stalls (east side, clear of dancers/poles/clues)
+    foodStall(-28, -45, [0xc9566c, 0xf7ecd4], "apples", -Math.PI / 2);
+    foodStall(-26, -55, [0x6a9fd8, 0xf7ecd4], "bread", -Math.PI / 2);
+    foodStall(-28, -65, [0xd8a05a, 0xf7ecd4], "pies", -Math.PI / 2);
   }
 
   // ---------- fireflies ----------
