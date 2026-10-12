@@ -376,6 +376,25 @@ export function buildWorld(scene) {
       if (!clearOf(x, z, 3)) continue;
       treeSpots.push([x, z]);
     }
+    // enchanted grove: tower-zone forest she walks BETWEEN — tall trees flank a clear corridor
+    const groveStart = treeSpots.length;
+    {
+      const gx = -10, gz = -74, gr = 24;
+      const espots = [[18, -76], [-32, -80]]; // elephants live here — keep trunks clear
+      let placed = 0; guard = 0;
+      while (placed < 20 && guard++ < 4000) {
+        const a = rand() * Math.PI * 2, r = 6 + rand() * (gr - 6);
+        const x = gx + Math.cos(a) * r, z = gz + Math.sin(a) * r;
+        if (Math.hypot(x, z + 95) < 20) continue;   // the tower itself
+        if (Math.hypot(x, z + 58) < 7) continue;    // her spawn point
+        if (onPath(x, z, 7)) continue;               // walking corridor stays open (wide)
+        if (!clearOf(x, z, 3.5)) continue;          // clue spots
+        if (espots.some(([ex, ez]) => (x-ex)**2 + (z-ez)**2 < 25)) continue;
+        if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 30)) continue;
+        treeSpots.push([x, z, 1.0]);                // tall grove trees (not giants)
+        placed++;
+      }
+    }
     // hero trees: hand-placed, larger — frame the tower and the lake shore
     // (kept clear of clue spots, the dock, and walking lines)
     const heroes = [[-16,-68,1.6],[18,-70,1.45],[-20,-98,1.7],[16,-102,1.35],
@@ -423,6 +442,51 @@ export function buildWorld(scene) {
     worldAnims.swayCanopy = { canA, canB, canC, swayData, dummy: new THREE.Object3D() };
     treeSpots.slice(0, 95).forEach(([x, z]) => addCollider(x, z, 0.9));
     for (let i = heroStart; i < treeSpots.length; i++) addCollider(treeSpots[i][0], treeSpots[i][1], 1.2);
+    for (let i = groveStart; i < heroStart; i++) addCollider(treeSpots[i][0], treeSpots[i][1], 1.1);
+  }
+
+  // ---------- elephants (ambient, enchanted grove — not interactive) ----------
+  {
+    const gray = mat(0x8a8a9a), dark = mat(0x6a6a7a);
+    const espots = [[18, -76, 0.5], [-32, -80, -2.2]];
+    const elephants = [];
+    for (const [ex, ez, ry] of espots) {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 10), gray);
+      body.scale.set(1, 0.95, 1.35); body.position.y = 2.2; g.add(body);
+      [[-0.75, -0.9], [0.75, -0.9], [-0.75, 0.9], [0.75, 0.9]].forEach(([x, z]) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 2.2, 8), dark);
+        leg.position.set(x, 1.1, z); g.add(leg);
+      });
+      const headG = new THREE.Group(); headG.position.set(0, 2.9, 1.9); g.add(headG);
+      headG.add(new THREE.Mesh(new THREE.SphereGeometry(0.85, 10, 8), gray));
+      const ears = [];
+      [-1, 1].forEach(s => {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), dark);
+        ear.scale.set(0.25, 1, 0.9); ear.position.set(s * 0.85, 0.15, -0.1);
+        headG.add(ear); ears.push(ear);
+      });
+      const trunkG = new THREE.Group(); trunkG.position.set(0, -0.2, 0.8); headG.add(trunkG);
+      let ty = 0, tz = 0;
+      for (let k = 0; k < 3; k++) {
+        const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.22 - k * 0.05, 0.26 - k * 0.05, 0.7, 8), gray);
+        seg.position.set(0, ty - 0.3, tz + 0.15); seg.rotation.x = 0.35 + k * 0.25;
+        trunkG.add(seg); ty -= 0.55; tz += 0.28;
+      }
+      [-1, 1].forEach(s => {
+        const tusk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 0.6, 6), mat(0xe8dcc0));
+        tusk.position.set(s * 0.35, -0.55, 0.75); tusk.rotation.x = 0.9; headG.add(tusk);
+      });
+      const tailG = new THREE.Group(); tailG.position.set(0, 2.8, -2.0); g.add(tailG);
+      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 1.4, 6), dark);
+      tail.position.y = -0.7; tailG.add(tail);
+      g.position.set(ex, 0, ez); g.rotation.y = ry;
+      g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      scene.add(g);
+      addCollider(ex, ez, 2.2);
+      elephants.push({ group: g, headG, trunkG, tailG, ears, ph: rand() * 6 });
+    }
+    worldAnims.elephants = elephants;
   }
 
   // ---------- flowers (instanced) ----------
@@ -756,6 +820,40 @@ export function buildWorld(scene) {
     }
   }
 
+  // ---------- lantern posts lining the main walking paths (tower→festival→lake→village) ----------
+  {
+    const orbM = new THREE.MeshBasicMaterial({ color: 0xffd98a });
+    const postM = mat(0x4a3826);
+    const postG = new THREE.CylinderGeometry(0.14, 0.2, 4.2, 8);
+    const orbG = new THREE.SphereGeometry(0.5, 10, 8);
+    const segs = [
+      [0, -90, -45, -60],    // tower -> festival
+      [-45, -60, -80, 20],   // festival -> lake
+      [-80, 20, 0, 90],      // lake -> village
+    ];
+    let side = 1;
+    for (const [ax, az, bx, bz] of segs) {
+      const len = Math.hypot(bx - ax, bz - az);
+      const dx = (bx - ax) / len, dz = (bz - az) / len;
+      const nx = -dz, nz = dx;
+      const count = Math.max(2, Math.floor(len / 12));
+      for (let i = 1; i <= count; i++) {
+        const f = i / (count + 1);
+        const px = ax + dx * len * f + nx * 2.8 * side;
+        const pz = az + dz * len * f + nz * 2.8 * side;
+        side *= -1;
+        if (((px + 80) / 32) ** 2 + ((pz - 20) / 26) ** 2 < 1) continue; // keep out of the lake
+        const post = new THREE.Mesh(postG, postM);
+        post.position.set(px, 2.1, pz); post.castShadow = true; scene.add(post);
+        const orb = new THREE.Mesh(orbG, orbM);
+        orb.position.set(px, 4.5, pz); scene.add(orb);
+        const gl = addGlow(px, 4.5, pz, 7, 0xffb060, 0.75);
+        worldAnims.flicker.push({ glow: gl, pool: null, ph: rand() * 6, gb: 0.75, pb: 0 });
+        addCollider(px, pz, 0.5);
+      }
+    }
+  }
+
   // ---------- boat ----------
   const boat = { group: new THREE.Group(), from: V3(-58, 0.35, 15), to: V3(-80, 0.35, 44), t: 0, riding: false };
   {
@@ -859,6 +957,25 @@ export function buildWorld(scene) {
     worldAnims.fireflies = fireflies; worldAnims.fireflyBase = fireflyBase;
   }
 
+  // ---------- enchanted grove fireflies (second swarm, warm gold, tower forest) ----------
+  {
+    const n = 80, pos = new Float32Array(n * 3);
+    const base = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      base[i*3]   = -10 + (rand() - 0.5) * 40;
+      base[i*3+1] = 0.8 + rand() * 3.2;
+      base[i*3+2] = -74 + (rand() - 0.5) * 32;
+    }
+    pos.set(base);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({
+      map: mistTex, color: 0xffd76a, size: 0.65, transparent: true, opacity: 0.9,
+      blending: THREE.AdditiveBlending, depthWrite: false }));
+    scene.add(pts);
+    worldAnims.groveFlies = { pts, base };
+  }
+
   // ---------- floating sky lanterns (the iconic Tangled image) ----------
   // concentrated over the festival clearing + the lake, a few drifting elsewhere
   {
@@ -912,6 +1029,34 @@ export function buildWorld(scene) {
       map: mistTex, transparent: true, opacity: 0.9, depthWrite: false }));
     scene.add(pts);
     worldAnims.petals = { pts, meta };
+  }
+
+  // ---------- guiding leaves: wind streams along tower → festival → lake → village ----------
+  {
+    const route = [[0,-90],[-45,-60],[-80,20],[0,90]];
+    const segLen = [];
+    let total = 0;
+    for (let i = 0; i < route.length - 1; i++) {
+      const L = Math.hypot(route[i+1][0]-route[i][0], route[i+1][1]-route[i][1]);
+      segLen.push(L); total += L;
+    }
+    const n = 120, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    const meta = [];
+    const pal = [0xd8a53a, 0xc96a2a, 0xa83a4a, 0xe0c060];
+    const c = new THREE.Color();
+    for (let i = 0; i < n; i++) {
+      meta.push({ d: Math.random() * total, lat: (Math.random()-0.5) * 5,
+                  y: 0.5 + Math.random() * 2.5, sp: 2.5 + Math.random() * 2, ph: Math.random() * 6 });
+      c.set(pal[i % pal.length]).offsetHSL((Math.random()-0.5)*0.03, 0, (Math.random()-0.5)*0.08);
+      col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.55, vertexColors: true,
+      map: mistTex, transparent: true, opacity: 0.95, depthWrite: false }));
+    scene.add(pts);
+    worldAnims.leaves = { pts, meta, route, segLen, total };
   }
 
   // ---------- ambient mist sprites ----------
@@ -969,6 +1114,51 @@ export function buildWorld(scene) {
       }
       p.needsUpdate = true;
       worldAnims.fireflies.material.opacity = 0.75 + Math.sin(t * 2.3) * 0.2;
+    }
+    // grove fireflies drift + twinkle (warm gold, enchanted forest)
+    {
+      const gf = worldAnims.groveFlies;
+      if (gf) {
+        const p = gf.pts.geometry.attributes.position, fb = gf.base;
+        for (let i = 0; i < p.count; i++) {
+          p.array[i*3]   = fb[i*3] + Math.sin(t * 0.6 + i * 1.3) * 1.1;
+          p.array[i*3+1] = fb[i*3+1] + Math.sin(t * 1.0 + i * 2.1) * 0.6;
+          p.array[i*3+2] = fb[i*3+2] + Math.cos(t * 0.45 + i * 0.8) * 1.1;
+        }
+        p.needsUpdate = true;
+        gf.pts.material.opacity = 0.8 + Math.sin(t * 2.0 + 1) * 0.2;
+      }
+    }
+    // elephants: gentle sway + ear flaps + trunk sway
+    for (const e of (worldAnims.elephants || [])) {
+      e.group.rotation.z = Math.sin(t * 0.7 + e.ph) * 0.02;
+      e.headG.rotation.y = Math.sin(t * 0.4 + e.ph) * 0.15;
+      e.trunkG.rotation.x = Math.sin(t * 0.9 + e.ph) * 0.12;
+      e.tailG.rotation.x = Math.sin(t * 1.6 + e.ph) * 0.3;
+      e.ears[0].rotation.z = 0.2 + Math.sin(t * 1.1 + e.ph) * 0.15;
+      e.ears[1].rotation.z = -0.2 - Math.sin(t * 1.1 + e.ph + 0.5) * 0.15;
+    }
+    // guiding leaves stream along tower → festival → lake → village
+    {
+      const GL = worldAnims.leaves;
+      if (GL) {
+        const p = GL.pts.geometry.attributes.position;
+        for (let i = 0; i < GL.meta.length; i++) {
+          const m = GL.meta[i];
+          m.d += m.sp * dt;
+          if (m.d > GL.total) { m.d -= GL.total; m.lat = (Math.random()-0.5) * 5; }
+          let d = m.d, si = 0;
+          while (si < GL.segLen.length - 1 && d > GL.segLen[si]) { d -= GL.segLen[si]; si++; }
+          const ax = GL.route[si][0], az = GL.route[si][1];
+          const dx = GL.route[si+1][0] - ax, dz = GL.route[si+1][1] - az;
+          const f = d / GL.segLen[si], len = GL.segLen[si];
+          const bob = Math.sin(t * 2 + m.ph) * 0.4;
+          p.array[i*3]   = ax + dx * f + (-dz / len) * m.lat + Math.sin(t * 1.3 + m.ph) * 0.8;
+          p.array[i*3+1] = m.y + bob;
+          p.array[i*3+2] = az + dz * f + (dx / len) * m.lat + Math.cos(t * 1.1 + m.ph) * 0.8;
+        }
+        p.needsUpdate = true;
+      }
     }
     // horse: graze cycle + tail swish + ear twitches — alive, not a statue
     {
