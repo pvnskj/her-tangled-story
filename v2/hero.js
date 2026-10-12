@@ -7,8 +7,8 @@ export async function loadHero(scene) {
   return createHero(scene,gltf);
 }
 export function createHero(scene,gltf) {
-  const group=gltf.scene;scene.add(group);const bones={};
-  group.traverse(o=>{if(o.isBone)bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;}});
+  const group=gltf.scene;scene.add(group);const bones={};const eyeMeshes=[];
+  group.traverse(o=>{if(o.isBone)bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;if(/Eye|Iris|Pupil|Catchlight/.test(o.name))eyeMeshes.push(o);}});
   const mixer=new T.AnimationMixer(group),actions={};for(const clip of gltf.animations)actions[clip.name]=mixer.clipAction(clip);
   actions.Landing.setLoop(T.LoopOnce,1);actions.Landing.clampWhenFinished=true;
   let current;const play=(name)=>{if(current===name)return;actions[current]?.fadeOut(.25);actions[name].reset().fadeIn(.25).play();current=name;};play('Idle');
@@ -44,6 +44,10 @@ export function createHero(scene,gltf) {
       }
     }
     if(pose==='idle')bones.Head.rotation.y+=Math.sin(time*.55)*.09;
+    // Blink: every few seconds, squash the eye meshes briefly. This alone kills the doll-stare.
+    const blinkPhase=time%4.2;
+    const blinkAmt=blinkPhase<.12?Math.sin(blinkPhase/.12*Math.PI):0;
+    for(const m of eyeMeshes)m.scale.y=m.userData.baseScaleY??(m.userData.baseScaleY=m.scale.y),m.scale.y=m.userData.baseScaleY*(1-blinkAmt*.88);
   }};
 }
 export class Braid {
