@@ -437,6 +437,7 @@ function animate() {
   const kv = keyVector();
   const jx = UI.joystick.x + kv.x, jz = UI.joystick.y + kv.z;
   player.setInput(jx, jz);
+  player.keyLook(dt, keys);
 
   player.update(dt);
   updateBoat(dt, t);

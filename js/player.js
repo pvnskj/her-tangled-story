@@ -40,6 +40,19 @@ export class Player {
     this.orbit.lastDrag = performance.now() / 1000;
   }
 
+  // keyboard look: Q/E yaw, R/F pitch — for desktop users who prefer keys over drag
+  keyLook(dt, keys) {
+    const spd = 1.8 * dt;
+    if (keys.KeyQ) this.orbit.yaw += spd;
+    if (keys.KeyE) this.orbit.yaw -= spd;
+    if (keys.KeyR) this.orbit.pitch += spd * 0.7;
+    if (keys.KeyF) this.orbit.pitch -= spd * 0.7;
+    if (keys.KeyQ || keys.KeyE || keys.KeyR || keys.KeyF) {
+      this.orbit.pitch = THREE.MathUtils.clamp(this.orbit.pitch, -0.6, 0.6);
+      this.orbit.lastDrag = performance.now() / 1000;
+    }
+  }
+
   setInput(x, z) { this.moveVec.x = x; this.moveVec.z = z; }
 
   inWater(x, z) {
@@ -123,7 +136,12 @@ export class Player {
     // the very first frame. (Portrait keeps the framing that worked; desktop
     // gets a slight forward bias toward her tower.)
     const portrait = camera.aspect < 1;
-    const lookH = portrait ? 5 : 5.5;
+    // ADAPTIVE look height: when the user drags to a low angle (looking up at
+    // buildings/trees), lower the target so the view stays level instead of
+    // tilting steeply up. When high, raise it for the diorama feel.
+    const orbitPitch = this.orbit.pitch || 0;
+    const pitchT = THREE.MathUtils.clamp((orbitPitch + 0.5) / 1.0, 0, 1);
+    const lookH = THREE.MathUtils.lerp(2.2, portrait ? 5 : 5.5, pitchT);
     const biasZ = portrait ? 0 : -4;
     if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x, lookH, p.z + biasZ);
     this.lookSm.lerp(new THREE.Vector3(p.x + lx * 0.7, lookH, p.z + lz * 0.7 + biasZ), 1 - Math.pow(0.004, dt));
@@ -146,6 +164,8 @@ export class Player {
       const yaw = baseYaw + this.orbit.yaw;
       off.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(L);
       camera.position.copy(this.lookSm).add(off);
+      // never let the camera sink below ground — kills the "funk" when looking up
+      if (camera.position.y < 1.6) camera.position.y = 1.6;
     }
     camera.lookAt(this.lookSm);
   }
