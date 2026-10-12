@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"build:avatar":"node --experimental-loader ./tools/three-loader.mjs ./tools/build-avatar.mjs","test":"node --experimental-loader ./tools/three-loader.mjs --test tests/*.test.mjs"}}
