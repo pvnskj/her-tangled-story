@@ -23,7 +23,6 @@ for(let i=0;i<5;i++) {part('Corset ribbon '+i,new T.CylinderGeometry(.009,.009,.
 ball('Neck','skin','Neck',[0,1.445,0],[.076,.13,.075]);
 ball('Face','skin','Head',[0,1.67,.016],[.255,.295,.223]);
 ball('Hair crown','gold','Head',[0,1.73,-.035],[.271,.27,.22]);
-ball('Face front','skin','Head',[0,1.65,.085],[.224,.257,.172]);
 for(const [side,s] of [['L',-1],['R',1]]) {
  ball('Ear'+side,'skin','Head',[s*.246,1.66,.012],[.048,.071,.041]);
  ball('Eye white'+side,'white','Head',[s*.092,1.699,.237],[.065,.077,.028]);

@@ -38,6 +38,7 @@ export function buildWorld(scene,quality='balanced') {
   mesh(tower,new T.CylinderGeometry(3.04,3.34,18,36,1,true),PALETTE.stone,0,9,0);
   const stones=new T.InstancedMesh(new T.BoxGeometry(.47,.31,.13),mat(0xc5b493),620);let count=0,dummy=new T.Object3D();
   for(let row=0;row<40;row++)for(let k=0;k<15;k++){const ang=(k/15+row%2/30)*Math.PI*2,r=3.35-row*.007;dummy.position.set(Math.sin(ang)*r,.4+row*.43,Math.cos(ang)*r);dummy.rotation.set(0,ang,0);dummy.scale.set(.75+rnd()*.7,.65+rnd()*.5,1);dummy.updateMatrix();stones.setMatrixAt(count++,dummy.matrix);stones.setColorAt(count-1,new T.Color().setHSL(.10,.18,.59+rnd()*.17));}stones.count=count;stones.castShadow=true;tower.add(stones);
+  {const wallG=new T.CylinderGeometry(3.28,3.34,17.4,28,1,true);const wall=new T.Mesh(wallG,mat(0xbfae8e,{side:T.DoubleSide}));wall.position.y=8.9;wall.castShadow=true;wall.receiveShadow=true;tower.add(wall);}
   for(const y of [2.1,11.5,17.9])mesh(tower,new T.TorusGeometry(y===17.9?3.03:3.37-y*.017,.105,6,48),0xb6a381,0,y,0).rotation.x=Math.PI/2;
   mesh(tower,new T.CylinderGeometry(3.16,2.7,.45,36),0x8c7253,0,17.8,0);
   mesh(tower,new T.CylinderGeometry(3.06,3.06,.12,48),0xa17c55,0,17.98,0);
@@ -76,14 +77,16 @@ export function buildWorld(scene,quality='balanced') {
   // Low garden gate and stone stairs visually connect the landmark to the clearing.
   box(tower,1.35,2.7,.1,0x665442,0,1.4,3.07);for(let i=0;i<6;i++)box(tower,.014,2.55,.02,0x9b825b,-.55+i*.22,1.4,3.13);ell(tower,[.048,.048,.03],0xe2be6c,.38,1.28,3.17);
   // Original branch silhouettes and layered broadleaf crowns, shared geometry.
-  function tree(x,z,scale,seed){const r=random(seed),g=new T.Group();g.position.set(x,groundHeight(x,z),z);g.scale.setScalar(scale);scene.add(g);line(g,[[0,0,0],[.09,1.4,0],[-.12,2.5,.06],[.05,3.5,.1]],.17,0x6a5946);
-    for(let k=0;k<6;k++){const ang=k*2.4;const end=[Math.sin(ang)*(1+r()*.5),3.0+r()*1.6,Math.cos(ang)*(1+r()*.5)];line(g,[[0,1.9+k*.12,0],[end[0]*.55,end[1]-.5,end[2]*.55],end],.075,0x6a5946);for(let j=0;j<3;j++){const o=ell(g,[.93+r()*.32,.55+r()*.25,.78+r()*.4],[0x729467,0x5c825a,0x86a576,0x9ab47b][(j+k)%4],end[0]+(r()-.5)*.9,end[1]+j*.12,end[2]+(r()-.5)*.9);o.rotation.set(r(),r(),r());}}
+  function tree(x,z,scale,seed,pal){const r=random(seed),g=new T.Group();pal=pal||[0x729467,0x5c825a,0x86a576,0x9ab47b];g.position.set(x,groundHeight(x,z),z);g.scale.setScalar(scale);scene.add(g);line(g,[[0,0,0],[.09,1.4,0],[-.12,2.5,.06],[.05,3.5,.1]],.17,0x6a5946);
+    for(let k=0;k<6;k++){const ang=k*2.4;const end=[Math.sin(ang)*(1+r()*.5),3.0+r()*1.6,Math.cos(ang)*(1+r()*.5)];line(g,[[0,1.9+k*.12,0],[end[0]*.55,end[1]-.5,end[2]*.55],end],.075,0x6a5946);for(let j=0;j<3;j++){const o=ell(g,[.93+r()*.32,.55+r()*.25,.78+r()*.4],pal[(j+k)%4],end[0]+(r()-.5)*.9,end[1]+j*.12,end[2]+(r()-.5)*.9);o.rotation.set(r(),r(),r());}}
     for(let j=0;j<4;j++)line(g,[[0,.4,0],[Math.sin(j*1.6)*.45,.06,Math.cos(j*1.6)*.45],[Math.sin(j*1.6)*.7,.01,Math.cos(j*1.6)*.7]],.055,0x6a5946);trees.push(g);if(Math.abs(x)<24&&Math.abs(z)<24)colliders.push({x,z,r:.23*scale});return g;}
   [[-8,-5,2],[-10,3,1.8],[11,-8,2.3],[15,2,1.9],[-16,-12,2.5],[19,-15,2.8],[-20,7,2.2],[18,14,2],[-16,24,2.3],[25,24,2.4],[4,-15,1.7],[-22,-24,2.8],[26,-22,2.5]].forEach((p,i)=>tree(...p,30+i));
   for(let i=0;i<24;i++){const ang=rnd()*6.28;tree(Math.sin(ang)*42,Math.cos(ang)*42,1.8+rnd()*2,i+120);}
+  const blossom=[0xf2b8d0,0xe89ec0,0xf7cfe2,0xdd92b8];
+  [[16,9,2.1],[-13,3,1.9],[24,-4,2.3]].forEach((p,i)=>tree(p[0],p[1],p[2],300+i,blossom));
   // Instanced, tapered grass blades: one draw call, vertex wind, no frame allocations.
   const grassG=new T.BufferGeometry();grassG.setAttribute('position',new T.Float32BufferAttribute([-.06,0,0,.06,0,0,-.037,.28,.01,.037,.28,.01,.045,.64,.045],3));grassG.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,0,.45,1,.45,.5,1],2));grassG.setIndex([0,1,2,1,3,2,2,3,4]);grassG.computeVertexNormals();
-  const wind={value:0};const gm=mat(0x809b59,{side:T.DoubleSide});gm.onBeforeCompile=shader=>{shader.uniforms.uWind=wind;shader.vertexShader='uniform float uWind;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n transformed.x += sin(uWind * 1.4 + instanceMatrix[3].x * .4 + instanceMatrix[3].z * .3) * pow(uv.y,2.0) * .13;');};
+  const wind={value:0};const gm=mat(0x809b59,{side:T.DoubleSide});gm.onBeforeCompile=shader=>{shader.uniforms.uWind=wind;shader.vertexShader='uniform float uWind;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n float gust=.55+.45*sin(uWind*.45+instanceMatrix[3].x*.06+instanceMatrix[3].z*.04);\n transformed.x += sin(uWind*1.7+instanceMatrix[3].x*.4+instanceMatrix[3].z*.3)*pow(uv.y,2.0)*.24*gust;\n transformed.z += cos(uWind*1.15+instanceMatrix[3].z*.5+instanceMatrix[3].x*.2)*pow(uv.y,2.0)*.09*gust;');};
   const gc=quality==='low'?3500:quality==='high'?14500:8500,grass=new T.InstancedMesh(grassG,gm,gc);let gi=0;
   for(let i=0;i<gc*3&&gi<gc;i++){const x=(rnd()-.5)*62,z=(rnd()-.5)*62;if(Math.hypot(x,z)<3.5||Math.hypot(x-9,z+2)<3.3||Math.hypot(x+18,z-15)<8.7)continue;
     if(z>4&&z<25&&Math.abs(x-(z<13?-1:(z-13)*.85-1))<1.25)continue;dummy.position.set(x,groundHeight(x,z),z);dummy.rotation.set(0,rnd()*6.28,0);dummy.scale.setScalar(.5+rnd()*.8);dummy.updateMatrix();grass.setMatrixAt(gi,dummy.matrix);grass.setColorAt(gi,new T.Color().setHSL(.21+rnd()*.035,.29,.39+rnd()*.15));gi++;}grass.count=gi;grass.receiveShadow=true;scene.add(grass);
@@ -109,6 +112,12 @@ export function buildWorld(scene,quality='balanced') {
   const lid=new T.Group();lid.position.set(0,.5,-.23);chest.add(lid);const dome=mesh(lid,new T.CylinderGeometry(.23,.23,.7,20,1,false,0,Math.PI),0x9d7555,0,0,.23);dome.rotation.z=Math.PI/2;dome.rotation.y=Math.PI/2;
   for(const x of [-.24,.24])box(chest,.045,.43,.48,0xd4ad62,x,.31,0);box(chest,.10,.12,.035,0xe1bb6e,0,.45,.25);
   const keepsakeLight=new T.PointLight(0xffd993,0,3);keepsakeLight.position.set(-2.2,.85,7.6);scene.add(keepsakeLight);
+  // Drifting leaves and cherry petals ride the breeze across the meadow.
+  const LN=140,leafData=[];
+  const leaves=new T.InstancedMesh(new T.PlaneGeometry(.11,.08),mat(0xffffff,{side:T.DoubleSide,transparent:true,opacity:.92}),LN);
+  leaves.frustumCulled=false;
+  for(let i=0;i<LN;i++){const petal=i%3===0;leafData.push({x:(rnd()-.5)*55,y:.4+rnd()*6.5,z:(rnd()-.5)*55,ph:rnd()*6.28,sp:.22+rnd()*.45,sw:.4+rnd()*.9});leaves.setColorAt(i,new T.Color(petal?[0xf6c6da,0xef9ec3,0xf9d9e8][i%3]:[0xd8b96a,0xc9a54e,0xe4cf8a][i%3]));}
+  scene.add(leaves);
   // Airborne pollen: points, no texture request, soft circular shader.
   const pp=[];for(let i=0;i<100;i++)pp.push((rnd()-.5)*34,.5+rnd()*7,(rnd()-.5)*34);const pg=new T.BufferGeometry();pg.setAttribute('position',new T.Float32BufferAttribute(pp,3));const pollen=new T.Points(pg,new T.PointsMaterial({color:0xffe6ad,size:.055,transparent:true,opacity:.66,depthWrite:false}));scene.add(pollen);
   // Static geometry is merged per material and spatial tile. Individual tree
@@ -117,7 +126,10 @@ export function buildWorld(scene,quality='balanced') {
   const animals=buildAnimals(scene);
   let chestOpen=false;
   return {colliders,chest,animals,sun,openChest(){chestOpen=true;},update(dt,t,opening,hero) {
-    wind.value=t;for(const a of animated){if(a.kind==='curtain'){const p=a.mesh.geometry.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,a.base[i*3+2]+Math.sin(t*1.3+a.base[i*3+1]*2+a.phase)*.08);p.needsUpdate=true;}else a.mesh.material.opacity=.66+Math.sin(t*4)*.07;}
+    wind.value=t;
+    for(let i=0;i<LN;i++){const L=leafData[i];L.y-=L.sp*dt;L.x+=(Math.sin(t*.7+L.ph)*L.sw+.4)*dt;L.z+=Math.cos(t*.55+L.ph)*.35*dt;if(L.y<.06){L.y=4.5+rnd()*4;L.x=(rnd()-.5)*55;L.z=(rnd()-.5)*55;}dummy.position.set(L.x,L.y,L.z);dummy.rotation.set(t*.9+L.ph,L.ph*2,t*.6+L.ph);dummy.scale.setScalar(1);dummy.updateMatrix();leaves.setMatrixAt(i,dummy.matrix);}
+    leaves.instanceMatrix.needsUpdate=true;
+    for(const a of animated){if(a.kind==='curtain'){const p=a.mesh.geometry.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,a.base[i*3+2]+Math.sin(t*1.3+a.base[i*3+1]*2+a.phase)*.08);p.needsUpdate=true;}else a.mesh.material.opacity=.66+Math.sin(t*4)*.07;}
     lid.rotation.x=T.MathUtils.damp(lid.rotation.x,chestOpen?-1.25:0,4,dt);keepsakeLight.intensity=T.MathUtils.damp(keepsakeLight.intensity,chestOpen?5:0,4,dt);
     pollen.rotation.y=t*.008;water.material.roughness=.23+Math.sin(t)*.025;
     animals.update(dt,t,opening,hero);
@@ -140,8 +152,8 @@ function buildAnimals(scene) {
   ell(horse,[.39,.48,.83],0xe6deca,0,1.07,0);ell(horse,[.32,.49,.32],0xd9d0bc,0,1.2,.48);
   const neck=new T.Group();neck.position.set(0,1.3,.5);horse.add(neck);const n=ell(neck,[.24,.65,.24],0xe6deca,0,.43,.18);n.rotation.x=.38;ell(neck,[.24,.28,.42],0xe6deca,0,.93,.42);ell(neck,[.21,.17,.24],0xbeb5a3,0,.81,.71);
   const ears=[];for(const s of [-1,1]) {const e=ell(neck,[.07,.23,.09],0xe6deca,s*.15,1.21,.34);ears.push(e);ell(neck,[.055,.06,.034],0x392e2b,s*.22,.99,.48);ell(neck,[.055,.035,.027],0x6e635c,s*.13,.84,.91);}
-  line(neck,[[0,1.15,.2],[0,.9,-.03],[0,.45,-.06],[0,.1,-.12]],.10,0x9a8d79);
-  const legs=[];for(const x of [-.25,.25])for(const z of [-.5,.52]){const leg=new T.Group();leg.position.set(x,1.03,z);horse.add(leg);line(leg,[[0,0,0],[.02,-.42,.03],[0,-.85,-.04]],.068,0xd8cfbb);ell(leg,[.10,.10,.16],0x71665a,0,-.94,0);legs.push(leg);}
+  line(neck,[[0,1.15,.2],[0,.9,-.03],[0,.45,-.06],[0,.1,-.12]],.10,0x9a8d79);ell(neck,[.13,.17,.11],0x8a7d6b,0,1.34,.28);
+  const legs=[];for(const x of [-.25,.25])for(const z of [-.5,.52]){const leg=new T.Group();leg.position.set(x,1.03,z);horse.add(leg);line(leg,[[0,0,0],[.02,-.42,.03],[0,-.85,-.04]],.068,0xd8cfbb);ell(leg,[.075,.1,.075],0xf2ede2,0,-.72,-.02);ell(leg,[.10,.10,.16],0x71665a,0,-.94,0);legs.push(leg);}
   const tail=new T.Group();tail.position.set(0,1.35,-.77);horse.add(tail);line(tail,[[0,0,0],[0,-.32,-.21],[0,-.81,-.13]],.11,0x9a8d79);
   const companion=new T.Group();scene.add(companion);ell(companion,[.055,.075,.145],0x71974d,0,0,0);ell(companion,[.075,.073,.081],0x84a65c,0,.033,.14);
   for(const s of [-1,1]){ell(companion,[.038,.039,.038],0xb6c67a,s*.065,.066,.15);ell(companion,[.014,.02,.013],0x253d27,s*.092,.07,.169);for(const z of [-.07,.07])line(companion,[[s*.04,-.01,z],[s*.082,-.055,z+.015],[s*.069,-.075,z+.04]],.013,0x628841);}
