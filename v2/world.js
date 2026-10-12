@@ -1,9 +1,10 @@
 import * as T from 'three';
 import {mergeGeometries} from './vendor/utils/BufferGeometryUtils.js';
 import {phase} from './timeline.js';
+import {PATHS,HOMES} from './story.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export const PALETTE={stone:0xd6c4a4,wood:0x674732,trim:0x392e39,roof:0x79609b,grass:0x6b914f,gold:0xeecf88};
-export function groundHeight(x,z){const edge=Math.max(0,Math.hypot(x,z)-15)/20;return Math.sin(x*.13)*Math.cos(z*.14)*edge*1.7;}
+export function groundHeight(x,z){const lake=Math.hypot(x+18,z-15);if(lake<8.9)return -Math.min(1,(8.9-lake)/.65)*.9;const edge=Math.max(0,Math.hypot(x,z)-32)/20;return Math.sin(x*.13)*Math.cos(z*.14)*edge*1.7;}
 function random(seed=1237){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
 const mat=(color,opts={})=>new T.MeshStandardMaterial({color,roughness:.88,...opts});
 const materials=new Map();const M=color=>{if(!materials.has(color))materials.set(color,mat(color));return materials.get(color);};
@@ -29,10 +30,10 @@ export function buildWorld(scene,quality='balanced') {
   for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i),h=groundHeight(x,z);a.setY(i,h-.04);const c=new T.Color().setHSL(.26+rnd()*.02,.42+rnd()*.1,.3+rnd()*.05);colors.push(c.r,c.g,c.b);}floor.setAttribute('color',new T.Float32BufferAttribute(colors,3));floor.computeVertexNormals();mesh(scene,floor,new T.MeshStandardMaterial({vertexColors:true,roughness:1}));
   // Carefully composed distant ridgelines, out of the playable clearing.
   for(let i=0;i<20;i++){const ang=i/20*Math.PI*2,r=65+rnd()*20,h=10+rnd()*19;const hill=mesh(scene,new T.SphereGeometry(1,12,10),[0x91aaa0,0xa1b5aa,0xb0c2b6][i%3],Math.sin(ang)*r,h*.1,Math.cos(ang)*r);hill.scale.set(15+rnd()*15,h,15+rnd()*10);hill.castShadow=false;}
-  // Winding ochre path with uneven stepping stones.
-  const pathPoints=[[0,.005,5],[-2,.005,9],[-1,.005,13],[5,.005,18],[9,.005,24]];
-  const pathCurve=new T.CatmullRomCurve3(pathPoints.map(p=>V(...p)));
-  for(let i=0;i<95;i++){const p=pathCurve.getPoint(i/94),s=ell(scene,[.78,.045,.57],i%3?0xc2b38a:0xcdbd94,p.x,p.y,p.z);s.rotation.y=rnd()*3;s.castShadow=false;}
+  // Shared route geometry keeps grass and village buildings clear of every path.
+  const pathSamples=PATHS.flatMap(points=>new T.CatmullRomCurve3(points.map(([x,z])=>V(x,groundHeight(x,z)+.025,z))).getPoints(90));
+  const onPath=(x,z,margin=1.15)=>pathSamples.some(p=>Math.hypot(p.x-x,p.z-z)<margin);
+  for(let i=0;i<pathSamples.length;i++){const p=pathSamples[i],s=ell(scene,[.65,.035,.51],i%3?0xc2b38a:0xcdbd94,p.x,p.y,p.z);s.rotation.y=rnd()*3;s.castShadow=false;}
   // Tower: tapered stone shaft, a full chamber, and a real window aperture.
   const tower=new T.Group();scene.add(tower);
   mesh(tower,new T.CylinderGeometry(3.04,3.34,18,36,1,true),PALETTE.stone,0,9,0);
@@ -79,17 +80,17 @@ export function buildWorld(scene,quality='balanced') {
   // Original branch silhouettes and layered broadleaf crowns, shared geometry.
   function tree(x,z,scale,seed,pal){const r=random(seed),g=new T.Group();pal=pal||[0x7fae6a,0x6a9a5e,0x93bd7d,0xa8c98a];g.position.set(x,groundHeight(x,z),z);g.scale.setScalar(scale);scene.add(g);line(g,[[0,0,0],[.09,1.4,0],[-.12,2.5,.06],[.05,3.5,.1]],.17,0x6a5946);
     for(let k=0;k<6;k++){const ang=k*2.4;const end=[Math.sin(ang)*(1+r()*.5),3.0+r()*1.6,Math.cos(ang)*(1+r()*.5)];line(g,[[0,1.9+k*.12,0],[end[0]*.55,end[1]-.5,end[2]*.55],end],.075,0x6a5946);for(let j=0;j<3;j++){const o=ell(g,[.93+r()*.32,.55+r()*.25,.78+r()*.4],pal[(j+k)%4],end[0]+(r()-.5)*.9,end[1]+j*.12,end[2]+(r()-.5)*.9);o.rotation.set(r(),r(),r());}}
-    for(let j=0;j<4;j++)line(g,[[0,.4,0],[Math.sin(j*1.6)*.45,.06,Math.cos(j*1.6)*.45],[Math.sin(j*1.6)*.7,.01,Math.cos(j*1.6)*.7]],.055,0x6a5946);trees.push(g);if(Math.abs(x)<24&&Math.abs(z)<24)colliders.push({x,z,r:.23*scale});return g;}
+    for(let j=0;j<4;j++)line(g,[[0,.4,0],[Math.sin(j*1.6)*.45,.06,Math.cos(j*1.6)*.45],[Math.sin(j*1.6)*.7,.01,Math.cos(j*1.6)*.7]],.055,0x6a5946);trees.push(g);if(Math.abs(x)<38&&Math.abs(z)<38)colliders.push({x,z,r:.23*scale});return g;}
   [[-8,-5,2],[-10,3,1.8],[11,-8,2.3],[15,2,1.9],[-16,-12,2.5],[19,-15,2.8],[-20,7,2.2],[18,14,2],[-16,24,2.3],[25,24,2.4],[4,-15,1.7],[-22,-24,2.8],[26,-22,2.5]].forEach((p,i)=>tree(...p,30+i));
   for(let i=0;i<24;i++){const ang=rnd()*6.28;tree(Math.sin(ang)*42,Math.cos(ang)*42,1.8+rnd()*2,i+120);}
   const blossom=[0xf2b8d0,0xe89ec0,0xf7cfe2,0xdd92b8];
-  [[16,9,2.1],[-13,3,1.9],[24,-4,2.3]].forEach((p,i)=>tree(p[0],p[1],p[2],300+i,blossom));
+  [[16,9,2.1],[-13,3,1.9],[32,-5,2.3]].forEach((p,i)=>tree(p[0],p[1],p[2],300+i,blossom));
   // Instanced, tapered grass blades: one draw call, vertex wind, no frame allocations.
   const grassG=new T.BufferGeometry();grassG.setAttribute('position',new T.Float32BufferAttribute([-.035,0,0,.035,0,0,-.022,.13,.005,.022,.13,.005,.028,.28,.028],3));grassG.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,0,.45,1,.45,.5,1],2));grassG.setIndex([0,1,2,1,3,2,2,3,4]);grassG.computeVertexNormals();
   const wind={value:0};const gm=mat(0x809b59,{side:T.DoubleSide});gm.onBeforeCompile=shader=>{shader.uniforms.uWind=wind;shader.vertexShader='uniform float uWind;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n float gust=.55+.45*sin(uWind*.45+instanceMatrix[3].x*.06+instanceMatrix[3].z*.04);\n transformed.x += sin(uWind*1.7+instanceMatrix[3].x*.4+instanceMatrix[3].z*.3)*pow(uv.y,2.0)*.24*gust;\n transformed.z += cos(uWind*1.15+instanceMatrix[3].z*.5+instanceMatrix[3].x*.2)*pow(uv.y,2.0)*.09*gust;');};
   const gc=quality==='low'?12000:quality==='high'?35000:25000,grass=new T.InstancedMesh(grassG,gm,gc);let gi=0;
-  for(let i=0;i<gc*3&&gi<gc;i++){const x=(rnd()-.5)*62,z=(rnd()-.5)*62;if(Math.hypot(x,z)<3.5||Math.hypot(x-9,z+2)<3.3||Math.hypot(x+18,z-15)<8.7)continue;
-    if(z>4&&z<25&&Math.abs(x-(z<13?-1:(z-13)*.85-1))<1.25)continue;dummy.position.set(x,groundHeight(x,z),z);dummy.rotation.set(0,rnd()*6.28,0);dummy.scale.setScalar(.8+rnd()*.5);dummy.updateMatrix();grass.setMatrixAt(gi,dummy.matrix);grass.setColorAt(gi,new T.Color().setHSL(.28+rnd()*.03,.6,.45+rnd()*.1));gi++;}grass.count=gi;grass.receiveShadow=true;scene.add(grass);
+  for(let i=0;i<gc*3&&gi<gc;i++){const x=(rnd()-.5)*62,z=(rnd()-.5)*62;if(onPath(x,z)||HOMES.some(h=>Math.hypot(x-h.x,z-h.z)<2.4)||Math.hypot(x-4,z-22)<7.5||Math.hypot(x+16,z+9)<5.8||(Math.abs(x-25)<3.5&&Math.abs(z+3)<3.4)||Math.hypot(x,z)<3.5||Math.hypot(x-9,z+2)<3.3||Math.hypot(x+18,z-15)<8.7)continue;
+    dummy.position.set(x,groundHeight(x,z),z);dummy.rotation.set(0,rnd()*6.28,0);dummy.scale.setScalar(.8+rnd()*.5);dummy.updateMatrix();grass.setMatrixAt(gi,dummy.matrix);grass.setColorAt(gi,new T.Color().setHSL(.28+rnd()*.03,.6,.45+rnd()*.1));gi++;}grass.count=gi;grass.receiveShadow=true;scene.add(grass);
   // Flower heads and stems share instance buffers across the meadow.
   const petals=new T.InstancedMesh(new T.SphereGeometry(1,7,5),mat(0xffffff),1800),stems=new T.InstancedMesh(new T.CylinderGeometry(.008,.013,.3,4),mat(0x526e3a),360);let fi=0;
   for(let i=0;i<360;i++){const x=(rnd()-.5)*35,z=(rnd()-.5)*35;if(Math.hypot(x,z)<3.6)continue;const h=.18+rnd()*.24,y=groundHeight(x,z);dummy.position.set(x,y+h/2,z);dummy.rotation.set(0,0,0);dummy.scale.set(1,h/.3,1);dummy.updateMatrix();stems.setMatrixAt(fi,dummy.matrix);
@@ -100,10 +101,10 @@ export function buildWorld(scene,quality='balanced') {
   box(stable,4.25,.17,3.3,0x684c3b,0,2.7,0);for(const s of [-1,1]){const roof=box(stable,2.65,.13,3.65,0x74637d,s*1.1,3.19,0);roof.rotation.z=-s*.39;}
   for(let i=0;i<9;i++)box(stable,.37,1.65,.08,0x96744b,-1.8+i*.45,.83,-1.47);for(const x of [-2,2])for(let i=0;i<3;i++)box(stable,.1,.13,2.9,0x94754d,x,.45+i*.47,0);
   for(let i=0;i<3;i++)box(stable,.75,.55,.6,0xbaad6e,-1.35+i*.8,.28,-.85);box(stable,1.1,.35,.48,0x846949,1.8,.2,1.95);box(stable,.91,.015,.32,0x8db8b2,1.8,.38,1.95);
-  // Backdrop village stays clearly visible from the valley reveal.
-  for(let i=0;i<7;i++){const x=-10+i*3.8,z=28+Math.sin(i)*2,g=new T.Group();g.position.set(x,groundHeight(x,z),z);scene.add(g);const h=2.4+rnd()*1.8;box(g,2.8,h,2.5,[0xe4c7a4,0xd6ab98,0xe5d6ae,0xbec4ad][i%4],0,h/2,0);for(const s of [-1,1]){const r=box(g,2,.15,2.95,[0x84667c,0x9b7061,0x637c7c][i%3],s*.78,h+.58,0);r.rotation.z=-s*.58;}for(const x of [-1.27,1.27])box(g,.12,h,.12,0x6e5949,x,h/2,1.28);box(g,.57,1.4,.08,0x735c4d,0,.7,1.28);for(const x of [-.83,.83]){box(g,.5,.67,.04,0x638686,x,h*.64,1.29);box(g,.04,.67,.05,0xe9d4ac,x,h*.64,1.32);}box(g,.33,1.1,.4,0xb89b84,.7,h+1,-.5);}
-  // Pond and waterfall provide a visible destination without expanding this slice.
-  const water=mesh(scene,new T.CircleGeometry(8.4,64),mat(0x79aaa6,{metalness:.32,roughness:.23,transparent:true,opacity:.86}),-18,.015,15);water.rotation.x=-Math.PI/2;colliders.push({x:-18,z:15,r:8.4});
+  // Village homes frame the market square and retain proper collision volumes.
+  for(let i=0;i<HOMES.length;i++){const {x,z}=HOMES[i],g=new T.Group();g.position.set(x,groundHeight(x,z),z);g.rotation.y=Math.PI;scene.add(g);colliders.push({x,z,r:1.8,height:5});const h=2.4+rnd()*1.8;box(g,2.8,h,2.5,[0xe4c7a4,0xd6ab98,0xe5d6ae,0xbec4ad][i%4],0,h/2,0);for(const s of [-1,1]){const r=box(g,2,.15,2.95,[0x84667c,0x9b7061,0x637c7c][i%3],s*.78,h+.58,0);r.rotation.z=-s*.58;}for(const x of [-1.27,1.27])box(g,.12,h,.12,0x6e5949,x,h/2,1.28);box(g,.57,1.4,.08,0x735c4d,0,.7,1.28);for(const x of [-.83,.83]){box(g,.5,.67,.04,0x638686,x,h*.64,1.29);box(g,.04,.67,.05,0xe9d4ac,x,h*.64,1.32);}box(g,.33,1.1,.4,0xb89b84,.7,h+1,-.5);}
+  // The lake basin stays below its visible water surface.
+  const water=mesh(scene,new T.CircleGeometry(8.4,64),mat(0x79aaa6,{metalness:.32,roughness:.23,transparent:true,opacity:.86}),-18,.015,15);water.rotation.x=-Math.PI/2;colliders.push({x:-18,z:15,r:8.65,height:.15});
   for(let i=0;i<13;i++){let a=i/13*Math.PI*2;ell(scene,[.65,.3,.48],0x929e8d,-18+Math.cos(a)*8.5,.12,15+Math.sin(a)*8.5);}
   for(let i=0;i<7;i++)ell(scene,[2.3,2.5,1.5],0x93a294,-8+i*.8,1.3+i*.3,-12-i*.5);
   const falls=mesh(scene,new T.PlaneGeometry(.65,5,6,20),mat(0xd4e6d9,{transparent:true,opacity:.78,side:T.DoubleSide}),-5,2.6,-13);animated.push({kind:'waterfall',mesh:falls});
@@ -125,7 +126,7 @@ export function buildWorld(scene,quality='balanced') {
   batchStatics(scene,new Set([chest,water,...animated.map(a=>a.mesh)]));
   const animals=buildAnimals(scene);
   let chestOpen=false;
-  return {colliders,chest,animals,sun,openChest(){chestOpen=true;},update(dt,t,opening,hero) {
+  return {colliders,chest,animals,sun,water,openChest(){chestOpen=true;},update(dt,t,opening,hero) {
     wind.value=t;
     for(let i=0;i<LN;i++){const L=leafData[i];L.y-=L.sp*dt;L.x+=(Math.sin(t*.7+L.ph)*L.sw+.4)*dt;L.z+=Math.cos(t*.55+L.ph)*.35*dt;if(L.y<.06){L.y=4.5+rnd()*4;L.x=(rnd()-.5)*55;L.z=(rnd()-.5)*55;}dummy.position.set(L.x,L.y,L.z);dummy.rotation.set(t*.9+L.ph,L.ph*2,t*.6+L.ph);dummy.scale.setScalar(1);dummy.updateMatrix();leaves.setMatrixAt(i,dummy.matrix);}
     leaves.instanceMatrix.needsUpdate=true;
@@ -135,6 +136,7 @@ export function buildWorld(scene,quality='balanced') {
     animals.update(dt,t,opening,hero);
   }};
 }
+export {mesh,box,ell,line,painting,flower,batchStatics};
 function batchStatics(scene,exclude) {
   scene.updateMatrixWorld(true);const batches=new Map(),remove=[];
   scene.traverse(o=>{if(!o.isMesh||o.isInstancedMesh)return;let p=o;while(p){if(exclude.has(p))return;p=p.parent;}

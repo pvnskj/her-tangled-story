@@ -8,15 +8,15 @@
   <script type="importmap">{"imports":{"three":"../js/vendor/three.module.js"}}</script>
 </head>
 <body>
-  <canvas id="world" aria-label="An explorable fairytale tower and meadow"></canvas>
+  <canvas id="world" aria-label="An explorable fairytale valley with six connected regions"></canvas>
   <div class="grain" aria-hidden="true"></div>
-  <header><a class="wordmark" href="../" aria-label="Original birthday adventure">Her Tangled Story<span>A WORLD AWAITS</span></a><div class="top-actions"><span id="chapter-label">THE TOWER CHAPTER</span><button id="menu-button" aria-label="Open settings">☰</button></div></header>
+  <header><a class="wordmark" href="../" aria-label="Original birthday adventure">Her Tangled Story<span>V2 · THE SIX-REGION VALLEY</span></a><div class="top-actions"><span id="chapter-label">A VALLEY OF MEMORIES</span><button id="menu-button" aria-label="Open settings">☰</button></div></header>
   <main id="welcome" class="welcome">
     <div class="eyebrow"><span></span> A LITTLE WORLD. AN EXTRAORDINARY YOU.</div>
     <h1>There is a whole<br>world <em>waiting.</em></h1>
     <p>Beyond this window, a thousand little wonders.<br>And a story that could only be yours.</p>
     <div class="start-actions"><button class="primary" id="begin" disabled>Preparing your world…</button><button id="direct" class="text-button" hidden>Step into the meadow ↗</button></div>
-    <div class="welcome-foot">33 memories. One magical adventure.<span>The opening chapter · V2</span></div>
+    <div class="welcome-foot">33 memories. One magical adventure.<span>Six places. Thirty-three pieces of your story.</span></div>
     <p id="load-status" role="status">Gathering a little sunlight…</p>
   </main>
   <section id="cinema" hidden aria-label="Opening cinematic">
@@ -25,16 +25,23 @@
   </section>
   <div id="invitation" class="invitation" hidden><span>A WORLD AWAITS</span><h2>Your story begins here.</h2><p>33 memories. One magical adventure.</p></div>
   <section id="hud" hidden aria-label="Exploration controls">
-    <div class="memory-count"><span>✧</span><strong id="count">0</strong><small>/ 33 memories</small></div>
-    <div class="objective"><span>YOUR FIRST LITTLE WONDER</span><p id="objective-text">A keepsake waits beside the tower.</p><button id="guide">Take me there ↗</button></div>
-    <div class="bottom-actions"><button id="map-button">Clearing map</button><button id="recover">Center camera</button></div>
+    <div class="memory-count"><span>✧</span><strong id="count">0</strong><small>/ 33 memories</small></div><div id="core-count" class="core-count">0 / 5 story moments</div>
+    <div class="objective"><span id="objective-eyebrow">YOUR NEXT STORY MOMENT</span><p id="objective-text">A keepsake waits beside the tower.</p><button id="guide">Take me there ↗</button></div>
+    <div class="bottom-actions"><button id="map-button">Valley map</button><button id="journal-button">Memory album</button><button id="recover">Center camera</button></div>
     <p class="desktop-help">WASD / arrows to walk · drag to look · click the ground to stroll · E to interact</p>
     <button id="interact" class="interact primary" hidden>Open the keepsake · E</button>
     <div id="joystick" aria-label="Touch movement joystick"><div id="stick"></div></div>
   </section>
-  <dialog id="memory" class="memory-dialog"><button class="close" data-close="memory" aria-label="Close memory">×</button><div class="eyebrow">A PIECE OF YOUR STORY</div><h2>Where it all began.</h2><div class="photo-wrap"><img id="memory-photo" alt="A childhood memory from your story"></div><p id="memory-caption"></p><button class="primary" data-close="memory">Keep exploring ↗</button></dialog>
+  <dialog id="memory" class="memory-dialog"><button class="close" data-close="memory" aria-label="Close memory">×</button><div class="eyebrow">A PIECE OF YOUR STORY</div><h2 id="memory-title">Where it all began.</h2><div id="photo-wrap" class="photo-wrap"><img id="memory-photo" alt="A childhood memory from your story"></div><div id="memory-placeholder" class="paper-memory" hidden>A page waiting for your photograph.</div><p id="memory-caption"></p><button class="primary" data-close="memory">Keep exploring ↗</button></dialog>
   <dialog id="settings"><button class="close" data-close="settings" aria-label="Close settings">×</button><div class="eyebrow">A MOMENT TO YOURSELF</div><h2>Make yourself at home.</h2><label>World detail<select id="quality"><option value="low">Low</option><option value="balanced" selected>Balanced</option><option value="high">High</option></select></label><p class="small">Detail changes take effect when you reopen the chapter.</p><button id="sound">Turn ambient sound on</button><button id="replay">Replay the opening</button><button id="unstuck">Return to the meadow</button><a href="../">Open the original birthday adventure ↗</a></dialog>
-  <dialog id="map"><button class="close" data-close="map" aria-label="Close map">×</button><div class="eyebrow">THE TOWER CLEARING</div><h2>A little room to wonder.</h2><div class="map-art"><div class="map-path"></div><button data-go="tower" class="map-tower">♜<span>The tower</span></button><button data-go="keepsake" class="map-memory">✧<span>The keepsake</span></button><button data-go="horse" class="map-horse">♞<span>A new friend</span></button><i class="map-tree t1">♧</i><i class="map-tree t2">♧</i><i class="map-tree t3">♧</i></div><p>Choose a place and she’ll walk there.<br>The rest of the valley awaits a later chapter.</p></dialog>
+  <dialog id="map" class="valley-map"><button class="close" data-close="map" aria-label="Close map">×</button><div class="eyebrow">SIX PLACES. ONE STORY.</div><h2>Your little corner of the world.</h2>
+    <svg class="valley-illustration" viewBox="0 0 560 230" role="img" aria-label="The tower sits between the festival and tavern, with the lake, village and forest connected by paths below."><rect width="560" height="230" rx="35" fill="#dfe5ce"/><path d="M80 60 Q160 160 270 75 Q370 125 457 70 M270 75 Q270 140 275 185 M270 120 Q160 130 95 175 M340 125 Q400 145 460 185" stroke="#c6b894" stroke-width="14" fill="none"/><ellipse cx="85" cy="160" rx="49" ry="28" fill="#9ebebb"/><g fill="#344e42" font-family="Georgia" text-anchor="middle"><text x="90" y="48" font-size="28">✧</text><text x="90" y="74" font-size="13">Festival</text><text x="270" y="48" font-size="32">♜</text><text x="270" y="75" font-size="13">Tower</text><text x="460" y="47" font-size="29">♫</text><text x="460" y="72" font-size="13">Tavern</text><text x="85" y="166" font-size="16">Lake</text><text x="277" y="177" font-size="29">⌂</text><text x="277" y="202" font-size="13">Village</text><text x="459" y="173" font-size="32">♧</text><text x="459" y="202" font-size="13">Forest</text></g></svg>
+    <div id="map-destinations"></div><p id="finale-lock"></p><p class="small">Walk anywhere. Revisit discovered places quickly along the lantern paths.</p></dialog>
+  <dialog id="journal"><button class="close" data-close="journal" aria-label="Close album">×</button><div class="eyebrow">THE LITTLE THINGS, KEPT FOREVER</div><h2>Your memory album.</h2><p id="journal-count"></p><div id="journal-grid"></div><p class="small">Open a discovered page to revisit it. Every other memory remains yours to find, even after the festival.</p></dialog>
+  <dialog id="conversation"><button class="close" data-close="conversation" aria-label="Close conversation">×</button><div class="eyebrow">A NEW FRIEND</div><h2 id="dialogue-speaker"></h2><p id="dialogue-line"></p><div id="dialogue-choices"></div></dialog>
+  <dialog id="wish"><button class="close" data-close="wish" aria-label="Close wish">×</button><div class="eyebrow">FOR THE YEAR AHEAD</div><h2>What would you wish for?</h2><label class="sr-only" for="wish-input">Your wish</label><textarea id="wish-input" maxlength="180" placeholder="A little wish, just for you…"></textarea><p class="small">This stays in this browser with your story.</p><button id="wish-save" class="primary">Tie it to a lantern ↗</button></dialog>
+  <dialog id="finale" class="finale-dialog"><div class="eyebrow">THE WORLD IS BRIGHTER WITH YOU IN IT</div><h2>Happy birthday,<br><em>my love.</em></h2><p id="finale-message"></p><p id="saved-wish"></p><button id="finale-close" class="primary">Stay a little longer ↗</button><p class="small">The valley is still yours. Every undiscovered memory is waiting.</p></dialog>
+  <div id="sequence-controls" hidden><span id="sequence-title"></span><button id="sequence-skip">Return to shore</button></div>
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="error" hidden role="alert"><h2>The world needs a moment.</h2><p id="error-text"></p><button onclick="location.reload()">Try again</button><a href="../">Return to the birthday adventure</a></div>
   <script type="module" src="main.js"></script>

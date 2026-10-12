@@ -1,4 +1,4 @@
-# Her Tangled Story V2 — tower vertical slice
+# Her Tangled Story V2 — the six-region valley
 
 This is an isolated **work-in-progress review build**, not a replacement for the
 current birthday game. Serve the repository root and open `/v2/`.
@@ -16,18 +16,26 @@ current birthday game. Serve the repository root and open `/v2/`.
 - Instanced wind-animated grass and flowers, spatially batched static scenery,
   tree silhouettes, tower roof tiles, curtains, butterflies and birds.
 - WASD/arrows, mobile joystick, drag orbit, click-to-walk with obstacle routing,
-  a local clearing map, camera recovery and unstuck controls.
+  a six-destination illustrated map, camera recovery and unstuck controls.
 - Skip, pause and replay; reduced-motion users get a direct exploration choice.
-- A keepsake that opens the **original first memory**, with separate V2 local
-  persistence. All 33 original records and the original experience are untouched.
+- Five additional playable regions: rabbit-led forest discovery, tavern dialogue
+  and musicians, village market and gallery, a rowboat ride, and a lantern festival.
+- All 33 original memory identities, captions and supplied photos, with separate
+  V2 progress and an album. Five story moments unlock the birthday finale;
+  other discoveries stay optional and remain available after the celebration.
+- Independently rigged villagers, deer, rabbits, ducks, a seated rower, dialogue,
+  wish writing, timed camera sequences and instanced festival lanterns.
+- Houses set behind the village square; shared paths exclude grass and remain
+  clear of house roofs. The map routes to any region and speeds up revisits.
 - Low/Balanced/High presets, opt-in generated ambient tones, asset/context-loss
   error handling, and vendored Three.js support modules. No runtime CDN requests.
 
 ## Scope and honest limitations
 
-This slice unlocks one memory. The village, pond and distant landscape are
-scenery; the other five gameplay regions, remaining interactions and finale have
-not been migrated. The original game remains the complete birthday experience.
+All six regions are playable in this review build. The existing data has 22
+memories without photographs; these display the original caption and an explicit
+empty photo page. No personal photos or memories have been invented.
+The original public birthday game remains separate from this V2 branch.
 
 The hero and animals are original stylized geometry, not commissioned character
 art or scans of the recipient. The hair uses controlled curves and the grips use
@@ -53,15 +61,18 @@ npm run build:avatar
 
 The tests check scene-boundary continuity, window-sill clearance, the actual glTF
 rig/clips, hand-target reach, finite braid deformation, collisions/pathfinding,
-scene batching/instance capacity and the original first-memory photo.
+scene batching/instance capacity, all 33 routes, house/path clearance, optional
+progression, independent villager rigs, rabbit guidance and the full core journey
+through dialogue, the rowboat and the finale. The journey test uses a minimal DOM
+adapter, not an actual browser or GPU.
 
 Required browser review: run the full opening; inspect every grip and the sill
 crossing; inspect hair attachment/release; pause/resume; skip in each scene;
 replay after exploring; collect and reopen the keepsake; route around the tower;
 rotate and recover the camera; exercise touch controls; resize portrait/landscape;
 reload with saved progress; inspect network/console errors; record FPS and draw
-calls on representative desktop and mobile hardware. Approve the visuals before
-expanding this direction across the valley.
+calls on representative desktop and mobile hardware. Review all five destinations,
+boarding, return-to-shore, the finale and optional memories before merging.
 
 ## Assets and attribution
 

@@ -1,0 +1,25 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import * as T from 'three';
+import {GLTFLoader} from '../vendor/loaders/GLTFLoader.js';
+import {buildWorld,groundHeight} from '../world.js';
+import {buildValley} from '../valley.js';
+import {createHero} from '../hero.js';
+import {REGIONS,MEMORIES,CORE,canCelebrate,restoreProgress,nextMemory,boatSample,WORLD_BOUND,PATHS,HOMES} from '../story.js';
+import {findPath} from '../navigation.js';
+globalThis.document={createElement(){return {width:0,height:0,getContext(){return new Proxy({},{get:()=>()=>{}});}};}};
+async function setup(){const scene=new T.Scene(),world=buildWorld(scene,'low'),bytes=await readFile(new URL('../assets/story-hero.glb',import.meta.url)),gltf=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');const hero=createHero(scene,gltf),valley=buildValley(scene,world,hero,'low');return {scene,world,hero,valley};}
+test('all original memory IDs appear once across six regions',()=>{assert.equal(MEMORIES.length,33);assert.equal(new Set(MEMORIES.map(m=>m.id)).size,33);assert.deepEqual(REGIONS.map(r=>MEMORIES.filter(m=>m.zone===r.id).length),[5,6,5,7,5,5]);for(const m of MEMORIES)assert.ok(Math.abs(m.x)<WORLD_BOUND&&Math.abs(m.z)<WORLD_BOUND);});
+test('curated story unlocks finale independently of optional memories',()=>{const found=new Set();assert.equal(canCelebrate(found),false);for(const id of CORE){assert.equal(nextMemory(found).id,id);found.add(id);}assert.equal(canCelebrate(found),true);assert.equal(nextMemory(found).id,33);found.add(33);assert.equal(nextMemory(found).id,2);assert.equal(canCelebrate(new Set(MEMORIES.filter(m=>!CORE.includes(m.id)).map(m=>m.id))),false);});
+test('saved progress tolerates missing, malformed and obsolete data',()=>{assert.deepEqual([...restoreProgress('{broken',true).found],[1]);assert.equal(restoreProgress('null').found.size,0);const p=restoreProgress(JSON.stringify({found:[1,1,33,-1,100,'12',null],visited:['forest','other']}));assert.deepEqual([...p.found],[1,33]);assert.deepEqual([...p.visited],['forest','tower']);});
+test('boat path begins and ends at the dock inside the visible water',()=>{const a=boatSample(0),b=boatSample(26);assert.ok(Math.hypot(a.x-b.x,a.z-b.z)<1e-8);assert.equal(b.done,true);for(let t=0;t<=26;t+=.05){const p=boatSample(t);assert.ok(Math.hypot(p.x+18,p.z-15)<8.3);assert.ok(groundHeight(p.x,p.z)<-.5);}});
+test('every region and all 33 memory approaches are reachable with actual scenery colliders',async()=>{const {world}=await setup();const start={x:.42,z:5.25};for(const r of REGIONS)assert.ok(findPath(start,r,world.colliders,WORLD_BOUND).length,`${r.id} route blocked`);const blocked=MEMORIES.filter(m=>!findPath(start,m,world.colliders,WORLD_BOUND).length).map(m=>m.id);assert.deepEqual(blocked,[],`blocked memories: ${blocked.join(', ')}`);});
+test('villager skeletons are independent, merged, and remain finite while scenes animate',async()=>{const {scene,hero,valley}=await setup();const original=hero.bones.UpperArmR.quaternion.clone();const seen=new Set();for(const n of valley.actors){assert.notEqual(n.a.bones.Head,hero.bones.Head);assert.ok(!seen.has(n.a.bones.Head));seen.add(n.a.bones.Head);let skins=0;n.a.group.traverse(o=>{if(o.isSkinnedMesh)skins++;});assert.ok(skins<=14,`villager has ${skins} separate skin draws`);}
+  for(let t=0;t<3;t+=.1)valley.update(.1,t,new T.Vector3(25,0,1));assert.ok(hero.bones.UpperArmR.quaternion.equals(original));valley.startBoat();for(let t=0;t<=26;t+=.5)valley.update(.5,t,new T.Vector3(-18,0,15),{boatProgress:t});valley.stopBoat();valley.startFinale();for(let t=0;t<=24;t+=.5)valley.update(.5,t,new T.Vector3(-16,0,-10),{finaleProgress:t});assert.equal(valley.skyLanterns.visible,true);assert.ok(valley.skyLanterns.count>=100);scene.updateMatrixWorld(true);scene.traverse(o=>assert.ok(o.matrixWorld.elements.every(Number.isFinite),`${o.name} invalid matrix`));});
+test('rabbit progresses only with the player nearby and reaches its discoverable clearing',async()=>{const {valley}=await setup();valley.followRabbit();for(let t=0;t<10;t+=.1)valley.update(.1,t,new T.Vector3(-20,0,-20));assert.equal(valley.rabbitStatus().done,false);for(let t=0;t<8;t+=.1)valley.update(.1,t,new T.Vector3(22,0,20.1));assert.equal(valley.rabbitStatus().done,true);});
+test('existing photos resolve; intentionally missing photos stay explicit',async()=>{let missing=0;for(const m of MEMORIES){if(m.photo)assert.ok((await readFile(new URL('../../'+m.photo,import.meta.url))).length>0);else missing++;}assert.equal(missing,22);});
+
+test('village house roofs leave all signed walking paths clear',()=>{
+  for(const points of PATHS){const curve=new T.CatmullRomCurve3(points.map(([x,z])=>new T.Vector3(x,0,z)));for(const p of curve.getPoints(200))for(const h of HOMES){const dx=Math.max(0,Math.abs(p.x-h.x)-1.9),dz=Math.max(0,Math.abs(p.z-h.z)-1.5);assert.ok(Math.hypot(dx,dz)>1.15,`house at ${h.x},${h.z} crowds path at ${p.x},${p.z}`);}}
+});

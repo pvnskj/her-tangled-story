@@ -1,5 +1,6 @@
 import * as T from 'three';
 import {GLTFLoader} from './vendor/loaders/GLTFLoader.js';
+import {mergeGeometries} from './vendor/utils/BufferGeometryUtils.js';
 import {phase, mix, ROOM_Y} from './timeline.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 export async function loadHero(scene) {
@@ -11,6 +12,7 @@ export function createHero(scene,gltf) {
   group.traverse(o=>{if(o.isBone)bones[o.name]=o;if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;}});
   const mixer=new T.AnimationMixer(group),actions={};for(const clip of gltf.animations)actions[clip.name]=mixer.clipAction(clip);
   actions.Landing.setLoop(T.LoopOnce,1);actions.Landing.clampWhenFinished=true;
+  const rest=new Map(Object.values(bones).map(b=>[b,b.quaternion.clone()]));
   let current;const play=(name)=>{if(current===name)return;actions[current]?.fadeOut(.25);actions[name].reset().fadeIn(.25).play();current=name;};play('Idle');
   // Two bone analytical IK: the palms track the same world-space braid used by rendering.
   function grip(side,target) {
@@ -27,7 +29,9 @@ export function createHero(scene,gltf) {
     const q=upper.getWorldQuaternion(new T.Quaternion()).invert();
     lower.quaternion.setFromUnitVectors(V(0,-1,0),target.clone().sub(elbow).normalize().applyQuaternion(q));
   }
-  return {group,bones,mixer,play,update(dt,{pose='idle',time=0,moving=false,speed=0}={}) {
+  return {group,bones,mixer,play,animations:gltf.animations,update(dt,{pose='idle',time=0,moving=false,speed=0}={}) {
+    this.pose=pose;
+    for(const [bone,q]of rest)bone.quaternion.copy(q);
     const clip=pose==='gather'?'Gather':pose==='slide'||pose==='climb'?'Descent':pose==='land'?'Landing':pose==='wave'?'Wave':moving?'Walk':'Idle';play(clip);
     actions.Walk.timeScale=Math.max(.5,speed/1.8);actions.Idle.timeScale=.38;mixer.update(dt);
     if(pose==='slide'||(pose==='climb'&&time>=20.5)) {
@@ -44,7 +48,20 @@ export function createHero(scene,gltf) {
       }
     }
     if(pose==='idle')bones.Head.rotation.y+=Math.sin(time*.55)*.09;
+    if(pose==='sit'){for(const side of ['L','R']){bones['Thigh'+side].rotation.x=-1.48;bones['Shin'+side].rotation.x=1.42;bones['UpperArm'+side].rotation.x=-.5;bones['Forearm'+side].rotation.x=-.4;}bones.Skirt.rotation.x=-1.1;}
+    if(pose==='dance'){bones.Chest.rotation.z=Math.sin(time*3)*.13;bones.UpperArmL.rotation.z=-.5-Math.sin(time*3)*.25;bones.UpperArmR.rotation.z=.5-Math.sin(time*3)*.25;bones.Head.rotation.y=Math.sin(time*1.5)*.15;}
   }};
+}
+export function cloneVillager(scene,source,{color=0x6f91a2,hair=0x654934,scale=1,width=1}={}){
+  const root=source.group.clone(true),src=[],dst=[];source.group.traverse(o=>src.push(o));root.traverse(o=>dst.push(o));const map=new Map(src.map((o,i)=>[o,dst[i]])),mats=new Map(),groups=new Map();
+  root.position.set(0,0,0);root.rotation.set(0,0,0);root.scale.set(1,1,1);
+  for(let i=0;i<dst.length;i++){const o=dst[i];if(!o.isSkinnedMesh)continue;const original=src[i];o.skeleton=original.skeleton.clone();o.skeleton.bones=original.skeleton.bones.map(b=>map.get(b));
+    if(!mats.has(original.material)){const m=original.material.clone();const c=m.color.getHex();if(c===0x784999)m.color.setHex(color);if(c===0xbe85b7)m.color.setHex(color).lerp(new T.Color(0xfff0d0),.3);if(c===0xeac15b)m.color.setHex(hair);mats.set(original.material,m);}o.material=mats.get(original.material);
+    if(!groups.has(o.material))groups.set(o.material,[]);groups.get(o.material).push(o);
+  }
+  // Shared skeleton + merged skins gives each villager about a dozen draw calls.
+  for(const [material,parts]of groups){const g=mergeGeometries(parts.map(p=>p.geometry),false),m=new T.SkinnedMesh(g,material);m.name='Villager';m.bind(parts[0].skeleton,parts[0].bindMatrix);root.add(m);parts.forEach(p=>p.removeFromParent());}
+  const actor=createHero(scene,{scene:root,animations:source.animations});root.scale.set(scale*width,scale,scale);return actor;
 }
 export class Braid {
   constructor(scene) {
@@ -60,7 +77,8 @@ export class Braid {
     hero.group.updateMatrixWorld(true);this.head.copy(hero.bones.Head.getWorldPosition(V())).add(V(0,.02,-.18).applyQuaternion(hero.group.quaternion));
     const p=hero.group.position,release=opening?phase(t,30,34):1,drop=phase(t,13,19);
     const behind=V(0,0,-1).applyQuaternion(hero.group.quaternion);
-    const trail=[this.head.clone(),p.clone().addScaledVector(behind,.4).add(V(0,1,0)),p.clone().addScaledVector(behind,.9).add(V(0,.15,0)),p.clone().addScaledVector(behind,2).add(V(.4,.08,0)),p.clone().addScaledVector(behind,3).add(V(.7,.08,0)),p.clone().addScaledVector(behind,3.7).add(V(.1,.08,0))];
+    const local=(x,y,z)=>V(x,y,z).applyQuaternion(hero.group.quaternion).add(p);
+    const trail=hero.pose==='sit'?[this.head.clone(),local(0,1,-.25),local(.2,.45,-.4),local(.35,.43,-.6),local(.2,.42,-.85),local(-.1,.42,-.8)]:[this.head.clone(),p.clone().addScaledVector(behind,.4).add(V(0,1,0)),p.clone().addScaledVector(behind,.9).add(V(0,.15,0)),p.clone().addScaledVector(behind,2).add(V(.4,.08,0)),p.clone().addScaledVector(behind,3).add(V(.7,.08,0)),p.clone().addScaledVector(behind,3.7).add(V(.1,.08,0))];
     let points;
     const floorPoints=[this.head.clone(),V(-.6,18.8,1),V(-1.1,18.1,.7),V(-1.8,18.08,.2),V(-1.8,18.08,-1.3),V(-.4,18.08,-1.5)];
     if(opening && t<10) points=floorPoints;
