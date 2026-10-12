@@ -77,8 +77,8 @@ export function buildWorld(scene) {
 
   // strong ambient (the world must stay clearly readable) + low warm sun
   // dusk grade: cool fill + warm key, total kept moderate for mood
-  scene.add(new THREE.HemisphereLight(0x9a7ff0, 0x46543c, 1.62));
-  const sun = new THREE.DirectionalLight(0xffc182, 1.42);
+  scene.add(new THREE.HemisphereLight(0x9a7ff0, 0x46543c, 1.3));
+  const sun = new THREE.DirectionalLight(0xffc182, 1.25);
   sun.position.set(-80, 55, 60);
   // soft diorama shadows: modest shadow camera that main.js keeps centered on her
   sun.castShadow = true;
@@ -689,7 +689,7 @@ export function buildWorld(scene) {
   // ---------- fireflies ----------
   let fireflies, fireflyBase;
   {
-    const n = 400, pos = new Float32Array(n * 3);
+    const n = 160, pos = new Float32Array(n * 3);
     fireflyBase = new Float32Array(n * 3);
     const spots = [
       [55, -65, 50, 50],   // forest
@@ -707,7 +707,7 @@ export function buildWorld(scene) {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     fireflies = new THREE.Points(g, new THREE.PointsMaterial({
-      map: mistTex, color: 0xffe98a, size: 0.8, transparent: true, opacity: 1,
+      map: mistTex, color: 0xffe98a, size: 0.55, transparent: true, opacity: 0.85,
       blending: THREE.AdditiveBlending, depthWrite: false }));
     scene.add(fireflies);
     worldAnims.fireflies = fireflies; worldAnims.fireflyBase = fireflyBase;
