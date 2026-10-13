@@ -96,9 +96,9 @@ export class Player {
     let ix = this.moveVec.x, iz = this.moveVec.z;
     if (this.camMode === 'first') {
       const sinY = Math.sin(this.fpYaw), cosY = Math.cos(this.fpYaw);
-      // forward = (sinY, cosY), right = (cosY, -sinY); stick up is -iz
-      const rx = (-iz) * sinY + ix * cosY;
-      const rz = (-iz) * cosY + ix * (-sinY);
+      // forward = (sinY, cosY); right = forward × up = (-cosY, sinY)
+      const rx = (-iz) * sinY + ix * (-cosY);
+      const rz = (-iz) * cosY + ix * sinY;
       ix = rx; iz = rz;
     }
     const len = Math.hypot(ix, iz);
