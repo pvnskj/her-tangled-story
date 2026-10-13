@@ -447,7 +447,7 @@ function animate() {
 
   player.update(dt);
   updateBoat(dt, t);
-  world.update(dt, t);
+  world.update(dt, t, player.group.position.x, player.group.position.z);
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
   player.updateCamera(camera, dt);

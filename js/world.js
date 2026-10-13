@@ -88,7 +88,34 @@ export function buildWorld(scene) {
       vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
     dome.renderOrder = -10;
     scene.add(dome);
+    worldAnims.skyDome = dome; // for per-zone mood shifts
   }
+
+  // ---------- per-zone sky moods (the sky is never "always the same") ----------
+  // forest = deep mysterious indigo, lake = golden serene, festival = pink festive,
+  // village = warm cozy, default = classic dusk purple
+  const SKY_MOODS = [
+    { x: -22, z: -75, r: 35, tint: 0x8a7ab8, fog: 0x3a2a5a }, // forest: cool deep
+    { x: -80, z: 20, r: 40, tint: 0xffd8a8, fog: 0x5a3a6a },  // lake: golden
+    { x: -45, z: -60, r: 30, tint: 0xffb8d8, fog: 0x6a2a5a }, // festival: pink
+    { x: 0, z: 90, r: 35, tint: 0xffc890, fog: 0x5a3050 },    // village: warm
+  ];
+  const _skyTint = new THREE.Color(0xffffff), _fogC = new THREE.Color();
+  worldAnims.updateSky = (px, pz) => {
+    _skyTint.set(0xffffff); _fogC.set(0x54407a);
+    let best = 0;
+    for (const m of SKY_MOODS) {
+      const d = Math.hypot(px - m.x, pz - m.z);
+      const w = Math.max(0, 1 - d / m.r);
+      if (w > best) {
+        best = w;
+        _skyTint.set(0xffffff).lerp(new THREE.Color(m.tint), w * 0.45);
+        _fogC.set(0x54407a).lerp(new THREE.Color(m.fog), w * 0.6);
+      }
+    }
+    if (worldAnims.skyDome) worldAnims.skyDome.material.color.copy(_skyTint);
+    scene.fog.color.copy(_fogC);
+  };
 
   // moon + halo
   {
@@ -376,8 +403,8 @@ export function buildWorld(scene) {
       if (!clearOf(x, z, 3)) continue;
       treeSpots.push([x, z]);
     }
-    // enchanted forest ARCH: trees form a living tunnel over the tower→festival path
-    // two rows flank the path, canopies lean inward to meet overhead
+    // enchanted forest ARCH: tall trees set BACK from the path, canopies meet HIGH overhead
+    // (not in your face — you see through the arch, not at blobs)
     const groveStart = treeSpots.length;
     {
       const ax = 0, az = -90, bx = -45, bz = -60; // tower -> festival path
@@ -389,20 +416,20 @@ export function buildWorld(scene) {
         const dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz);
         const nx = -dz / len, nz = dx / len;
         for (const side of [-1, 1]) {
-          const off = 5.5 + (s % 2) * 1.2; // stagger for natural feel
+          const off = 11 + (s % 2) * 2; // set BACK — clear sightlines along the path
           const x = px + nx * off * side, z = pz + nz * off * side;
           if (Math.hypot(x, z + 95) < 18) continue; // tower itself
-          treeSpots.push([x, z, 1.1]); // arch trees — canopies will meet overhead
+          treeSpots.push([x, z, 1.7]); // TALL — canopies high overhead, not at eye level
         }
       }
       // a few extra wild trees behind the arch rows for depth
       let placed = 0, guard = 0;
       while (placed < 8 && guard++ < 1000) {
-        const a = rand() * Math.PI * 2, r = 12 + rand() * 12;
+        const a = rand() * Math.PI * 2, r = 16 + rand() * 14;
         const x = -22 + Math.cos(a) * r, z = -75 + Math.sin(a) * r;
-        if (onPath(x, z, 7)) continue;
+        if (onPath(x, z, 9)) continue;
         if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 25)) continue;
-        treeSpots.push([x, z, 0.9]);
+        treeSpots.push([x, z, 1.4]);
         placed++;
       }
     }
@@ -498,6 +525,60 @@ export function buildWorld(scene) {
       elephants.push({ group: g, headG, trunkG, tailG, ears, ph: rand() * 6 });
     }
     worldAnims.elephants = elephants;
+  }
+
+  // ---------- deers + pandas (ambient, visible from paths — not interactive) ----------
+  {
+    const deers = [], pandas = [];
+    // DEERS: slender body, long legs, neck, head with antlers
+    const deerSpots = [[-15, -65, 0.8], [-30, -55, -0.5], [25, 30, 2.1]];
+    for (const [dx, dz, ry] of deerSpots) {
+      const g = new THREE.Group();
+      const brown = mat(0x9a6a45), dark = mat(0x6a452a);
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), brown);
+      body.scale.set(1, 1, 1.4); body.position.y = 1.6; g.add(body);
+      for (const [lx, lz] of [[-0.4, -0.6], [0.4, -0.6], [-0.4, 0.6], [0.4, 0.6]]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 1.6, 6), dark);
+        leg.position.set(lx, 0.8, lz); g.add(leg);
+      }
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 1.2, 8), brown);
+      neck.position.set(0, 2.5, 1.1); neck.rotation.x = 0.5; g.add(neck);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), brown);
+      head.position.set(0, 3.1, 1.5); g.add(head);
+      for (const s of [-1, 1]) { // antlers
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 5), dark);
+        ant.position.set(s * 0.25, 3.7, 1.4); ant.rotation.z = s * 0.4; g.add(ant);
+      }
+      g.position.set(dx, 0, dz); g.rotation.y = ry;
+      g.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+      scene.add(g);
+      deers.push({ group: g, head, ph: rand() * 6 });
+    }
+    // PANDAS: round body, black/white, sitting
+    const pandaSpots = [[-25, -70, 0.3], [10, 40, -1.2]];
+    for (const [px, pz, ry] of pandaSpots) {
+      const g = new THREE.Group();
+      const white = mat(0xf0ece0), black = mat(0x2a2a30);
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.85, 12, 10), white);
+      body.position.y = 0.85; g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 10), white);
+      head.position.set(0, 1.7, 0.3); g.add(head);
+      for (const s of [-1, 1]) { // ears + eye patches
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), black);
+        ear.position.set(s * 0.35, 2.15, 0.25); g.add(ear);
+        const patch = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), black);
+        patch.position.set(s * 0.22, 1.78, 0.72); patch.scale.set(1, 1.3, 0.5); g.add(patch);
+      }
+      for (const s of [-1, 1]) { // arms
+        const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.5, 4, 8), black);
+        arm.position.set(s * 0.7, 0.7, 0.3); arm.rotation.z = s * 0.5; g.add(arm);
+      }
+      g.position.set(px, 0, pz); g.rotation.y = ry;
+      g.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+      scene.add(g);
+      pandas.push({ group: g, head, ph: rand() * 6 });
+    }
+    worldAnims.deers = deers; worldAnims.pandas = pandas;
   }
 
   // ---------- flowers (instanced) ----------
@@ -1087,7 +1168,9 @@ export function buildWorld(scene) {
   }
 
   // ---------- per-frame animation (everything alive) ----------
-  function update(dt, t) {
+  function update(dt, t, px, pz) {
+    // per-zone sky moods — the sky shifts as she travels
+    if (px !== undefined && worldAnims.updateSky) worldAnims.updateSky(px, pz);
     // rising lanterns: climb, sway, fade out at the top, respawn over home turf
     // (lanternBoost: while she's rowing the boat, the lake release intensifies)
     {
@@ -1153,6 +1236,14 @@ export function buildWorld(scene) {
       e.tailG.rotation.x = Math.sin(t * 1.6 + e.ph) * 0.3;
       e.ears[0].rotation.z = 0.2 + Math.sin(t * 1.1 + e.ph) * 0.15;
       e.ears[1].rotation.z = -0.2 - Math.sin(t * 1.1 + e.ph + 0.5) * 0.15;
+    }
+    for (const d of (worldAnims.deers || [])) {
+      d.head.position.y = 3.1 + Math.sin(t * 0.8 + d.ph) * 0.15; // grazing bob
+      d.group.rotation.y += Math.sin(t * 0.2 + d.ph) * 0.0005;
+    }
+    for (const p of (worldAnims.pandas || [])) {
+      p.head.rotation.z = Math.sin(t * 0.6 + p.ph) * 0.12; // cute head tilt
+      p.head.rotation.y = Math.sin(t * 0.35 + p.ph) * 0.2;
     }
     // guiding leaves stream along tower → festival → lake → village
     {
