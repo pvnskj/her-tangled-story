@@ -36,7 +36,7 @@ export class Player {
   // called from the canvas drag handler: dx/dy are pointer pixels
   addLook(dx, dy) {
     this.orbit.yaw -= dx * 0.0052;
-    this.orbit.pitch += dy * 0.0052;
+    this.orbit.pitch = THREE.MathUtils.clamp(this.orbit.pitch + dy * 0.0052, -0.55, 0.55);
     this.orbit.lastDrag = performance.now() / 1000;
   }
 
@@ -164,8 +164,6 @@ export class Player {
       const yaw = baseYaw + this.orbit.yaw;
       off.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(L);
       camera.position.copy(this.lookSm).add(off);
-      // never let the camera sink below ground — kills the "funk" when looking up
-      if (camera.position.y < 1.6) camera.position.y = 1.6;
     }
     camera.lookAt(this.lookSm);
   }

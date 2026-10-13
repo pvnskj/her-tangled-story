@@ -402,9 +402,9 @@ export function buildWorld(scene) {
     const heroStart = treeSpots.length;
     for (const [hx, hz, hs] of heroes) treeSpots.push([hx, hz, hs]);
     const trunkG = new THREE.CylinderGeometry(0.45, 0.65, 3, 7);
-    const folG = new THREE.IcosahedronGeometry(2.4, 0);
-    const folG2 = new THREE.IcosahedronGeometry(1.5, 0);
-    const folG3 = new THREE.IcosahedronGeometry(1.0, 0);
+    const folG = new THREE.IcosahedronGeometry(1.7, 0);
+    const folG2 = new THREE.IcosahedronGeometry(1.1, 0);
+    const folG3 = new THREE.IcosahedronGeometry(0.75, 0);
     const trunks = new THREE.InstancedMesh(trunkG, mat(0x6a4a30), treeSpots.length);
     const canA = new THREE.InstancedMesh(folG, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
     const canB = new THREE.InstancedMesh(folG2, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
@@ -413,7 +413,7 @@ export function buildWorld(scene) {
     const duskShadow = new THREE.Color(0x4a3a6e), goldKiss = new THREE.Color(0xd8a850);
     const swayData = [];
     treeSpots.forEach(([x, z, hs], i) => {
-      const s = (hs || 1) * (0.8 + rand() * 0.7), ph = rand() * 6;
+      const s = (hs || 1) * (0.7 + rand() * 0.5), ph = rand() * 6;
       d.position.set(x, 1.5 * s, z); d.scale.setScalar(s); d.rotation.y = rand() * 6; d.updateMatrix();
       trunks.setMatrixAt(i, d.matrix);
       d.position.set(x, 4.6 * s, z); d.updateMatrix();
@@ -549,11 +549,12 @@ export function buildWorld(scene) {
   // ---------- grass blades (instanced carpet, Bruno-style density) ----------
   {
     // simple 3-vertex blade: two base verts, one tip vert with a slight bend
+    // SHORT and WIDE for soft tufts — not tall spikes
     const bg = new THREE.BufferGeometry();
     bg.setAttribute("position", new THREE.Float32BufferAttribute([
-      -0.14, 0, 0,
-       0.14, 0, 0,
-       0.04, 1.0, 0.08,
+      -0.20, 0, 0,
+       0.20, 0, 0,
+       0.05, 0.38, 0.06,
     ], 3));
     bg.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
     bg.computeVertexNormals();
@@ -573,9 +574,9 @@ export function buildWorld(scene) {
       if (Math.hypot(x, z + 95) < 15) continue;  // tower
       if (Math.hypot(x - 85, z - 45) < 15) continue; // tavern
       if (onPath(x, z, 2.3)) continue; // keep dirt paths clear and readable
-      const s = 0.8 + rand() * 1.4;
+      const s = 0.7 + rand() * 0.6;
       d.position.set(x, 0, z);
-      d.scale.set(s, s * (0.9 + rand() * 0.7), s);
+      d.scale.set(s, s * (0.8 + rand() * 0.4), s);
       d.rotation.y = rand() * 6;
       d.updateMatrix(); m.setMatrixAt(placed, d.matrix);
       // varied greens with warm yellow-green highlights
