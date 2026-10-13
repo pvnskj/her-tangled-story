@@ -186,7 +186,7 @@ export function buildWorld(scene) {
       const n = Math.sin(x * 0.35) * Math.cos(z * 0.3) + Math.sin(x * 0.08 + z * 0.11);
       tmp.copy(cGrass).lerp(n > 0.4 ? cDry : cDark, Math.min(0.55, Math.abs(n) * 0.4));
       // sandy rim near the lake
-      const ldx = (x + 80) / 30, ldz = (z - 20) / 24;
+      const ldx = (x + 80) / 44, ldz = (z - 20) / 34;
       const ld = ldx * ldx + ldz * ldz;
       if (ld < 1.7) tmp.lerp(cSand, Math.max(0, 1 - ld / 1.7) * 0.65);
       // diorama edge: dissolve the rim into mist so it feels like a tiny world
@@ -608,7 +608,7 @@ export function buildWorld(scene) {
     let placed = 0, guard = 0;
     while (placed < n && guard++ < 4000) {
       const x = -112 + rand() * 224, z = -112 + rand() * 224;
-      if (((x + 80) / 30) ** 2 + ((z - 20) / 24) ** 2 < 1.15) continue; // lake
+      if (((x + 80) / 44) ** 2 + ((z - 20) / 34) ** 2 < 1.15) continue; // lake
       if (Math.hypot(x, z - 90) < 26) continue;   // village clearing
       if (Math.hypot(x + 45, z + 60) < 20) continue; // festival clearing
       if (Math.hypot(x, z + 95) < 16) continue;  // tower
@@ -642,12 +642,12 @@ export function buildWorld(scene) {
   // ---------- grass blades (instanced carpet, Bruno-style density) ----------
   {
     // simple 3-vertex blade: two base verts, one tip vert with a slight bend
-    // SHORT and WIDE for soft tufts — not tall spikes
+    // LONG soft blades (user request) — lush meadow feel
     const bg = new THREE.BufferGeometry();
     bg.setAttribute("position", new THREE.Float32BufferAttribute([
-      -0.20, 0, 0,
-       0.20, 0, 0,
-       0.05, 0.38, 0.06,
+      -0.16, 0, 0,
+       0.16, 0, 0,
+       0.05, 0.72, 0.06,
     ], 3));
     bg.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
     bg.computeVertexNormals();
@@ -660,16 +660,16 @@ export function buildWorld(scene) {
     let placed = 0, guard = 0;
     while (placed < n && guard++ < n * 4) {
       const x = -112 + rand() * 224, z = -112 + rand() * 224;
-      if (((x + 80) / 30) ** 2 + ((z - 20) / 24) ** 2 < 1.15) continue; // lake
+      if (((x + 80) / 44) ** 2 + ((z - 20) / 34) ** 2 < 1.15) continue; // lake
       if (((x - 85) / 10) ** 2 + ((z + 15) / 8) ** 2 < 1.3) continue;  // pond
       if (Math.hypot(x, z - 90) < 24) continue;   // village clearing
       if (Math.hypot(x + 45, z + 60) < 18) continue; // festival clearing
       if (Math.hypot(x, z + 95) < 15) continue;  // tower
       if (Math.hypot(x - 85, z - 45) < 15) continue; // tavern
       if (onPath(x, z, 2.3)) continue; // keep dirt paths clear and readable
-      const s = 0.7 + rand() * 0.6;
+      const s = 0.8 + rand() * 0.7;
       d.position.set(x, 0, z);
-      d.scale.set(s, s * (0.8 + rand() * 0.4), s);
+      d.scale.set(s, s * (0.9 + rand() * 0.5), s);
       d.rotation.y = rand() * 6;
       d.updateMatrix(); m.setMatrixAt(placed, d.matrix);
       // varied greens with warm yellow-green highlights
@@ -795,16 +795,16 @@ export function buildWorld(scene) {
     addCollider(-5, 100, 1.8);
   }
 
-  // ---------- Lake ----------
+  // ---------- Lake (big turquoise border water — clear enough to see fish) ----------
   let lakeMesh, pondMesh;
   {
     const mkWater = (rx, rz, x, z) => {
       const m = new THREE.Mesh(new THREE.CircleGeometry(1, 44),
-        new THREE.MeshStandardMaterial({ color: 0x265086, emissive: 0x0c1c36, transparent: true, opacity: 0.88, roughness: 0.15, metalness: 0.5 }));
+        new THREE.MeshStandardMaterial({ color: 0x35b8c8, emissive: 0x0a3a44, transparent: true, opacity: 0.55, roughness: 0.1, metalness: 0.3 }));
       m.rotation.x = -Math.PI / 2; m.scale.set(rx, rz, 1); m.position.set(x, 0.06, z);
       scene.add(m); waters.push({ x, z, rx, rz }); return m;
     };
-    lakeMesh = mkWater(28, 22, -80, 20);
+    lakeMesh = mkWater(42, 32, -80, 20); // BIG — borders the west map edge
     pondMesh = mkWater(8, 6, 85, -15);
     // lantern reflection streaks on the lake (vertical warm gradients)
     const sc = document.createElement("canvas"); sc.width = 32; sc.height = 128;
@@ -825,6 +825,50 @@ export function buildWorld(scene) {
       scene.add(sp); streaks.push({ m: sp, ph: rand() * 6 });
     }
     worldAnims.streaks = streaks;
+    // ---------- koi fish (colorful, visible through clear turquoise water) ----------
+    const koiColors = [0xff7a3a, 0xffd94d, 0xffffff, 0x4da8ff, 0xff4d8a];
+    const kois = [];
+    for (let i = 0; i < 14; i++) {
+      const g = new THREE.Group();
+      const c = koiColors[i % koiColors.length];
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8),
+        new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
+      body.scale.set(1, 0.7, 1.8); g.add(body);
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 6),
+        new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, transparent: true, opacity: 0.85 }));
+      tail.rotation.x = Math.PI / 2; tail.position.z = -0.8; g.add(tail);
+      // random swim position in the lake
+      const a = rand() * Math.PI * 2, r = 8 + rand() * 28;
+      const kx = -80 + Math.cos(a) * r * 0.9, kz = 20 + Math.sin(a) * r * 0.7;
+      g.position.set(kx, 0.15, kz);
+      scene.add(g);
+      kois.push({ g, tail, cx: -80, cz: 20, rx: 10 + rand() * 25, rz: 8 + rand() * 18,
+        a: rand() * 6, sp: 0.3 + rand() * 0.4, ph: rand() * 6 });
+    }
+    worldAnims.kois = kois;
+    // ---------- turtles (slow, cute, basking near shore) ----------
+    const turtles = [];
+    for (let i = 0; i < 5; i++) {
+      const g = new THREE.Group();
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        mat(0x4a6a3a));
+      shell.position.y = 0.15; g.add(shell);
+      const belly = new THREE.Mesh(new THREE.CircleGeometry(0.55, 12), mat(0xd8c890));
+      belly.rotation.x = -Math.PI / 2; belly.position.y = 0.16; g.add(belly);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), mat(0x5a7a4a));
+      head.position.set(0, 0.4, 0.7); g.add(head);
+      for (const [fx, fz] of [[-0.5, 0.3], [0.5, 0.3], [-0.5, -0.4], [0.5, -0.4]]) {
+        const flip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), mat(0x5a7a4a));
+        flip.scale.set(1, 0.5, 1.4); flip.position.set(fx, 0.2, fz); g.add(flip);
+      }
+      const a = rand() * Math.PI * 2;
+      const tx = -80 + Math.cos(a) * 35, tz = 20 + Math.sin(a) * 26;
+      g.position.set(tx, 0.12, tz); g.rotation.y = rand() * 6;
+      g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      scene.add(g);
+      turtles.push({ g, head, ph: rand() * 6, hx: tx, hz: tz });
+    }
+    worldAnims.turtles = turtles;
     const rc = document.createElement("canvas"); rc.width = 128; rc.height = 128;
     {
       const g = rc.getContext("2d");
@@ -938,7 +982,7 @@ export function buildWorld(scene) {
         const px = ax + dx * len * f + nx * 2.8 * side;
         const pz = az + dz * len * f + nz * 2.8 * side;
         side *= -1; colorFlip = !colorFlip;
-        if (((px + 80) / 32) ** 2 + ((pz - 20) / 26) ** 2 < 1) continue; // keep out of the lake
+        if (((px + 80) / 44) ** 2 + ((pz - 20) / 34) ** 2 < 1) continue; // keep out of the lake
         const post = new THREE.Mesh(postG, postM);
         post.position.set(px, 2.1, pz); post.castShadow = true; scene.add(post);
         const orb = new THREE.Mesh(orbG, colorFlip ? pinkM : warmM);
@@ -1244,6 +1288,19 @@ export function buildWorld(scene) {
     for (const p of (worldAnims.pandas || [])) {
       p.head.rotation.z = Math.sin(t * 0.6 + p.ph) * 0.12; // cute head tilt
       p.head.rotation.y = Math.sin(t * 0.35 + p.ph) * 0.2;
+    }
+    for (const k of (worldAnims.kois || [])) { // koi swim in lazy circles
+      k.a += k.sp * dt;
+      const x = k.cx + Math.cos(k.a) * k.rx, z = k.cz + Math.sin(k.a) * k.rz;
+      k.g.position.set(x, 0.15 + Math.sin(t * 2 + k.ph) * 0.05, z);
+      k.g.rotation.y = -k.a;
+      k.tail.rotation.y = Math.sin(t * 6 + k.ph) * 0.4; // tail swish
+    }
+    for (const tu of (worldAnims.turtles || [])) { // turtles paddle slowly
+      tu.head.position.y = 0.4 + Math.sin(t * 1.2 + tu.ph) * 0.08;
+      tu.g.position.x = tu.hx + Math.sin(t * 0.15 + tu.ph) * 3;
+      tu.g.position.z = tu.hz + Math.cos(t * 0.12 + tu.ph) * 3;
+      tu.g.rotation.y += Math.sin(t * 0.1 + tu.ph) * 0.002;
     }
     // guiding leaves stream along tower → festival → lake → village
     {
