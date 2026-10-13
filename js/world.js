@@ -1185,20 +1185,23 @@ export function buildWorld(scene) {
     worldAnims.fireflies = fireflies; worldAnims.fireflyBase = fireflyBase;
   }
 
-  // ---------- enchanted grove fireflies (second swarm, warm gold, tower forest) ----------
+  // ---------- enchanted grove fireflies (second swarm, warm gold, along the ARCH) ----------
   {
-    const n = 80, pos = new Float32Array(n * 3);
+    const n = 120, pos = new Float32Array(n * 3);
     const base = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
-      base[i*3]   = -10 + (rand() - 0.5) * 40;
-      base[i*3+1] = 0.8 + rand() * 3.2;
-      base[i*3+2] = -74 + (rand() - 0.5) * 32;
+      // scatter ALONG the arch path (80,-40) to (0,-90), not just at one spot
+      const t = rand();
+      const px = 80 + (0 - 80) * t, pz = -40 + (-90 + 40) * t;
+      base[i*3]   = px + (rand() - 0.5) * 14; // within the corridor
+      base[i*3+1] = 1.0 + rand() * 4.0; // eye-level to overhead
+      base[i*3+2] = pz + (rand() - 0.5) * 14;
     }
     pos.set(base);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     const pts = new THREE.Points(g, new THREE.PointsMaterial({
-      map: mistTex, color: 0xffd76a, size: 0.65, transparent: true, opacity: 0.9,
+      map: mistTex, color: 0xffd76a, size: 1.4, transparent: true, opacity: 0.95,
       blending: THREE.AdditiveBlending, depthWrite: false }));
     scene.add(pts);
     worldAnims.groveFlies = { pts, base };
