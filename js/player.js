@@ -31,6 +31,15 @@ export class Player {
     this.lookSm = null; // smoothed look-at target for buttery camera
     // drag-to-look offsets (radians): yaw/pitch added around the follow target
     this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
+    // camera modes: 'third' (diorama), 'first' (her POV), 'top' (royalty view)
+    this.camMode = 'third';
+  }
+
+  cycleCamMode() {
+    this.camMode = this.camMode === 'third' ? 'first' : this.camMode === 'first' ? 'top' : 'third';
+    // hide her sprite in first-person so you don't see the back of her head
+    if (this.sprite) this.sprite.visible = this.camMode !== 'first';
+    return this.camMode;
   }
 
   // called from the canvas drag handler: dx/dy are pointer pixels
@@ -40,14 +49,14 @@ export class Player {
     this.orbit.lastDrag = performance.now() / 1000;
   }
 
-  // keyboard look: Q/E yaw, R/F pitch — for desktop users who prefer keys over drag
+  // keyboard look: Z/X yaw, R/F pitch — for desktop users who prefer keys over drag
   keyLook(dt, keys) {
     const spd = 1.8 * dt;
-    if (keys.KeyQ) this.orbit.yaw += spd;
-    if (keys.KeyE) this.orbit.yaw -= spd;
+    if (keys.KeyZ) this.orbit.yaw += spd;
+    if (keys.KeyX) this.orbit.yaw -= spd;
     if (keys.KeyR) this.orbit.pitch += spd * 0.7;
     if (keys.KeyF) this.orbit.pitch -= spd * 0.7;
-    if (keys.KeyQ || keys.KeyE || keys.KeyR || keys.KeyF) {
+    if (keys.KeyZ || keys.KeyX || keys.KeyR || keys.KeyF) {
       this.orbit.pitch = THREE.MathUtils.clamp(this.orbit.pitch, -0.6, 0.6);
       this.orbit.lastDrag = performance.now() / 1000;
     }
@@ -117,6 +126,30 @@ export class Player {
 
   updateCamera(camera, dt) {
     const p = this.group.position;
+    // FIRST-PERSON: see through her eyes — lanterns, arches, and fireflies up close
+    if (this.camMode === 'first') {
+      const eyeH = 2.9;
+      const yaw = this.orbit.yaw + Math.atan2(this.group.rotation.y, 1);
+      // face her movement direction, or last drag direction
+      const fx = Math.sin(this.group.rotation.y), fz = Math.cos(this.group.rotation.y);
+      const tx = p.x + fx * 10 + Math.sin(this.orbit.yaw) * 8;
+      const tz = p.z + fz * 10 + Math.cos(this.orbit.yaw) * 8;
+      const ty = eyeH + this.orbit.pitch * 8;
+      camera.position.lerp(new THREE.Vector3(p.x, eyeH, p.z), 1 - Math.pow(0.0001, dt));
+      if (!this.lookSm) this.lookSm = new THREE.Vector3(tx, ty, tz);
+      this.lookSm.lerp(new THREE.Vector3(tx, ty, tz), 1 - Math.pow(0.001, dt));
+      camera.lookAt(this.lookSm);
+      return;
+    }
+    // TOP-DOWN ROYALTY: high cinematic view of the whole diorama
+    if (this.camMode === 'top') {
+      const tx = p.x, tz = p.z;
+      camera.position.lerp(new THREE.Vector3(tx, 42, tz + 10), 1 - Math.pow(0.002, dt));
+      if (!this.lookSm) this.lookSm = new THREE.Vector3(tx, 0, tz);
+      this.lookSm.lerp(new THREE.Vector3(tx, 0, tz), 1 - Math.pow(0.004, dt));
+      camera.lookAt(this.lookSm);
+      return;
+    }
     // pull back on narrow (portrait phone) screens so more world is visible
     const wide = 1 + Math.max(0, 1 - camera.aspect) * 0.55;
     // look-ahead: shift the frame toward her movement direction so landmarks

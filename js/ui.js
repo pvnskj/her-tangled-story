@@ -36,6 +36,11 @@ export const UI = {
     el("finale-replay").addEventListener("click", () => location.reload());
     el("map-toggle").addEventListener("click", () => this.openMap());
     el("map-close").addEventListener("click", () => this.closeMap());
+    el("cam-toggle").addEventListener("click", () => {
+      const mode = window.__player?.cycleCamMode();
+      const labels = { third: "📷", first: "👁️", top: "👑" };
+      el("cam-toggle").textContent = labels[mode] || "📷";
+    });
   },
 
   // ---------- world map ----------

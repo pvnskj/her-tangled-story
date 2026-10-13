@@ -376,22 +376,33 @@ export function buildWorld(scene) {
       if (!clearOf(x, z, 3)) continue;
       treeSpots.push([x, z]);
     }
-    // enchanted grove: tower-zone forest she walks BETWEEN — tall trees flank a clear corridor
+    // enchanted forest ARCH: trees form a living tunnel over the tower→festival path
+    // two rows flank the path, canopies lean inward to meet overhead
     const groveStart = treeSpots.length;
     {
-      const gx = -10, gz = -74, gr = 24;
-      const espots = [[18, -76], [-32, -80]]; // elephants live here — keep trunks clear
-      let placed = 0; guard = 0;
-      while (placed < 20 && guard++ < 4000) {
-        const a = rand() * Math.PI * 2, r = 6 + rand() * (gr - 6);
-        const x = gx + Math.cos(a) * r, z = gz + Math.sin(a) * r;
-        if (Math.hypot(x, z + 95) < 20) continue;   // the tower itself
-        if (Math.hypot(x, z + 58) < 7) continue;    // her spawn point
-        if (onPath(x, z, 7)) continue;               // walking corridor stays open (wide)
-        if (!clearOf(x, z, 3.5)) continue;          // clue spots
-        if (espots.some(([ex, ez]) => (x-ex)**2 + (z-ez)**2 < 25)) continue;
-        if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 30)) continue;
-        treeSpots.push([x, z, 1.0]);                // tall grove trees (not giants)
+      const ax = 0, az = -90, bx = -45, bz = -60; // tower -> festival path
+      const segs = 10;
+      for (let s = 0; s <= segs; s++) {
+        const t = s / segs;
+        const px = ax + (bx - ax) * t, pz = az + (bz - az) * t;
+        // perpendicular direction
+        const dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz);
+        const nx = -dz / len, nz = dx / len;
+        for (const side of [-1, 1]) {
+          const off = 5.5 + (s % 2) * 1.2; // stagger for natural feel
+          const x = px + nx * off * side, z = pz + nz * off * side;
+          if (Math.hypot(x, z + 95) < 18) continue; // tower itself
+          treeSpots.push([x, z, 1.1]); // arch trees — canopies will meet overhead
+        }
+      }
+      // a few extra wild trees behind the arch rows for depth
+      let placed = 0, guard = 0;
+      while (placed < 8 && guard++ < 1000) {
+        const a = rand() * Math.PI * 2, r = 12 + rand() * 12;
+        const x = -22 + Math.cos(a) * r, z = -75 + Math.sin(a) * r;
+        if (onPath(x, z, 7)) continue;
+        if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 25)) continue;
+        treeSpots.push([x, z, 0.9]);
         placed++;
       }
     }
@@ -534,13 +545,14 @@ export function buildWorld(scene) {
 
   // ---------- dirt walking paths (visible strips, grass exclusions) ----------
   {
-    const pathMat = new THREE.MeshStandardMaterial({ color: 0x9a8563, roughness: 1 });
+    const pathMat = new THREE.MeshStandardMaterial({ color: 0x9a8563, roughness: 1,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     for (const [ax, az, bx, bz] of PATHS) {
       const len = Math.hypot(bx - ax, bz - az);
       const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 3.6), pathMat);
       m.rotation.x = -Math.PI / 2;
       m.rotation.z = -Math.atan2(bz - az, bx - ax);
-      m.position.set((ax + bx) / 2, 0.06, (az + bz) / 2);
+      m.position.set((ax + bx) / 2, 0.08, (az + bz) / 2);
       m.receiveShadow = true;
       scene.add(m);
     }
@@ -822,8 +834,10 @@ export function buildWorld(scene) {
   }
 
   // ---------- lantern posts lining the main walking paths (tower→festival→lake→village) ----------
+  // alternating warm white + cherry blossom pink — magical in first-person POV
   {
-    const orbM = new THREE.MeshBasicMaterial({ color: 0xffd98a });
+    const warmM = new THREE.MeshBasicMaterial({ color: 0xfff2d8 }); // warm white
+    const pinkM = new THREE.MeshBasicMaterial({ color: 0xffb8d8 }); // cherry blossom pink
     const postM = mat(0x4a3826);
     const postG = new THREE.CylinderGeometry(0.14, 0.2, 4.2, 8);
     const orbG = new THREE.SphereGeometry(0.5, 10, 8);
@@ -832,7 +846,7 @@ export function buildWorld(scene) {
       [-45, -60, -80, 20],   // festival -> lake
       [-80, 20, 0, 90],      // lake -> village
     ];
-    let side = 1;
+    let side = 1, colorFlip = false;
     for (const [ax, az, bx, bz] of segs) {
       const len = Math.hypot(bx - ax, bz - az);
       const dx = (bx - ax) / len, dz = (bz - az) / len;
@@ -842,13 +856,14 @@ export function buildWorld(scene) {
         const f = i / (count + 1);
         const px = ax + dx * len * f + nx * 2.8 * side;
         const pz = az + dz * len * f + nz * 2.8 * side;
-        side *= -1;
+        side *= -1; colorFlip = !colorFlip;
         if (((px + 80) / 32) ** 2 + ((pz - 20) / 26) ** 2 < 1) continue; // keep out of the lake
         const post = new THREE.Mesh(postG, postM);
         post.position.set(px, 2.1, pz); post.castShadow = true; scene.add(post);
-        const orb = new THREE.Mesh(orbG, orbM);
+        const orb = new THREE.Mesh(orbG, colorFlip ? pinkM : warmM);
         orb.position.set(px, 4.5, pz); scene.add(orb);
-        const gl = addGlow(px, 4.5, pz, 7, 0xffb060, 0.75);
+        const glowColor = colorFlip ? 0xff90c0 : 0xffe0a0;
+        const gl = addGlow(px, 4.5, pz, 7, glowColor, 0.75);
         worldAnims.flicker.push({ glow: gl, pool: null, ph: rand() * 6, gb: 0.75, pb: 0 });
         addCollider(px, pz, 0.5);
       }

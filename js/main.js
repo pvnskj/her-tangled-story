@@ -35,6 +35,7 @@ window.addEventListener("resize", fitCamera);
 // ---------- world, player, npcs ----------
 const world = buildWorld(scene);
 const player = new Player(scene, world);
+window.__player = player; // for camera toggle button
 camera.position.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene);
 
@@ -320,6 +321,11 @@ canvas.addEventListener("pointerup", (e) => {
 const keys = {};
 window.addEventListener("keydown", (e) => {
   keys[e.code] = true;
+  if (e.code === "KeyV" && !modalOpen) {
+    const mode = player.cycleCamMode();
+    const labels = { third: "📷", first: "👁️", top: "👑" };
+    document.getElementById("cam-toggle").textContent = labels[mode] || "📷";
+  }
   if (e.code === "KeyE" && !modalOpen) {
     const p = player.group.position;
     // nearest interactive villager first, then clues

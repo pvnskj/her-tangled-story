@@ -112,13 +112,13 @@ export function buildNPCs(scene) {
   ];
   for (let i = 0; i < 12; i++) {
     const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 7), mat(0xd8cfc0));
-    body.scale.set(1, 0.85, 1.25); body.position.y = 0.4; g.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 7), mat(0xd8cfc0));
-    head.position.set(0, 0.75, 0.4); g.add(head);
-    [[-0.12], [0.12]].forEach(([ex]) => {
-      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.5, 5), mat(0xc8bfb0));
-      ear.position.set(ex, 1.1, 0.4); g.add(ear);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.62, 8, 7), mat(0xd8cfc0));
+    body.scale.set(1, 0.85, 1.25); body.position.y = 0.55; g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 7), mat(0xd8cfc0));
+    head.position.set(0, 1.0, 0.55); g.add(head);
+    [[-0.16], [0.16]].forEach(([ex]) => {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 5), mat(0xc8bfb0));
+      ear.position.set(ex, 1.5, 0.55); g.add(ear);
     });
     let x, z;
     if (i < rabbitSpots.length) {
@@ -140,7 +140,7 @@ export function buildNPCs(scene) {
     const wl = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.4), wingM);
     const wr = wl.clone(); wl.position.x = -0.55; wr.position.x = 0.55; g.add(wl, wr);
     scene.add(g);
-    birds.push({ group: g, wl, wr, cx: -20 + i * 30, cz: -20 + (i % 2) * 60, r: 14 + i * 3, h: 16 + i * 1.5, a: Math.random() * 6, sp: 0.5 + Math.random() * 0.3 });
+    birds.push({ group: g, wl, wr, cx: -20 + i * 30, cz: -20 + (i % 2) * 60, r: 14 + i * 3, h: 9 + i * 1.2, a: Math.random() * 6, sp: 0.5 + Math.random() * 0.3 });
   }
   // perched birds: unmissable, sitting on stall awnings and lantern poles
   const perched = [];
