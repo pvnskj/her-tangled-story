@@ -498,6 +498,14 @@ export function buildWorld(scene) {
       });
       const headG = new THREE.Group(); headG.position.set(0, 2.9, 1.9); g.add(headG);
       headG.add(new THREE.Mesh(new THREE.SphereGeometry(0.85, 10, 8), gray));
+      for (const s of [-1, 1]) { // kind wise eyes
+        const ew = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        ew.position.set(s * 0.35, 0.2, 0.72); headG.add(ew);
+        const eb = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0x1a1a1a }));
+        eb.position.set(s * 0.35, 0.2, 0.83); headG.add(eb);
+      }
       const ears = [];
       [-1, 1].forEach(s => {
         const ear = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), dark);
@@ -545,6 +553,14 @@ export function buildWorld(scene) {
       neck.position.set(0, 2.5, 1.1); neck.rotation.x = 0.5; g.add(neck);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), brown);
       head.position.set(0, 3.1, 1.5); g.add(head);
+      for (const s of [-1, 1]) { // big gentle eyes
+        const ew = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        ew.position.set(s * 0.2, 3.18, 1.82); g.add(ew);
+        const eb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0x1a1a1a }));
+        eb.position.set(s * 0.2, 3.18, 1.9); g.add(eb);
+      }
       for (const s of [-1, 1]) { // antlers
         const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.9, 5), dark);
         ant.position.set(s * 0.25, 3.7, 1.4); ant.rotation.z = s * 0.4; g.add(ant);
@@ -568,6 +584,12 @@ export function buildWorld(scene) {
         ear.position.set(s * 0.35, 2.15, 0.25); g.add(ear);
         const patch = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), black);
         patch.position.set(s * 0.22, 1.78, 0.72); patch.scale.set(1, 1.3, 0.5); g.add(patch);
+        const pew = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        pew.position.set(s * 0.22, 1.8, 0.82); g.add(pew);
+        const peb = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0x1a1a1a }));
+        peb.position.set(s * 0.22, 1.8, 0.87); g.add(peb);
       }
       for (const s of [-1, 1]) { // arms
         const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.5, 4, 8), black);
@@ -857,6 +879,14 @@ export function buildWorld(scene) {
       belly.rotation.x = -Math.PI / 2; belly.position.y = 0.16; g.add(belly);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), mat(0x5a7a4a));
       head.position.set(0, 0.4, 0.7); g.add(head);
+      for (const s of [-1, 1]) { // curious eyes
+        const ew = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        ew.position.set(s * 0.11, 0.48, 0.88); g.add(ew);
+        const eb = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6),
+          new THREE.MeshBasicMaterial({ color: 0x1a1a1a }));
+        eb.position.set(s * 0.11, 0.48, 0.93); g.add(eb);
+      }
       for (const [fx, fz] of [[-0.5, 0.3], [0.5, 0.3], [-0.5, -0.4], [0.5, -0.4]]) {
         const flip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), mat(0x5a7a4a));
         flip.scale.set(1, 0.5, 1.4); flip.position.set(fx, 0.2, fz); g.add(flip);

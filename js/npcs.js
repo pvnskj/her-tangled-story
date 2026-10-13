@@ -116,10 +116,27 @@ export function buildNPCs(scene) {
     body.scale.set(1, 0.85, 1.25); body.position.y = 0.55; g.add(body);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 7), mat(0xd8cfc0));
     head.position.set(0, 1.0, 0.55); g.add(head);
+    // EYES — big and visible
+    const eyeW = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const eyeB = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+    const ears = [];
+    for (const s of [-1, 1]) {
+      const ew = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), eyeW);
+      ew.position.set(s * 0.18, 1.12, 0.88); g.add(ew);
+      const eb = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), eyeB);
+      eb.position.set(s * 0.18, 1.12, 0.97); g.add(eb);
+    }
+    // pink nose
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6),
+      new THREE.MeshBasicMaterial({ color: 0xff9ab8 }));
+    nose.position.set(0, 0.95, 0.93); g.add(nose);
     [[-0.16], [0.16]].forEach(([ex]) => {
       const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.7, 5), mat(0xc8bfb0));
-      ear.position.set(ex, 1.5, 0.55); g.add(ear);
+      ear.position.set(ex, 1.5, 0.55); g.add(ear); ears.push(ear);
     });
+    // fluffy tail
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), mat(0xffffff));
+    tail.position.set(0, 0.6, -0.75); g.add(tail);
     let x, z;
     if (i < rabbitSpots.length) {
       [x, z] = rabbitSpots[i];
@@ -129,18 +146,37 @@ export function buildNPCs(scene) {
     }
     g.position.set(x, 0, z);
     scene.add(g);
-    rabbits.push({ group: g, hx: x, hz: z, tx: x, tz: z, hop: Math.random() * 6, wait: Math.random() * 2 });
+    rabbits.push({ group: g, hx: x, hz: z, tx: x, tz: z, hop: Math.random() * 6, wait: Math.random() * 2,
+      ears, binky: 0, binkyCd: 4 + Math.random() * 8 });
   }
 
-  // birds circling overhead
+  // birds circling overhead (with bodies and eyes now!)
   const birds = [];
   for (let i = 0; i < 5; i++) {
     const g = new THREE.Group();
-    const wingM = new THREE.MeshBasicMaterial({ color: 0xf7ecd4, side: THREE.DoubleSide });
+    const birdC = [0x6a9fd8, 0xff9a6a, 0xffd94d, 0xc39bff, 0x7ad88a][i];
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8),
+      new THREE.MeshStandardMaterial({ color: birdC, roughness: 0.8 }));
+    body.scale.set(1, 0.9, 1.4); g.add(body);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 6),
+      new THREE.MeshStandardMaterial({ color: 0xffb84d, roughness: 0.8 }));
+    beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.05, 0.55); g.add(beak);
+    const eyeW = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const eyeB = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+    for (const s of [-1, 1]) {
+      const ew = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), eyeW);
+      ew.position.set(s * 0.16, 0.15, 0.35); g.add(ew);
+      const eb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), eyeB);
+      eb.position.set(s * 0.16, 0.15, 0.43); g.add(eb);
+    }
+    const wingM = new THREE.MeshBasicMaterial({ color: birdC, side: THREE.DoubleSide });
     const wl = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.4), wingM);
     const wr = wl.clone(); wl.position.x = -0.55; wr.position.x = 0.55; g.add(wl, wr);
+    // tail
+    const tail = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.5), wingM);
+    tail.position.set(0, 0, -0.6); tail.rotation.x = -0.3; g.add(tail);
     scene.add(g);
-    birds.push({ group: g, wl, wr, cx: -20 + i * 30, cz: -20 + (i % 2) * 60, r: 14 + i * 3, h: 9 + i * 1.2, a: Math.random() * 6, sp: 0.5 + Math.random() * 0.3 });
+    birds.push({ group: g, wl, wr, cx: -20 + i * 30, cz: -20 + (i % 2) * 60, r: 14 + i * 3, h: 9 + i * 1.2, a: Math.random() * 6, sp: 0.5 + Math.random() * 0.3, ph: Math.random() * 6 });
   }
   // perched birds: unmissable, sitting on stall awnings and lantern poles
   const perched = [];
@@ -249,21 +285,36 @@ export function buildNPCs(scene) {
         }
       }
     }
-    // rabbits hop
+    // rabbits hop (with ear twitches and happy binkies!)
     for (const r of rabbits) {
       const dx = r.tx - r.group.position.x, dz = r.tz - r.group.position.z;
       const d = Math.hypot(dx, dz);
-      if (d < 0.8) {
-        r.wait += dt;
-        if (r.wait > 1.5 + (r.hop % 1.5)) {
-          r.tx = r.hx + (Math.random() - 0.5) * 22; r.tz = r.hz + (Math.random() - 0.5) * 22; r.wait = 0;
-        }
+      // ear twitch — random, lifelike
+      r.ears[0].rotation.z = Math.sin(t * 7 + r.hop) * 0.12;
+      r.ears[1].rotation.z = -Math.sin(t * 6.3 + r.hop + 1) * 0.12;
+      // binky! (happy twist jump) — the humorous bit
+      r.binkyCd -= dt;
+      if (r.binkyCd < 0 && d < 0.8) { r.binky = 0.5; r.binkyCd = 5 + Math.random() * 10; }
+      if (r.binky > 0) {
+        r.binky -= dt;
+        const bt = 1 - r.binky / 0.5;
+        r.group.position.y = Math.sin(bt * Math.PI) * 1.2;
+        r.group.rotation.y += dt * 9; // spin!
+        r.group.rotation.z = Math.sin(bt * Math.PI) * 0.4;
       } else {
-        r.hop += dt * 9;
-        r.group.position.x += (dx / d) * 3.2 * dt;
-        r.group.position.z += (dz / d) * 3.2 * dt;
-        r.group.position.y = Math.abs(Math.sin(r.hop)) * 0.45;
-        r.group.rotation.y = Math.atan2(dx, dz);
+        r.group.rotation.z *= 0.9;
+        if (d < 0.8) {
+          r.wait += dt;
+          if (r.wait > 1.5 + (r.hop % 1.5)) {
+            r.tx = r.hx + (Math.random() - 0.5) * 22; r.tz = r.hz + (Math.random() - 0.5) * 22; r.wait = 0;
+          }
+        } else {
+          r.hop += dt * 9;
+          r.group.position.x += (dx / d) * 3.2 * dt;
+          r.group.position.z += (dz / d) * 3.2 * dt;
+          r.group.position.y = Math.abs(Math.sin(r.hop)) * 0.45;
+          r.group.rotation.y = Math.atan2(dx, dz);
+        }
       }
     }
     // perched birds: bob and look around
