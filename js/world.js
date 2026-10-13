@@ -440,9 +440,9 @@ export function buildWorld(scene) {
     const heroStart = treeSpots.length;
     for (const [hx, hz, hs] of heroes) treeSpots.push([hx, hz, hs]);
     const trunkG = new THREE.CylinderGeometry(0.45, 0.65, 3, 7);
-    const folG = new THREE.IcosahedronGeometry(1.7, 0);
-    const folG2 = new THREE.IcosahedronGeometry(1.1, 0);
-    const folG3 = new THREE.IcosahedronGeometry(0.75, 0);
+    const folG = new THREE.IcosahedronGeometry(1.7, 1);
+    const folG2 = new THREE.IcosahedronGeometry(1.1, 1);
+    const folG3 = new THREE.IcosahedronGeometry(0.75, 1);
     const trunks = new THREE.InstancedMesh(trunkG, mat(0x6a4a30), treeSpots.length);
     const canA = new THREE.InstancedMesh(folG, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
     const canB = new THREE.InstancedMesh(folG2, new THREE.MeshStandardMaterial({ roughness: 1 }), treeSpots.length);
@@ -805,7 +805,7 @@ export function buildWorld(scene) {
       scene.add(m); waters.push({ x, z, rx, rz }); return m;
     };
     lakeMesh = mkWater(42, 32, -80, 20); // BIG — borders the west map edge
-    pondMesh = mkWater(8, 6, 85, -15);
+    pondMesh = mkWater(8, 6, 98, -28); // off the tavern→forest path (was blocking it)
     // lantern reflection streaks on the lake (vertical warm gradients)
     const sc = document.createElement("canvas"); sc.width = 32; sc.height = 128;
     {
