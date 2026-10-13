@@ -120,6 +120,26 @@ export function buildNPCs(scene) {
     wi++;
   }
 
+  // village market vendors: stationary behind stalls, facing customers
+  const VENDOR_SPOTS = [
+    { x: -16, z: 93.5, ry: Math.PI, goods: "apples", line: "Fresh apples, picked this morning!" },
+    { x: -2,  z: 95.5, ry: Math.PI, goods: "bread",  line: "Warm bread! Still warm!" },
+    { x: 8,   z: 97.5, ry: Math.PI, goods: "pies",   line: "Pies! Berry pies!" },
+    { x: 18,  z: 93.5, ry: Math.PI, goods: "veg",    line: "Fresh greens, best in Corona!" },
+    { x: -12, z: 97.5, ry: Math.PI, goods: "pottery", line: "Hand-thrown pots, finest clay!" },
+    { x: -6,  z: 99.5, ry: Math.PI, goods: "cloth",   line: "Silks and cottons, feel the weave!" },
+    { x: 12,  z: 95.5, ry: Math.PI, goods: "flowers", line: "Fresh blooms for your hair!" },
+  ];
+  for (const v of VENDOR_SPOTS) {
+    const { group, headY } = personMesh(wanderCols[wi % wanderCols.length]);
+    group.position.set(v.x, 0, v.z);
+    group.rotation.y = v.ry; // face south toward the path/customers
+    scene.add(group);
+    npcs.push({ name: "Vendor", kind: "vendor", group, headY,
+      flavor: v.line, phase: Math.random() * 6 });
+    wi++;
+  }
+
   // extra tavern thugs (seated, generic)
   const thugSpots = [[76.5, 51.5, 0x7a5a2a], [79.5, 48.5, 0x5a7a3a], [82.5, 59.5, 0x3a6a8a], [85.5, 56.5, 0x8a3a5a]];
   const thugs = [];
@@ -325,6 +345,16 @@ export function buildNPCs(scene) {
           n.rod.rotation.x -= 0.15;
         }
         facePlayer(n, dt, playerPos, 7);
+      } else if (n.kind === "vendor") {
+        // lively merchant: bobs, gestures, calls out
+        n.group.position.y = Math.abs(Math.sin(t * 2 + n.phase)) * 0.12;
+        n.group.rotation.y += Math.sin(t * 0.5 + n.phase) * 0.003; // sway
+        // wave arm when player is near
+        const dx = playerPos.x - n.group.position.x, dz = playerPos.z - n.group.position.z;
+        if (Math.hypot(dx, dz) < 8) {
+          n.group.rotation.y = Math.atan2(dx, dz); // face the customer!
+        }
+        facePlayer(n, dt, playerPos, 6);
       }
     }
     // rabbits hop (with ear twitches and happy binkies!)

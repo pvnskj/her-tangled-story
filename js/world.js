@@ -16,12 +16,12 @@ export const ZONES = [
 const PATHS = [
   [0, -90, -45, -60],    // tower -> festival
   [-45, -60, -36, 20],   // festival -> lake pier (stops AT the shore, not in water)
-  [-36, 20, 0, 90],      // lake pier -> village
-  [0, 90, 85, 45],       // village -> tavern
+  [-36, 20, 0, 82],      // lake pier -> village (stops BEFORE the well, not in it!)
+  [0, 82, 85, 45],       // village -> tavern
   [85, 45, 80, -40],     // tavern -> forest
   [80, -40, 0, -90],     // forest -> tower
   [-45, -60, -45, -40],  // festival approach spur
-  [0, 90, 0, 65],        // village north gate spur
+  [0, 82, 0, 65],        // village north gate spur
 ];
 function distToSeg(px, pz, ax, az, bx, bz) {
   const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz;
@@ -783,14 +783,32 @@ export function buildWorld(scene) {
       addCollider(h.x, h.z, 5);
     }
     addPool(0, 92, 34, 0.32); // warm heart of the village
-    // market stalls
-    [[-12, 96], [-6, 98], [12, 94]].forEach(([sx, sz]) => {
-      box(3.6, 0.25, 2.6, 0x8a6238, sx, 2.6, sz);
+    // market stalls (proper counter height, posts reach the awning, goods on top)
+    [[-12, 96, "pottery"], [-6, 98, "cloth"], [12, 94, "flowers"]].forEach(([sx, sz, goods]) => {
+      box(3.6, 0.9, 2.6, 0x8a6238, sx, 0.45, sz); // counter base
+      box(3.8, 0.12, 2.8, 0x9a7248, sx, 0.96, sz); // countertop
       const awn = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.18, 3.2),
         new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 1 }));
       awn.position.set(sx, 3.4, sz); awn.rotation.z = 0.12; scene.add(awn);
       [[-1.6, -1.1], [1.6, -1.1], [-1.6, 1.1], [1.6, 1.1]].forEach(([px, pz]) =>
-        box(0.22, 2.6, 0.22, 0x6a4a30, sx + px, 1.3, sz + pz));
+        box(0.22, 3.4, 0.22, 0x6a4a30, sx + px, 1.7, sz + pz)); // posts reach the awning
+      // goods on the counter
+      if (goods === "pottery") {
+        for (let i = 0; i < 4; i++) {
+          const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 0.5, 8),
+            mat([0xc96a3a, 0x8a6a9a, 0x6a9a8a, 0xd8a05a][i]));
+          pot.position.set(sx - 1.1 + i * 0.75, 1.27, sz); scene.add(pot);
+        }
+      } else if (goods === "cloth") {
+        for (let i = 0; i < 3; i++)
+          box(0.7, 0.35, 0.9, [0xd86a9a, 0x6a9fd8, 0x7fbf6a][i], sx - 0.9 + i * 0.9, 1.2, sz);
+      } else {
+        for (let i = 0; i < 5; i++) {
+          const f = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6),
+            new THREE.MeshStandardMaterial({ color: [0xff9ecf, 0xffd94d, 0xc39bff, 0xff8a7a, 0xffffff][i], roughness: 0.8 }));
+          f.position.set(sx - 1.2 + i * 0.6, 1.25, sz + (i % 2) * 0.4 - 0.2); scene.add(f);
+        }
+      }
       addCollider(sx, sz, 2.4);
     });
     // food stalls with goods (Bruno-style market density)
