@@ -222,7 +222,7 @@ function interactWith(target) {
 }
 
 // ---------- boat ride (free rowing on the lake) ----------
-const BOAT_PARK = { x: -58, z: 15 }; // beside the dock, visible on approach
+const BOAT_PARK = { x: -43, z: 15 }; // beside the dock, visible on approach
 function boatNearShore() {
   const b = world.boat.group.position;
   if (Math.hypot(b.x - BOAT_PARK.x, b.z - BOAT_PARK.z) < 8) return true;

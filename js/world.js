@@ -15,8 +15,8 @@ export const ZONES = [
 // walking-path network: dirt strips connecting the six zones (also grass exclusions)
 const PATHS = [
   [0, -90, -45, -60],    // tower -> festival
-  [-45, -60, -57, 20],   // festival -> lake DOCK (not the center — the entrance!)
-  [-57, 20, 0, 90],      // lake dock -> village
+  [-45, -60, -43, 20],   // festival -> lake DOCK (the entrance!)
+  [-43, 20, 0, 90],      // lake dock -> village
   [0, 90, 85, 45],       // village -> tavern
   [85, 45, 80, -40],     // tavern -> forest
   [80, -40, 0, -90],     // forest -> tower
@@ -822,7 +822,7 @@ export function buildWorld(scene) {
   {
     const mkWater = (rx, rz, x, z) => {
       const m = new THREE.Mesh(new THREE.CircleGeometry(1, 44),
-        new THREE.MeshStandardMaterial({ color: 0x35b8c8, emissive: 0x0a3a44, transparent: true, opacity: 0.55, roughness: 0.1, metalness: 0.3 }));
+        new THREE.MeshStandardMaterial({ color: 0x14a0b8, emissive: 0x083038, transparent: true, opacity: 0.68, roughness: 0.1, metalness: 0.3 }));
       m.rotation.x = -Math.PI / 2; m.scale.set(rx, rz, 1); m.position.set(x, 0.06, z);
       scene.add(m); waters.push({ x, z, rx, rz }); return m;
     };
@@ -954,7 +954,7 @@ export function buildWorld(scene) {
     addGlow(-80, 3, 20, 42, 0xff9a50, 0.22); // broad warm shimmer over the lake
     addPool(-56, 20, 18, 0.3);               // dock lamplight
   }
-  const dockRect = { x0: -68, x1: -46, z0: 17.5, z1: 22.5 };
+  const dockRect = { x0: -50, x1: -36, z0: 17.5, z1: 22.5 }; // extends from shore into water
   {
     for (let i = 0; i < 7; i++) box(2.6, 0.25, 4.4, 0x8a6a48, -48 - i * 3, 0.35, 20);
     [[-48, 18.2], [-48, 21.8], [-63, 18.2], [-63, 21.8]].forEach(([px, pz]) =>
@@ -1026,7 +1026,7 @@ export function buildWorld(scene) {
   }
 
   // ---------- boat ----------
-  const boat = { group: new THREE.Group(), from: V3(-58, 0.35, 15), to: V3(-80, 0.35, 44), t: 0, riding: false };
+  const boat = { group: new THREE.Group(), from: V3(-43, 0.35, 15), to: V3(-80, 0.35, 44), t: 0, riding: false };
   {
     const g = boat.group;
     const hull = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.9, 1.9), mat(0x7a5230));

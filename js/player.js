@@ -53,8 +53,8 @@ export class Player {
   // called from the canvas drag handler: dx/dy are pointer pixels
   addLook(dx, dy) {
     if (this.camMode === 'first') {
-      // first-person: drag to look around
-      this.fpYaw -= dx * 0.005;
+      // first-person: drag to look around (drag right = turn right)
+      this.fpYaw += dx * 0.005;
       this.fpPitch = THREE.MathUtils.clamp(this.fpPitch + dy * 0.004, -0.6, 0.6);
     } else {
       this.orbit.yaw -= dx * 0.0052;
@@ -152,9 +152,11 @@ export class Player {
     // FIRST-PERSON: see through her eyes — drag to look, joystick moves relative to view
     if (this.camMode === 'first') {
       const eyeH = 2.9;
-      const lx = Math.sin(this.fpYaw) * 12, lz = Math.cos(this.fpYaw) * 12;
+      const sinY = Math.sin(this.fpYaw), cosY = Math.cos(this.fpYaw);
+      const lx = sinY * 12, lz = cosY * 12;
       const ly = eyeH + this.fpPitch * 10;
-      camera.position.set(p.x, eyeH, p.z);
+      // pulled back 2.2 units for a slightly wider, less claustrophobic view
+      camera.position.set(p.x - sinY * 2.2, eyeH, p.z - cosY * 2.2);
       if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x + lx, ly, p.z + lz);
       // snappy look (no heavy smoothing — first-person needs to feel direct)
       this.lookSm.lerp(new THREE.Vector3(p.x + lx, ly, p.z + lz), 1 - Math.pow(0.000001, dt));
