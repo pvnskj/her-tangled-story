@@ -435,8 +435,9 @@ export function buildWorld(scene) {
     }
     // hero trees: hand-placed, larger — frame the tower and the lake shore
     // (kept clear of clue spots, the dock, and walking lines)
+    // NOTE: lake is now rx=42 — these sit ON the shore, not in the water
     const heroes = [[-16,-68,1.6],[18,-70,1.45],[-20,-98,1.7],[16,-102,1.35],
-                    [-52,4,1.4],[-48,36,1.5],[-104,44,1.45],[-108,-6,1.55]];
+                    [-32,4,1.4],[-28,36,1.5],[-108,52,1.45],[-108,-6,1.55]];
     const heroStart = treeSpots.length;
     for (const [hx, hz, hs] of heroes) treeSpots.push([hx, hz, hs]);
     const trunkG = new THREE.CylinderGeometry(0.45, 0.65, 3, 7);
@@ -1039,6 +1040,34 @@ export function buildWorld(scene) {
     seat.position.set(0.8, 1, 0); g.add(seat);
     const oar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3, 6), mat(0x8a6a48));
     oar.rotation.z = 1.1; oar.position.set(-0.6, 1.1, 1.2); g.add(oar);
+    // fairy lights: string of warm glowing bulbs around the boat rim
+    const fairy = [];
+    const bulbG = new THREE.SphereGeometry(0.09, 8, 6);
+    const bulbM = new THREE.MeshBasicMaterial({ color: 0xffd98a });
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      const bx = Math.cos(a) * 2.1, bz = Math.sin(a) * 1.0;
+      const bulb = new THREE.Mesh(bulbG, bulbM);
+      bulb.position.set(bx, 1.15 + Math.sin(a * 3) * 0.15, bz);
+      g.add(bulb);
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffc86a,
+        transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
+      glow.position.copy(bulb.position); glow.scale.set(0.7, 0.7, 1);
+      g.add(glow);
+      fairy.push({ bulb, glow, ph: i * 0.7 });
+    }
+    // mast with a hanging lantern
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.5, 6), mat(0x6a4a2a));
+    mast.position.set(-1.5, 2.0, 0); g.add(mast);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffe8a8 }));
+    lamp.position.set(-1.5, 3.1, 0); g.add(lamp);
+    const lampGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd88a,
+      transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+    lampGlow.position.copy(lamp.position); lampGlow.scale.set(1.8, 1.8, 1);
+    g.add(lampGlow);
+    fairy.push({ bulb: lamp, glow: lampGlow, ph: 0 });
+    worldAnims.boatFairy = fairy;
     g.position.copy(boat.from);
     scene.add(g);
   }
@@ -1331,6 +1360,12 @@ export function buildWorld(scene) {
       tu.g.position.x = tu.hx + Math.sin(t * 0.15 + tu.ph) * 3;
       tu.g.position.z = tu.hz + Math.cos(t * 0.12 + tu.ph) * 3;
       tu.g.rotation.y += Math.sin(t * 0.1 + tu.ph) * 0.002;
+    }
+    for (const f of (worldAnims.boatFairy || [])) { // fairy lights twinkle
+      const tw = 0.6 + Math.sin(t * 3 + f.ph) * 0.25 + Math.sin(t * 7.3 + f.ph * 2) * 0.15;
+      f.glow.material.opacity = Math.max(0.3, tw);
+      const s = 0.65 + tw * 0.25;
+      f.glow.scale.set(s, s, 1);
     }
     // guiding leaves stream along tower → festival → lake → village
     {

@@ -60,13 +60,18 @@ export function buildNPCs(scene) {
   }
 
   // zone wanderers: 4 per zone across all six zones (24 total, never clustered)
+  // NOTE: lake shore uses stationary FISHERS (not wanderers) — standing at the water with rods
   const ZONE_HOMES = [
     { x: -15, z: -70, r: 12 },  // tower meadow
     { x: 70,  z: -30, r: 15 },  // forest trail
     { x: 85,  z: 62,  r: 12 },  // tavern exterior
     { x: 0,   z: 90,  r: 18 },  // village
-    { x: -45, z: 30,  r: 10 },  // lake shore
     { x: -45, z: -35, r: 12 },  // festival approach
+  ];
+  // lake fishers: stand ON the shore facing the water, rods out
+  const FISHER_SPOTS = [
+    { x: -32, z: 12, ry: -1.2 }, { x: -30, z: 28, ry: -1.4 },
+    { x: -34, z: 44, ry: -1.1 }, { x: -36, z: -2, ry: -1.3 },
   ];
   function zoneWP(home) {
     const a = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * home.r;
@@ -87,6 +92,32 @@ export function buildNPCs(scene) {
         home, wp: zoneWP(home), wait: 0 });
       wi++;
     }
+  }
+  // lake fishers: stationary, facing the water with fishing rods
+  for (const [i, spot] of FISHER_SPOTS.entries()) {
+    const { group, headY } = personMesh(wanderCols[wi % wanderCols.length]);
+    group.position.set(spot.x, 0, spot.z);
+    group.rotation.y = spot.ry;
+    // fishing rod: long thin cylinder angled toward the water
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4.5, 6),
+      new THREE.MeshStandardMaterial({ color: 0x6a4a2a, roughness: 0.9 }));
+    rod.position.set(0.5, 1.8, 0.8); rod.rotation.x = 0.7; rod.rotation.z = -0.3;
+    group.add(rod);
+    // line: thin line from rod tip toward water
+    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 3, 4),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+    line.position.set(0.9, 0.8, 2.2); line.rotation.x = 0.3;
+    group.add(line);
+    // bobber: small red/white float on the water
+    const bob = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6),
+      new THREE.MeshStandardMaterial({ color: 0xff4a4a, roughness: 0.6 }));
+    bob.position.set(spot.x + 2.5, 0.25, spot.z + 3.5);
+    scene.add(bob);
+    scene.add(group);
+    npcs.push({ name: "Fisher", kind: "fisher", group, headY,
+      flavor: "The koi are biting today!", phase: Math.random() * 6,
+      rod, bob, bobX: spot.x + 2.5, bobZ: spot.z + 3.5 });
+    wi++;
   }
 
   // extra tavern thugs (seated, generic)
@@ -283,6 +314,17 @@ export function buildNPCs(scene) {
           n.group.rotation.y = Math.atan2(dx, dz);
           n.group.position.y = Math.abs(Math.sin(t * 8)) * 0.08;
         }
+      } else if (n.kind === "fisher") {
+        // stationary fishing: rod bobs, bobber dances on the water
+        n.rod.rotation.x = 0.7 + Math.sin(t * 1.5 + n.phase) * 0.08;
+        n.bob.position.y = 0.25 + Math.sin(t * 2.2 + n.phase) * 0.08;
+        n.bob.position.x = n.bobX + Math.sin(t * 0.8 + n.phase) * 0.3;
+        // occasional tug! (fish biting)
+        if (Math.sin(t * 0.3 + n.phase) > 0.97) {
+          n.bob.position.y -= 0.15;
+          n.rod.rotation.x -= 0.15;
+        }
+        facePlayer(n, dt, playerPos, 7);
       }
     }
     // rabbits hop (with ear twitches and happy binkies!)

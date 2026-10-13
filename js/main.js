@@ -257,10 +257,17 @@ function tapBoat() {
 function updateBoat(dt, t) {
   const b = world.boat;
   if (!b.riding) return;
-  const ix = player.moveVec.x, iz = player.moveVec.z;
+  let ix = player.moveVec.x, iz = player.moveVec.z;
+  // in first-person, boat steers relative to view (like walking)
+  if (player.camMode === 'first') {
+    const sinY = Math.sin(player.fpYaw), cosY = Math.cos(player.fpYaw);
+    const rx = (-iz) * sinY + ix * (-cosY);
+    const rz = (-iz) * cosY + ix * sinY;
+    ix = rx; iz = rz;
+  }
   const len = Math.hypot(ix, iz);
-  const sp = 7.5 * Math.min(1, len);
-  if (len > 0.05) {
+  const sp = 6.0 * Math.min(1, len); // gentle rowing pace, not twitchy
+  if (len > 0.08) { // deadzone so it doesn't drift
     const nx = ix / Math.max(1, len), nz = iz / Math.max(1, len);
     b.group.position.x += nx * sp * dt;
     b.group.position.z += nz * sp * dt;
@@ -268,7 +275,7 @@ function updateBoat(dt, t) {
     let dr = targetRot - b.group.rotation.y;
     while (dr > Math.PI) dr -= Math.PI * 2;
     while (dr < -Math.PI) dr += Math.PI * 2;
-    b.group.rotation.y += dr * Math.min(1, dt * 5);
+    b.group.rotation.y += dr * Math.min(1, dt * 3.5); // smooth turn, not snap
   }
   // stay on the lake: clamp inside the ellipse with a small margin
   const w = world.waters[0];
