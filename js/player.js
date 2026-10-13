@@ -92,11 +92,13 @@ export class Player {
       return;
     }
     // in first-person, joystick moves relative to where you're looking
+    // (up on stick = forward in view direction)
     let ix = this.moveVec.x, iz = this.moveVec.z;
     if (this.camMode === 'first') {
-      const cosY = Math.cos(this.fpYaw), sinY = Math.sin(this.fpYaw);
-      const rx = ix * cosY + iz * sinY;
-      const rz = -ix * sinY + iz * cosY;
+      const sinY = Math.sin(this.fpYaw), cosY = Math.cos(this.fpYaw);
+      // forward = (sinY, cosY), right = (cosY, -sinY); stick up is -iz
+      const rx = (-iz) * sinY + ix * cosY;
+      const rz = (-iz) * cosY + ix * (-sinY);
       ix = rx; iz = rz;
     }
     const len = Math.hypot(ix, iz);

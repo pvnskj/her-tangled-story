@@ -15,8 +15,8 @@ export const ZONES = [
 // walking-path network: dirt strips connecting the six zones (also grass exclusions)
 const PATHS = [
   [0, -90, -45, -60],    // tower -> festival
-  [-45, -60, -80, 20],   // festival -> lake
-  [-80, 20, 0, 90],      // lake -> village
+  [-45, -60, -57, 20],   // festival -> lake DOCK (not the center — the entrance!)
+  [-57, 20, 0, 90],      // lake dock -> village
   [0, 90, 85, 45],       // village -> tavern
   [85, 45, 80, -40],     // tavern -> forest
   [80, -40, 0, -90],     // forest -> tower
