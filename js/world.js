@@ -15,8 +15,8 @@ export const ZONES = [
 // walking-path network: dirt strips connecting the six zones (also grass exclusions)
 const PATHS = [
   [0, -90, -45, -60],    // tower -> festival
-  [-45, -60, -43, 20],   // festival -> lake DOCK (the entrance!)
-  [-43, 20, 0, 90],      // lake dock -> village
+  [-45, -60, -36, 20],   // festival -> lake pier (stops AT the shore, not in water)
+  [-36, 20, 0, 90],      // lake pier -> village
   [0, 90, 85, 45],       // village -> tavern
   [85, 45, 80, -40],     // tavern -> forest
   [80, -40, 0, -90],     // forest -> tower
@@ -955,10 +955,11 @@ export function buildWorld(scene) {
     addGlow(-80, 3, 20, 42, 0xff9a50, 0.22); // broad warm shimmer over the lake
     addPool(-56, 20, 18, 0.3);               // dock lamplight
   }
-  const dockRect = { x0: -50, x1: -36, z0: 17.5, z1: 22.5 }; // extends from shore into water
+  const dockRect = { x0: -58, x1: -36, z0: 17.5, z1: 22.5 }; // pier connects shore to water
   {
-    for (let i = 0; i < 7; i++) box(2.6, 0.25, 4.4, 0x8a6a48, -48 - i * 3, 0.35, 20);
-    [[-48, 18.2], [-48, 21.8], [-63, 18.2], [-63, 21.8]].forEach(([px, pz]) =>
+    // pier planks: start AT the shoreline (x=-38) and extend west into the lake
+    for (let i = 0; i < 7; i++) box(2.6, 0.25, 4.4, 0x8a6a48, -38 - i * 3, 0.35, 20);
+    [[-38, 18.2], [-38, 21.8], [-53, 18.2], [-53, 21.8]].forEach(([px, pz]) =>
       cyl(0.25, 0.25, 1.6, 0x5a4228, px, 0, pz, 8));
   }
   // lantern posts along the lake's east/south shore — their reflections shimmer below
@@ -967,9 +968,9 @@ export function buildWorld(scene) {
     const orbM = new THREE.MeshBasicMaterial({ color: 0xffd98a });
     const postM = mat(0x4a3826);
     const posts = [
-      { px: -50.6, pz: 5.8,  sx: -60, sz: 5.8 },   // north-east shore
-      { px: -50.6, pz: 34.2, sx: -60, sz: 34.2 },  // south-east shore
-      { px: -63.3, pz: 0.4,  sx: -69, sz: 0.4 },   // north shore
+      { px: -40, pz: 5.8,  sx: -48, sz: 5.8 },   // north-east shore (on land!)
+      { px: -40, pz: 34.2, sx: -48, sz: 34.2 },  // south-east shore (on land!)
+      { px: -42, pz: 0.4,  sx: -50, sz: 0.4 },   // north shore (on land!)
     ];
     for (const { px, pz, sx, sz } of posts) {
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 4.6, 8), postM);
@@ -1027,7 +1028,7 @@ export function buildWorld(scene) {
   }
 
   // ---------- boat ----------
-  const boat = { group: new THREE.Group(), from: V3(-43, 0.35, 15), to: V3(-80, 0.35, 44), t: 0, riding: false };
+  const boat = { group: new THREE.Group(), from: V3(-50, 0.35, 15), to: V3(-80, 0.35, 44), t: 0, riding: false };
   {
     const g = boat.group;
     const hull = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.9, 1.9), mat(0x7a5230));
