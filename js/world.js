@@ -382,9 +382,10 @@ export function buildWorld(scene) {
       [95,-32],[72,-52],[85,-15],[80,40],[98,40],[90,45],[0,90],[0,-95]];
     const clearOf = (x, z, d) => avoid.every(([ax, az]) => (x-ax)**2 + (z-az)**2 > d*d);
     let guard = 0;
-    while (treeSpots.length < 95 && guard++ < 4000) {
+    while (treeSpots.length < 80 && guard++ < 40000) {
       const x = 55 + rand() * 50, z = -65 + rand() * 50;
       if (!clearOf(x, z, 4)) continue;
+      if (onPath(x, z, 5)) continue; // keep trees off the walking paths (trunks have colliders)
       if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 16)) continue;
       const pdx = (x - 85) / 10, pdz = (z + 15) / 8;
       if (pdx*pdx + pdz*pdz < 1.4) continue; // keep the pond clear
@@ -392,8 +393,11 @@ export function buildWorld(scene) {
     }
     // scattered trees elsewhere
     guard = 0;
-    while (treeSpots.length < 121 && guard++ < 4000) {
+    while (treeSpots.length < 121 && guard++ < 20000) {
       const x = -110 + rand() * 220, z = -110 + rand() * 220;
+      if (onPath(x, z, 8)) continue; // keep trees CLEAR of walking paths (canopies overhang!)
+      // keep the forest arch corridor clear — only arch trees there
+      if (distToSeg(x, z, 80, -40, 0, -90) < 16) continue;
       if (Math.hypot(x - 80, z + 40) < 52) continue;
       if (Math.hypot(x, z - 90) < 30) continue;
       if (Math.hypot(x + 80, z - 20) < 36) continue;
@@ -403,12 +407,12 @@ export function buildWorld(scene) {
       if (!clearOf(x, z, 3)) continue;
       treeSpots.push([x, z]);
     }
-    // enchanted forest ARCH: tall trees set BACK from the path, canopies meet HIGH overhead
-    // (not in your face — you see through the arch, not at blobs)
+    // enchanted forest ARCH: tall trees form a clear corridor, canopies HIGH overhead
+    // (corridor you walk through, not blobs you walk into)
     const groveStart = treeSpots.length;
     {
-      const ax = 0, az = -90, bx = -45, bz = -60; // tower -> festival path
-      const segs = 10;
+      const ax = 80, az = -40, bx = 0, bz = -90; // forest -> tower path (through The Forest zone)
+      const segs = 12;
       for (let s = 0; s <= segs; s++) {
         const t = s / segs;
         const px = ax + (bx - ax) * t, pz = az + (bz - az) * t;
@@ -416,18 +420,21 @@ export function buildWorld(scene) {
         const dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz);
         const nx = -dz / len, nz = dx / len;
         for (const side of [-1, 1]) {
-          const off = 11 + (s % 2) * 2; // set BACK — clear sightlines along the path
+          const off = 7.5 + (s % 2) * 1.5; // corridor — enclosed but walkable
           const x = px + nx * off * side, z = pz + nz * off * side;
           if (Math.hypot(x, z + 95) < 18) continue; // tower itself
-          treeSpots.push([x, z, 1.7]); // TALL — canopies high overhead, not at eye level
+          treeSpots.push([x, z, 2.1]); // TALL — canopies meet overhead
         }
       }
       // a few extra wild trees behind the arch rows for depth
       let placed = 0, guard = 0;
       while (placed < 8 && guard++ < 1000) {
-        const a = rand() * Math.PI * 2, r = 16 + rand() * 14;
-        const x = -22 + Math.cos(a) * r, z = -75 + Math.sin(a) * r;
-        if (onPath(x, z, 9)) continue;
+        const a = rand() * Math.PI * 2, r = 20 + rand() * 14;
+        const x = 40 + Math.cos(a) * r, z = -65 + Math.sin(a) * r;
+        if (onPath(x, z, 10)) continue;
+        if (distToSeg(x, z, 80, -40, 0, -90) < 16) continue;
+        const wpdx = (x - 85) / 10, wpdz = (z + 15) / 8;
+        if (wpdx*wpdx + wpdz*wpdz < 1.4) continue; // keep the pond clear
         if (treeSpots.some(([tx, tz]) => (x-tx)**2 + (z-tz)**2 < 25)) continue;
         treeSpots.push([x, z, 1.4]);
         placed++;
@@ -479,7 +486,7 @@ export function buildWorld(scene) {
     });
     scene.add(trunks, canA, canB, canC);
     worldAnims.swayCanopy = { canA, canB, canC, swayData, dummy: new THREE.Object3D() };
-    treeSpots.slice(0, 95).forEach(([x, z]) => addCollider(x, z, 0.9));
+    treeSpots.slice(0, 80).forEach(([x, z]) => addCollider(x, z, 0.9));
     for (let i = heroStart; i < treeSpots.length; i++) addCollider(treeSpots[i][0], treeSpots[i][1], 1.2);
     for (let i = groveStart; i < heroStart; i++) addCollider(treeSpots[i][0], treeSpots[i][1], 1.1);
   }
@@ -540,7 +547,7 @@ export function buildWorld(scene) {
   {
     const deers = [], pandas = [];
     // DEERS: slender body, long legs, neck, head with antlers
-    const deerSpots = [[-15, -65, 0.8], [-30, -55, -0.5], [25, 30, 2.1]];
+    const deerSpots = [[67, -34, 0.8], [88, -52, -0.5], [58, -58, 2.1]];
     for (const [dx, dz, ry] of deerSpots) {
       const g = new THREE.Group();
       const brown = mat(0x9a6a45), dark = mat(0x6a452a);
@@ -572,7 +579,7 @@ export function buildWorld(scene) {
       deers.push({ group: g, head, ph: rand() * 6 });
     }
     // PANDAS: round body, black/white, sitting
-    const pandaSpots = [[-25, -70, 0.3], [10, 40, -1.2]];
+    const pandaSpots = [[74, -48, 0.3], [92, -38, -1.2]];
     for (const [px, pz, ry] of pandaSpots) {
       const g = new THREE.Group();
       const white = mat(0xf0ece0), black = mat(0x2a2a30);
@@ -1020,6 +1027,8 @@ export function buildWorld(scene) {
       [0, -90, -45, -60],    // tower -> festival
       [-45, -60, -80, 20],   // festival -> lake
       [-80, 20, 0, 90],      // lake -> village
+      [85, 45, 80, -40],     // tavern -> forest
+      [80, -40, 0, -90],     // forest -> tower
     ];
     let side = 1, colorFlip = false;
     for (const [ax, az, bx, bz] of segs) {
