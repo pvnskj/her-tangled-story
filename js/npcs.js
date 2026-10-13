@@ -42,7 +42,7 @@ const NAMED = [
     hint: "I saw sparkles by the flower cart! Shiny shiny!" },
   { name: "Elder Asha", x: -10, z: 88, clueId: 23, color: 0x9a6ad8,
     hint: "The festival stage holds the greatest treasure of all. You'll see." },
-  { name: "Dev the fisher", x: -50, z: 16, clueId: 25, color: 0x4a7a9a,
+  { name: "Dev the fisher", x: -33, z: 16, clueId: 25, color: 0x4a7a9a,
     hint: "The lake shows memories in its reflection. And the old boat? It remembers too." },
 ];
 
