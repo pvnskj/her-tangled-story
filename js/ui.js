@@ -70,6 +70,11 @@ export const UI = {
     // lake hint
     g.fillStyle = "rgba(95,145,225,0.4)";
     g.beginPath(); g.ellipse(mx(-80), mz(20), 28 * (R / B), 22 * (R / B), 0, 0, 7); g.fill();
+    // valley rim — ring of hills around the border (the "valley" in Valley Map)
+    g.strokeStyle = "rgba(90,140,90,0.55)"; g.lineWidth = 10;
+    g.beginPath(); g.arc(C, C, R * 0.96, 0, 7); g.stroke();
+    g.fillStyle = "rgba(140,200,140,0.9)"; g.font = "10px Georgia";
+    g.fillText("⛰ Valley Hills", C, 16);
     // zones with per-zone clue progress
     g.textAlign = "center";
     for (const zn of zones) {

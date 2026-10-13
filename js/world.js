@@ -770,21 +770,22 @@ export function buildWorld(scene) {
 
   // ---------- Valley hills (the "valley" in Valley Map — ring of hills around the border) ----------
   {
-    const hillCols = [0x3a5a3a, 0x4a6a4a, 0x2a4a3a, 0x5a7a5a];
+    const hillCols = [0x4a6a4a, 0x5a7a5a, 0x3a5a4a, 0x6a8a6a]; // brighter greens, visible at dusk
     for (let i = 0; i < 22; i++) {
       const a = (i / 22) * Math.PI * 2 + rand() * 0.15;
       const r = 118 + rand() * 15; // just outside play area, clearly visible
       const hx = Math.cos(a) * r, hz = Math.sin(a) * r;
       const hs = 28 + rand() * 30; // TALL — unmistakable on the horizon
       const hill = new THREE.Mesh(new THREE.ConeGeometry(hs * 0.85, hs, 7),
-        new THREE.MeshStandardMaterial({ color: hillCols[i % 4], roughness: 1 }));
+        new THREE.MeshStandardMaterial({ color: hillCols[i % 4], roughness: 1,
+          emissive: hillCols[i % 4], emissiveIntensity: 0.25 })); // subtle glow so they read at dusk
       hill.position.set(hx, hs * 0.28, hz); // sunk into the ground
       hill.rotation.y = rand() * Math.PI;
       scene.add(hill);
       // snowcap on the tallest
       if (hs > 40) {
         const cap = new THREE.Mesh(new THREE.ConeGeometry(hs * 0.3, hs * 0.32, 7),
-          new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.9 }));
+          new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.9, emissive: 0x8888aa, emissiveIntensity: 0.3 }));
         cap.position.set(hx, hs * 0.28 + hs * 0.34, hz);
         cap.rotation.y = hill.rotation.y;
         scene.add(cap);
