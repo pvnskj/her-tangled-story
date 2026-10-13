@@ -748,6 +748,49 @@ export function buildWorld(scene) {
       box(3.4, 0.35, 0.8, 0x7a5a38, tx, 0.75, tz - 2.4);
       addCollider(tx, tz, 2.4);
     });
+    // fire pit with thugs gathered around
+    const pitX = 78, pitZ = 42;
+    cyl(1.2, 1.4, 0.6, 0x5a5a5a, pitX, 0.3, pitZ, 10); // stone ring
+    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.4, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff7a2a }));
+    fire.position.set(pitX, 1.0, pitZ); scene.add(fire);
+    const fireGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff8a3a,
+      transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+    fireGlow.position.set(pitX, 1.2, pitZ); fireGlow.scale.set(4, 4, 1); scene.add(fireGlow);
+    worldAnims.firePit = { fire, glow: fireGlow, ph: rand() * 6 };
+    // logs around the fire
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + 0.4;
+      const lx = pitX + Math.cos(a) * 2.8, lz = pitZ + Math.sin(a) * 2.8;
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2.2, 8), mat(0x6a4a2a));
+      log.rotation.z = Math.PI / 2; log.rotation.y = -a;
+      log.position.set(lx, 0.35, lz); scene.add(log);
+    }
+  }
+
+  // ---------- Valley hills (the "valley" in Valley Map — ring of hills around the border) ----------
+  {
+    const hillM = new THREE.MeshStandardMaterial({ roughness: 1 });
+    const hillCols = [0x3a5a3a, 0x4a6a4a, 0x2a4a3a, 0x5a7a5a];
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2 + rand() * 0.2;
+      const r = 135 + rand() * 25; // outside the play area
+      const hx = Math.cos(a) * r, hz = Math.sin(a) * r;
+      const hs = 18 + rand() * 22; // height
+      const hill = new THREE.Mesh(new THREE.ConeGeometry(hs * 0.9, hs, 7),
+        new THREE.MeshStandardMaterial({ color: hillCols[i % 4], roughness: 1 }));
+      hill.position.set(hx, hs * 0.3, hz); // sunk into the ground
+      hill.rotation.y = rand() * Math.PI;
+      scene.add(hill);
+      // snowcap on the tallest
+      if (hs > 32) {
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(hs * 0.32, hs * 0.35, 7),
+          new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.9 }));
+        cap.position.set(hx, hs * 0.3 + hs * 0.32, hz);
+        cap.rotation.y = hill.rotation.y;
+        scene.add(cap);
+      }
+    }
   }
 
   // ---------- Village ----------
@@ -1397,6 +1440,12 @@ export function buildWorld(scene) {
       f.glow.material.opacity = Math.max(0.3, tw);
       const s = 0.65 + tw * 0.25;
       f.glow.scale.set(s, s, 1);
+    }
+    const fp = worldAnims.firePit; // tavern fire pit flickers
+    if (fp) {
+      const fl = 0.85 + Math.sin(t * 9 + fp.ph) * 0.15 + Math.sin(t * 23 + fp.ph * 2) * 0.08;
+      fp.fire.scale.set(fl, 1 + Math.sin(t * 7 + fp.ph) * 0.2, fl);
+      fp.glow.material.opacity = 0.7 + Math.sin(t * 8 + fp.ph) * 0.15;
     }
     // guiding leaves stream along tower → festival → lake → village
     {

@@ -140,16 +140,24 @@ export function buildNPCs(scene) {
     wi++;
   }
 
-  // extra tavern thugs (seated, generic)
-  const thugSpots = [[76.5, 51.5, 0x7a5a2a], [79.5, 48.5, 0x5a7a3a], [82.5, 59.5, 0x3a6a8a], [85.5, 56.5, 0x8a3a5a]];
+  // extra tavern thugs (seated, generic) — now with PERSONALITY
+  const thugSpots = [
+    [76.5, 51.5, 0x7a5a2a, "I dream of being a concert pianist!"],
+    [79.5, 48.5, 0x5a7a3a, "I knit! These are for my grandmother!"],
+    [82.5, 59.5, 0x3a6a8a, "I collect ceramic unicorns. Don't judge."],
+    [85.5, 56.5, 0x8a3a5a, "I'm a mime! ... (he mimes)"],
+    // around the fire pit
+    [76, 40, 0x6a5a7a, "I do puppet shows for the kids!"],
+    [80, 44, 0x7a6a4a, "I write poetry! 'Ode to a Mug...'"],
+  ];
   const thugs = [];
-  for (const [x, z, c] of thugSpots) {
+  for (const [x, z, c, line] of thugSpots) {
     const { group, headY } = personMesh(c, 1.25, true);
     group.position.set(x, 0, z);
     group.rotation.y = Math.atan2(78 - x, 50 - z);
     scene.add(group);
     thugs.push({ group, phase: Math.random() * 6, headY });
-    npcs.push({ name: "Thug", kind: "thug", group, headY, flavor: "We dream big dreams at the Snuggly Duckling!", phase: Math.random() * 6 });
+    npcs.push({ name: "Thug", kind: "thug", group, headY, flavor: line, phase: Math.random() * 6 });
   }
 
   // rabbits: 12 total — 5 along the main walking paths (unmissable), 7 in the forest
