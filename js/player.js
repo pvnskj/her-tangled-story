@@ -33,19 +33,33 @@ export class Player {
     this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
     // camera modes: 'third' (diorama), 'first' (her POV), 'top' (royalty view)
     this.camMode = 'third';
+    this.fpYaw = 0; // first-person look direction (radians)
+    this.fpPitch = 0;
   }
 
   cycleCamMode() {
     this.camMode = this.camMode === 'third' ? 'first' : this.camMode === 'first' ? 'top' : 'third';
     // hide her sprite in first-person so you don't see the back of her head
     if (this.sprite) this.sprite.visible = this.camMode !== 'first';
+    // when entering first-person, face her current movement direction
+    if (this.camMode === 'first') {
+      const ml = Math.hypot(this.moveVec.x, this.moveVec.z);
+      if (ml > 0.1) this.fpYaw = Math.atan2(this.moveVec.x, this.moveVec.z);
+      this.fpPitch = 0;
+    }
     return this.camMode;
   }
 
   // called from the canvas drag handler: dx/dy are pointer pixels
   addLook(dx, dy) {
-    this.orbit.yaw -= dx * 0.0052;
-    this.orbit.pitch = THREE.MathUtils.clamp(this.orbit.pitch + dy * 0.0052, -0.55, 0.55);
+    if (this.camMode === 'first') {
+      // first-person: drag to look around
+      this.fpYaw -= dx * 0.005;
+      this.fpPitch = THREE.MathUtils.clamp(this.fpPitch + dy * 0.004, -0.6, 0.6);
+    } else {
+      this.orbit.yaw -= dx * 0.0052;
+      this.orbit.pitch = THREE.MathUtils.clamp(this.orbit.pitch + dy * 0.0052, -0.55, 0.55);
+    }
     this.orbit.lastDrag = performance.now() / 1000;
   }
 
@@ -77,7 +91,14 @@ export class Player {
       this.svel.multiplyScalar(Math.max(0, 1 - dt * 4));
       return;
     }
-    const { x: ix, z: iz } = this.moveVec;
+    // in first-person, joystick moves relative to where you're looking
+    let ix = this.moveVec.x, iz = this.moveVec.z;
+    if (this.camMode === 'first') {
+      const cosY = Math.cos(this.fpYaw), sinY = Math.sin(this.fpYaw);
+      const rx = ix * cosY + iz * sinY;
+      const rz = -ix * sinY + iz * cosY;
+      ix = rx; iz = rz;
+    }
     const len = Math.hypot(ix, iz);
     // desired velocity (analog from joystick, digital from keys)
     const nx = len > 1e-4 ? ix / Math.max(1, len) : 0;
@@ -126,18 +147,15 @@ export class Player {
 
   updateCamera(camera, dt) {
     const p = this.group.position;
-    // FIRST-PERSON: see through her eyes — lanterns, arches, and fireflies up close
+    // FIRST-PERSON: see through her eyes — drag to look, joystick moves relative to view
     if (this.camMode === 'first') {
       const eyeH = 2.9;
-      const yaw = this.orbit.yaw + Math.atan2(this.group.rotation.y, 1);
-      // face her movement direction, or last drag direction
-      const fx = Math.sin(this.group.rotation.y), fz = Math.cos(this.group.rotation.y);
-      const tx = p.x + fx * 10 + Math.sin(this.orbit.yaw) * 8;
-      const tz = p.z + fz * 10 + Math.cos(this.orbit.yaw) * 8;
-      const ty = eyeH + this.orbit.pitch * 8;
-      camera.position.lerp(new THREE.Vector3(p.x, eyeH, p.z), 1 - Math.pow(0.0001, dt));
-      if (!this.lookSm) this.lookSm = new THREE.Vector3(tx, ty, tz);
-      this.lookSm.lerp(new THREE.Vector3(tx, ty, tz), 1 - Math.pow(0.001, dt));
+      const lx = Math.sin(this.fpYaw) * 12, lz = Math.cos(this.fpYaw) * 12;
+      const ly = eyeH + this.fpPitch * 10;
+      camera.position.set(p.x, eyeH, p.z);
+      if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x + lx, ly, p.z + lz);
+      // snappy look (no heavy smoothing — first-person needs to feel direct)
+      this.lookSm.lerp(new THREE.Vector3(p.x + lx, ly, p.z + lz), 1 - Math.pow(0.000001, dt));
       camera.lookAt(this.lookSm);
       return;
     }
