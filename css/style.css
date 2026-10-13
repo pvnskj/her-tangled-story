@@ -37,7 +37,7 @@ body {
   background: rgba(24, 14, 44, 0.55); border: 1px solid rgba(245,214,123,0.4); border-radius: 999px;
   padding: 5px 14px; font-size: 14px; color: rgba(247,236,212,0.85); letter-spacing: 1px;
 }
-#sound-toggle, #map-toggle {
+#sound-toggle, #map-toggle, #cam-toggle {
   pointer-events: auto; background: var(--panel); border: 1px solid var(--gold);
   border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer; color: #fff;
 }
