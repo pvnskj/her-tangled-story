@@ -145,6 +145,11 @@ export class Player {
         p.z = c.z + (dz / d) * min;
       }
     }
+    // follow the terrain — feel the slopes!
+    if (window.terrainHeight) {
+      const targetY = window.terrainHeight(p.x, p.z);
+      p.y += (targetY - p.y) * Math.min(1, dt * 10); // smooth
+    }
   }
 
   updateCamera(camera, dt) {

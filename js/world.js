@@ -29,6 +29,26 @@ function distToSeg(px, pz, ax, az, bx, bz) {
   t = Math.max(0, Math.min(1, t));
   return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
 }
+// Valley terrain: height function — the world has real slopes in the valley!
+// Corridor runs forest (80,-45) → tavern (85,50), centerline x≈82
+// Exported globally so player.js and npcs.js can follow the terrain.
+function terrainHeight(x, z) {
+  // only the valley region has height; rest of the world stays flat
+  if (x < 45 || x > 115 || z < -60 || z > 65) return 0;
+  const d = Math.abs(x - 82); // distance from valley centerline
+  let h = 0;
+  // valley walls rise on both sides
+  if (d > 12) {
+    const t = Math.min(1, (d - 12) / 28);
+    h += t * t * 22;
+  }
+  // gentle downhill from forest to tavern: +3 at forest end, -3 at tavern end
+  const slopeT = (z + 45) / 95; // 0 at forest, 1 at tavern
+  const slope = 3 - slopeT * 6;
+  h += slope * Math.max(0, 1 - d / 45); // slope fades into the walls
+  return h;
+}
+window.terrainHeight = terrainHeight;
 function onPath(x, z, halfW) {
   for (const [ax, az, bx, bz] of PATHS)
     if (distToSeg(x, z, ax, az, bx, bz) < halfW) return true;
@@ -174,7 +194,7 @@ export function buildWorld(scene) {
 
   // ---------- terrain ----------
   {
-    const geo = new THREE.PlaneGeometry(240, 240, 56, 56);
+    const geo = new THREE.PlaneGeometry(240, 240, 96, 96); // denser for smooth slopes
     geo.rotateX(-Math.PI / 2);
     const p = geo.attributes.position;
     const colors = new Float32Array(p.count * 3);
@@ -183,6 +203,7 @@ export function buildWorld(scene) {
           cMist = new THREE.Color(0x453063), tmp = new THREE.Color();
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
+      p.setY(i, terrainHeight(x, z)); // real slopes!
       const n = Math.sin(x * 0.35) * Math.cos(z * 0.3) + Math.sin(x * 0.08 + z * 0.11);
       tmp.copy(cGrass).lerp(n > 0.4 ? cDry : cDark, Math.min(0.55, Math.abs(n) * 0.4));
       // sandy rim near the lake
@@ -460,13 +481,14 @@ export function buildWorld(scene) {
     const swayData = [];
     treeSpots.forEach(([x, z, hs], i) => {
       const s = (hs || 1) * (0.7 + rand() * 0.5), ph = rand() * 6;
-      d.position.set(x, 1.5 * s, z); d.scale.setScalar(s); d.rotation.y = rand() * 6; d.updateMatrix();
+      const ty = terrainHeight(x, z); // sit on the slopes!
+      d.position.set(x, ty + 1.5 * s, z); d.scale.setScalar(s); d.rotation.y = rand() * 6; d.updateMatrix();
       trunks.setMatrixAt(i, d.matrix);
-      d.position.set(x, 4.6 * s, z); d.updateMatrix();
+      d.position.set(x, ty + 4.6 * s, z); d.updateMatrix();
       canA.setMatrixAt(i, d.matrix);
-      d.position.set(x + 0.9 * s, 6.3 * s, z - 0.5 * s); d.updateMatrix();
+      d.position.set(x + 0.9 * s, ty + 6.3 * s, z - 0.5 * s); d.updateMatrix();
       canB.setMatrixAt(i, d.matrix);
-      d.position.set(x - 0.5 * s, 7.7 * s, z + 0.4 * s); d.updateMatrix();
+      d.position.set(x - 0.5 * s, ty + 7.7 * s, z + 0.4 * s); d.updateMatrix();
       canC.setMatrixAt(i, d.matrix);
       // dusk-graded canopy: cool purple-shadowed underside, sun-kissed gold crown
       // ~30% get Bruno-style autumn colors (orange, gold, red)
@@ -659,13 +681,22 @@ export function buildWorld(scene) {
     const pathMat = new THREE.MeshStandardMaterial({ color: 0x9a8563, roughness: 1,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     for (const [ax, az, bx, bz] of PATHS) {
+      // subdivide into segments that follow the terrain slopes
       const len = Math.hypot(bx - ax, bz - az);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 3.6), pathMat);
-      m.rotation.x = -Math.PI / 2;
-      m.rotation.z = -Math.atan2(bz - az, bx - ax);
-      m.position.set((ax + bx) / 2, 0.08, (az + bz) / 2);
-      m.receiveShadow = true;
-      scene.add(m);
+      const segs = Math.max(1, Math.ceil(len / 8));
+      for (let s = 0; s < segs; s++) {
+        const t0 = s / segs, t1 = (s + 1) / segs;
+        const sx = ax + (bx - ax) * t0, sz = az + (bz - az) * t0;
+        const ex = ax + (bx - ax) * t1, ez = az + (bz - az) * t1;
+        const slen = Math.hypot(ex - sx, ez - sz);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(slen + 0.4, 3.6), pathMat);
+        m.rotation.x = -Math.PI / 2;
+        m.rotation.z = -Math.atan2(ez - sz, ex - sx);
+        const mx = (sx + ex) / 2, mz = (sz + ez) / 2;
+        m.position.set(mx, terrainHeight(mx, mz) + 0.1, mz);
+        m.receiveShadow = true;
+        scene.add(m);
+      }
     }
   }
 
@@ -712,20 +743,21 @@ export function buildWorld(scene) {
 
   // ---------- Tavern (Snuggly Duckling) ----------
   {
-    box(12, 6, 9, 0x7a5a38, 90, 3, 45);                       // hut
+    const TVY = terrainHeight(87, 48); // tavern sits on the valley slope
+    box(12, 6, 9, 0x7a5a38, 90, 3 + TVY, 45);                       // hut
     const roof = new THREE.Mesh(new THREE.ConeGeometry(9, 4.5, 4), mat(0x5a3a22));
-    roof.position.set(90, 8.2, 45); roof.rotation.y = Math.PI / 4; roof.scale.set(1.15, 1, 0.95);
+    roof.position.set(90, 8.2 + TVY, 45); roof.rotation.y = Math.PI / 4; roof.scale.set(1.15, 1, 0.95);
     scene.add(roof);
     const winM = new THREE.MeshBasicMaterial({ color: 0xffc46a });
     [[84.2, 3.4, 45, Math.PI/2], [90, 3.4, 40.4, 0], [95.8, 3.4, 45, -Math.PI/2]].forEach(([x,y,z,ry]) => {
       const w = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), winM);
-      w.position.set(x, y, z); w.rotation.y = ry + Math.PI; scene.add(w);
+      w.position.set(x, y + TVY, z); w.rotation.y = ry + Math.PI; scene.add(w);
     });
-    box(2.2, 3.6, 0.5, 0x3a2a1a, 84, 1.8, 45);                // door faces west
-    cyl(1, 1.1, 2.2, 0x6a5a48, 97, 1.1, 53, 10);              // rain barrel
-    const tg1 = addGlow(90, 3.4, 40.9, 7, 0xffc46a, 0.7);
-    const tg2 = addGlow(90, 3.4, 49.1, 7, 0xffc46a, 0.7);
-    const tg3 = addGlow(83.6, 2, 45, 6, 0xffb060, 0.6);                   // doorway
+    box(2.2, 3.6, 0.5, 0x3a2a1a, 84, 1.8 + TVY, 45);                // door faces west
+    cyl(1, 1.1, 2.2, 0x6a5a48, 97, 1.1 + TVY, 53, 10);              // rain barrel
+    const tg1 = addGlow(90, 3.4 + TVY, 40.9, 7, 0xffc46a, 0.7);
+    const tg2 = addGlow(90, 3.4 + TVY, 49.1, 7, 0xffc46a, 0.7);
+    const tg3 = addGlow(83.6, 2 + TVY, 45, 6, 0xffb060, 0.6);                   // doorway
     worldAnims.flicker.push({ glow: tg1, pool: null, ph: rand() * 6, gb: 0.7, pb: 0 });
     worldAnims.flicker.push({ glow: tg2, pool: null, ph: rand() * 6, gb: 0.7, pb: 0 });
     worldAnims.flicker.push({ glow: tg3, pool: null, ph: rand() * 6, gb: 0.6, pb: 0 });
@@ -735,28 +767,29 @@ export function buildWorld(scene) {
     // tables with mugs
     const mugM = mat(0xc9a05a);
     [[78, 50], [84, 58]].forEach(([tx, tz]) => {
-      cyl(1.8, 1.8, 0.35, 0x8a6238, tx, 1.15, tz, 12);
-      cyl(0.3, 0.35, 1.1, 0x6a4a30, tx, 0.55, tz, 8);
+      const tY = terrainHeight(tx, tz);
+      cyl(1.8, 1.8, 0.35, 0x8a6238, tx, 1.15 + tY, tz, 12);
+      cyl(0.3, 0.35, 1.1, 0x6a4a30, tx, 0.55 + tY, tz, 8);
       for (let k = 0; k < 3; k++) {
         const a = rand() * Math.PI * 2;
         const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.4, 8), mugM);
-        mug.position.set(tx + Math.cos(a) * 0.9, 1.55, tz + Math.sin(a) * 0.9);
+        mug.position.set(tx + Math.cos(a) * 0.9, 1.55 + tY, tz + Math.sin(a) * 0.9);
         scene.add(mug);
       }
       // benches
-      box(3.4, 0.35, 0.8, 0x7a5a38, tx, 0.75, tz + 2.4);
-      box(3.4, 0.35, 0.8, 0x7a5a38, tx, 0.75, tz - 2.4);
+      box(3.4, 0.35, 0.8, 0x7a5a38, tx, 0.75 + tY, tz + 2.4);
+      box(3.4, 0.35, 0.8, 0x7a5a38, tx, 0.75 + tY, tz - 2.4);
       addCollider(tx, tz, 2.4);
     });
     // fire pit with thugs gathered around
-    const pitX = 78, pitZ = 42;
-    cyl(1.2, 1.4, 0.6, 0x5a5a5a, pitX, 0.3, pitZ, 10); // stone ring
+    const pitX = 78, pitZ = 42, pitY = terrainHeight(pitX, pitZ);
+    cyl(1.2, 1.4, 0.6, 0x5a5a5a, pitX, 0.3 + pitY, pitZ, 10); // stone ring
     const fire = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.4, 8),
       new THREE.MeshBasicMaterial({ color: 0xff7a2a }));
-    fire.position.set(pitX, 1.0, pitZ); scene.add(fire);
+    fire.position.set(pitX, 1.0 + pitY, pitZ); scene.add(fire);
     const fireGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff8a3a,
       transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
-    fireGlow.position.set(pitX, 1.2, pitZ); fireGlow.scale.set(4, 4, 1); scene.add(fireGlow);
+    fireGlow.position.set(pitX, 1.2 + pitY, pitZ); fireGlow.scale.set(4, 4, 1); scene.add(fireGlow);
     worldAnims.firePit = { fire, glow: fireGlow, ph: rand() * 6 };
     // logs around the fire
     for (let i = 0; i < 4; i++) {
@@ -764,7 +797,7 @@ export function buildWorld(scene) {
       const lx = pitX + Math.cos(a) * 2.8, lz = pitZ + Math.sin(a) * 2.8;
       const log = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2.2, 8), mat(0x6a4a2a));
       log.rotation.z = Math.PI / 2; log.rotation.y = -a;
-      log.position.set(lx, 0.35, lz); scene.add(log);
+      log.position.set(lx, 0.35 + terrainHeight(lx, lz), lz); scene.add(log);
     }
   }
 

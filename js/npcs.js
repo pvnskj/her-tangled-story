@@ -153,11 +153,12 @@ export function buildNPCs(scene) {
   const thugs = [];
   for (const [x, z, c, line] of thugSpots) {
     const { group, headY } = personMesh(c, 1.25, true);
-    group.position.set(x, 0, z);
+    const baseY = window.terrainHeight ? window.terrainHeight(x, z) : 0;
+    group.position.set(x, baseY, z);
     group.rotation.y = Math.atan2(78 - x, 50 - z);
     scene.add(group);
-    thugs.push({ group, phase: Math.random() * 6, headY });
-    npcs.push({ name: "Thug", kind: "thug", group, headY, flavor: line, phase: Math.random() * 6 });
+    thugs.push({ group, phase: Math.random() * 6, headY, baseY });
+    npcs.push({ name: "Thug", kind: "thug", group, headY, flavor: line, phase: Math.random() * 6, baseY });
   }
 
   // rabbits: 12 total — 5 along the main walking paths (unmissable), 7 in the forest
@@ -318,8 +319,9 @@ export function buildNPCs(scene) {
     for (const n of npcs) {
       if (n.kind === "named" || n.kind === "thug") {
         if (n.kind === "thug") {
-          // mid-song: hearty rocking side to side
-          n.group.position.y = Math.abs(Math.sin(t * 2.6 + n.phase)) * 0.22;
+          // mid-song: hearty rocking side to side (on terrain!)
+          const by = n.baseY || 0;
+          n.group.position.y = by + Math.abs(Math.sin(t * 2.6 + n.phase)) * 0.22;
           n.group.rotation.z = Math.sin(t * 2.6 + n.phase) * 0.1;
         } else {
           n.group.position.y = Math.abs(Math.sin(t * 2.2 + n.phase)) * 0.06;
