@@ -37,15 +37,15 @@ function terrainHeight(x, z) {
   if (x < 45 || x > 115 || z < -60 || z > 65) return 0;
   const d = Math.abs(x - 82); // distance from valley centerline
   let h = 0;
-  // valley walls rise on both sides
-  if (d > 12) {
-    const t = Math.min(1, (d - 12) / 28);
-    h += t * t * 22;
+  // valley walls rise gently on both sides — low enough to see over, high enough to feel
+  if (d > 20) {
+    const t = Math.min(1, (d - 20) / 30);
+    h += t * t * 10;
   }
-  // gentle downhill from forest to tavern: +3 at forest end, -3 at tavern end
+  // gentle downhill from forest to tavern: +2.5 at forest end, -2.5 at tavern end
   const slopeT = (z + 45) / 95; // 0 at forest, 1 at tavern
-  const slope = 3 - slopeT * 6;
-  h += slope * Math.max(0, 1 - d / 45); // slope fades into the walls
+  const slope = 2.5 - slopeT * 5;
+  h += slope * Math.max(0, 1 - d / 50); // slope fades into the walls
   return h;
 }
 window.terrainHeight = terrainHeight;
@@ -801,40 +801,9 @@ export function buildWorld(scene) {
     }
   }
 
-  // ---------- Valley (forest → Snuggly Duckling): two hill rows flanking the corridor ----------
-  // a real valley — low walkable floor between hills, running north-south on the east side
-  {
-    const hillCols = [0x4a6a4a, 0x5a7a5a, 0x3a5a4a, 0x6a8a6a]; // brighter greens, visible at dusk
-    const mkHill = (hx, hz, hs) => {
-      const hill = new THREE.Mesh(new THREE.ConeGeometry(hs * 0.85, hs, 7),
-        new THREE.MeshStandardMaterial({ color: hillCols[Math.floor(rand() * 4)], roughness: 1,
-          emissive: 0x2a4a2a, emissiveIntensity: 0.35 })); // subtle glow so they read at dusk
-      hill.position.set(hx, hs * 0.28, hz);
-      hill.rotation.y = rand() * Math.PI;
-      scene.add(hill);
-      if (hs > 38) { // snowcap on the tallest
-        const cap = new THREE.Mesh(new THREE.ConeGeometry(hs * 0.3, hs * 0.32, 7),
-          new THREE.MeshStandardMaterial({ color: 0xe8e8f0, roughness: 0.9, emissive: 0x8888aa, emissiveIntensity: 0.3 }));
-        cap.position.set(hx, hs * 0.28 + hs * 0.34, hz);
-        cap.rotation.y = hill.rotation.y;
-        scene.add(cap);
-      }
-    };
-    // west row of the valley (forest side foothills)
-    for (let i = 0; i < 8; i++) {
-      const t = i / 7;
-      const hz = -45 + t * 95; // from forest (-45) down to tavern (50)
-      const hx = 58 + Math.sin(t * 5) * 6 + rand() * 4; // gently wandering ridgeline
-      mkHill(hx, hz, 26 + rand() * 26);
-    }
-    // east row of the valley (behind the tavern, toward the map edge)
-    for (let i = 0; i < 8; i++) {
-      const t = i / 7;
-      const hz = -45 + t * 95;
-      const hx = 106 + Math.sin(t * 4 + 1) * 5 + rand() * 4;
-      mkHill(hx, hz, 30 + rand() * 26);
-    }
-  }
+  // ---------- Valley (forest → Snuggly Duckling): terrain provides the shape ----------
+  // (hill cones removed — they blocked the forest view; the ground slopes form the valley now)
+  {}
 
   // ---------- Village ----------
   const stripeTex = (() => {
