@@ -70,11 +70,14 @@ export const UI = {
     // lake hint
     g.fillStyle = "rgba(95,145,225,0.4)";
     g.beginPath(); g.ellipse(mx(-80), mz(20), 28 * (R / B), 22 * (R / B), 0, 0, 7); g.fill();
-    // valley rim — ring of hills around the border (the "valley" in Valley Map)
-    g.strokeStyle = "rgba(90,140,90,0.55)"; g.lineWidth = 10;
-    g.beginPath(); g.arc(C, C, R * 0.96, 0, 7); g.stroke();
+    // valley — shaded corridor running forest → Snuggly Duckling on the east side
+    g.fillStyle = "rgba(90,140,90,0.28)";
+    const vx1 = mx(58), vx2 = mx(108), vz1 = mz(-45), vz2 = mz(50);
+    g.beginPath();
+    g.moveTo(vx1, vz1); g.lineTo(vx2, vz1); g.lineTo(vx2, vz2); g.lineTo(vx1, vz2);
+    g.closePath(); g.fill();
     g.fillStyle = "rgba(140,200,140,0.9)"; g.font = "10px Georgia";
-    g.fillText("⛰ Valley Hills", C, 16);
+    g.fillText("⛰ Valley", mx(83), mz(-52));
     // zones with per-zone clue progress
     g.textAlign = "center";
     for (const zn of zones) {
