@@ -107,12 +107,20 @@ for (const clue of CLUES) {
       blending: THREE.AdditiveBlending, opacity: 0.85 }));
     s.scale.setScalar(clue.kind === "boat" ? 2.2 : 1.4);
     s.position.y = 1.2; g.add(s); g.userData.spark = s;
+    // invisible fat hit sphere — easy to tap on a phone
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(2.2, 8, 6),
+      new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.y = 1.2; g.add(hit);
   } else if (clue.kind === "reflection") {
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.5, 24),
       new THREE.MeshBasicMaterial({ color: 0xfff2b0, transparent: true, opacity: 0.75, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.12; g.add(ring); g.userData.ring = ring;
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.6 }));
     s.scale.setScalar(2.4); s.position.y = 0.6; g.add(s); g.userData.spark = s;
+    // invisible fat hit disc — easy to tap on a phone
+    const hit = new THREE.Mesh(new THREE.CircleGeometry(3, 12),
+      new THREE.MeshBasicMaterial({ visible: false }));
+    hit.rotation.x = -Math.PI / 2; hit.position.y = 0.3; g.add(hit);
   } else if (clue.kind === "animal") {
     const crit = makeCritter(clue.critter || "rabbit");
     g.add(crit); g.userData.crit = crit;
