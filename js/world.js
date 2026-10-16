@@ -1269,6 +1269,9 @@ export function buildWorld(scene) {
                   ph: rand() * 6, sw: 1 + rand() * 2.2 });
     }
     scene.add(inst, glowPts);
+    // HIDDEN until the finale — the magical lantern release is the reward for clue 33
+    inst.visible = false;
+    glowPts.visible = false;
     worldAnims.lanterns = { inst, glowPts, data, dummy: new THREE.Object3D() };
   }
 
@@ -1564,5 +1567,10 @@ export function buildWorld(scene) {
 
   return { colliders, waters, dockRect, boat, zoneAt, update, sun,
            setLanternBoost: (b) => { worldAnims.lanternBoost = b; },
+           // Finale: release the sky lanterns — the magical Tangled moment, only after clue 33
+           releaseLanterns: () => {
+             const L = worldAnims.lanterns;
+             if (L) { L.inst.visible = true; L.glowPts.visible = true; }
+           },
            lanternDebug: () => worldAnims.lanterns ? worldAnims.lanterns.data.slice(0, 8).map((L) => ({ x: +L.x.toFixed(1), y: +L.y.toFixed(1), z: +L.z.toFixed(1), home: L.home, maxY: L.maxY })) : null };
 }

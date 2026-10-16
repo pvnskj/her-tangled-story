@@ -177,6 +177,7 @@ function discover(clue) {
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
   if (clue.kind === "finale") {
     UI.fanfare();
+    world.releaseLanterns(); // the sky fills with lanterns — the Tangled moment!
     setTimeout(() => UI.finaleModal(clue.photo, CONFIG.FINAL_MESSAGE), 350);
   } else {
     UI.chime();
