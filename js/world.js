@@ -29,24 +29,10 @@ function distToSeg(px, pz, ax, az, bx, bz) {
   t = Math.max(0, Math.min(1, t));
   return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
 }
-// Valley terrain: height function — the world has real slopes in the valley!
-// Corridor runs forest (80,-45) → tavern (85,50), centerline x≈82
-// Exported globally so player.js and npcs.js can follow the terrain.
+// Valley terrain: DISABLED — reverted to flat ground per user request (2026-10-16)
+// The slopes swallowed the forest. Flat is better than broken.
 function terrainHeight(x, z) {
-  // only the valley region has height; rest of the world stays flat
-  if (x < 45 || x > 115 || z < -60 || z > 65) return 0;
-  const d = Math.abs(x - 82); // distance from valley centerline
-  let h = 0;
-  // valley walls rise gently on both sides — low enough to see over, high enough to feel
-  if (d > 20) {
-    const t = Math.min(1, (d - 20) / 30);
-    h += t * t * 10;
-  }
-  // gentle downhill from forest to tavern: +2.5 at forest end, -2.5 at tavern end
-  const slopeT = (z + 45) / 95; // 0 at forest, 1 at tavern
-  const slope = 2.5 - slopeT * 5;
-  h += slope * Math.max(0, 1 - d / 50); // slope fades into the walls
-  return h;
+  return 0;
 }
 window.terrainHeight = terrainHeight;
 function onPath(x, z, halfW) {
@@ -194,7 +180,7 @@ export function buildWorld(scene) {
 
   // ---------- terrain ----------
   {
-    const geo = new THREE.PlaneGeometry(240, 240, 96, 96); // denser for smooth slopes
+    const geo = new THREE.PlaneGeometry(240, 240, 56, 56);
     geo.rotateX(-Math.PI / 2);
     const p = geo.attributes.position;
     const colors = new Float32Array(p.count * 3);
@@ -203,7 +189,6 @@ export function buildWorld(scene) {
           cMist = new THREE.Color(0x453063), tmp = new THREE.Color();
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
-      p.setY(i, terrainHeight(x, z)); // real slopes!
       const n = Math.sin(x * 0.35) * Math.cos(z * 0.3) + Math.sin(x * 0.08 + z * 0.11);
       tmp.copy(cGrass).lerp(n > 0.4 ? cDry : cDark, Math.min(0.55, Math.abs(n) * 0.4));
       // sandy rim near the lake
@@ -681,22 +666,13 @@ export function buildWorld(scene) {
     const pathMat = new THREE.MeshStandardMaterial({ color: 0x9a8563, roughness: 1,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     for (const [ax, az, bx, bz] of PATHS) {
-      // subdivide into segments that follow the terrain slopes
       const len = Math.hypot(bx - ax, bz - az);
-      const segs = Math.max(1, Math.ceil(len / 8));
-      for (let s = 0; s < segs; s++) {
-        const t0 = s / segs, t1 = (s + 1) / segs;
-        const sx = ax + (bx - ax) * t0, sz = az + (bz - az) * t0;
-        const ex = ax + (bx - ax) * t1, ez = az + (bz - az) * t1;
-        const slen = Math.hypot(ex - sx, ez - sz);
-        const m = new THREE.Mesh(new THREE.PlaneGeometry(slen + 0.4, 3.6), pathMat);
-        m.rotation.x = -Math.PI / 2;
-        m.rotation.z = -Math.atan2(ez - sz, ex - sx);
-        const mx = (sx + ex) / 2, mz = (sz + ez) / 2;
-        m.position.set(mx, terrainHeight(mx, mz) + 0.1, mz);
-        m.receiveShadow = true;
-        scene.add(m);
-      }
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 3.6), pathMat);
+      m.rotation.x = -Math.PI / 2;
+      m.rotation.z = -Math.atan2(bz - az, bx - ax);
+      m.position.set((ax + bx) / 2, 0.08, (az + bz) / 2);
+      m.receiveShadow = true;
+      scene.add(m);
     }
   }
 
