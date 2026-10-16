@@ -1166,17 +1166,31 @@ export function buildWorld(scene) {
     });
     addPool(-45, -57, 30, 0.4);   // festival heart glow
     addPool(-45, -65, 16, 0.3);   // stage glow
-    // dancing crowd (simple low-poly figures)
+    // dancing crowd — natural festival scatter, not a perfect circle
+    // (pairs and small groups, some near the stage, some by the stalls)
     const danceRand = lcg(77);
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2, r = 3.4 + danceRand() * 2.2;
+    const danceSpots = [
+      // pairs dancing together
+      [-48, -56], [-47, -55], [-42, -58], [-41, -57],
+      [-46, -60], [-45, -61], [-43, -54], [-44, -53],
+      // small group near the stage
+      [-47, -62], [-44, -63], [-41, -62],
+      // a few by the food stalls
+      [-32, -48], [-31, -52], [-32, -62],
+      // one dancing alone, lost in the music
+      [-49, -52],
+    ];
+    for (let i = 0; i < danceSpots.length; i++) {
+      const [dx, dz] = danceSpots[i];
+      const jx = dx + (danceRand() - 0.5) * 1.2, jz = dz + (danceRand() - 0.5) * 1.2;
       const g = new THREE.Group();
       const bodyC = [0xc9566c, 0x6a9fd8, 0x7fbf6a, 0xd8a05a, 0x9a6ad8][i % 5];
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.55, 1.5, 8), mat(bodyC));
       body.position.y = 0.95; g.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 7), mat(0xe8b88a));
       head.position.y = 2; g.add(head);
-      g.position.set(-45 + Math.cos(a) * r, 0, -57 + Math.sin(a) * r);
+      g.position.set(jx, 0, jz);
+      g.rotation.y = danceRand() * Math.PI * 2; // face random directions, not the center
       g.userData.phase = danceRand() * 6;
       scene.add(g); dancers.push(g);
     }
@@ -1187,6 +1201,29 @@ export function buildWorld(scene) {
     foodStall(-28, -45, [0xc9566c, 0xf7ecd4], "apples", -Math.PI / 2);
     foodStall(-26, -55, [0x6a9fd8, 0xf7ecd4], "bread", -Math.PI / 2);
     foodStall(-28, -65, [0xd8a05a, 0xf7ecd4], "pies", -Math.PI / 2);
+    // confetti — colorful bits drifting down over the festival, always celebrating
+    {
+      const n = 150, pos = new Float32Array(n * 3);
+      const base = new Float32Array(n * 3);
+      const confCols = [0xff9ecf, 0xc39bff, 0xffd94d, 0x9fd8ff, 0xff8a7a, 0x7fff9e];
+      const colArr = new Float32Array(n * 3);
+      const tmpC = new THREE.Color();
+      for (let i = 0; i < n; i++) {
+        base[i*3]   = -45 + (rand() - 0.5) * 36;
+        base[i*3+1] = rand() * 14;
+        base[i*3+2] = -57 + (rand() - 0.5) * 30;
+        tmpC.set(confCols[i % confCols.length]);
+        colArr[i*3] = tmpC.r; colArr[i*3+1] = tmpC.g; colArr[i*3+2] = tmpC.b;
+      }
+      pos.set(base);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      g.setAttribute("color", new THREE.BufferAttribute(colArr, 3));
+      const pts = new THREE.Points(g, new THREE.PointsMaterial({
+        size: 0.35, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false }));
+      scene.add(pts);
+      worldAnims.confetti = { pts, base, n };
+    }
   }
 
   // ---------- fireflies ----------
@@ -1549,6 +1586,22 @@ export function buildWorld(scene) {
       g.rotation.z = Math.sin(t * 3.2 + ph) * 0.14;
       g.rotation.y += Math.sin(t * 1.1 + ph) * 0.01;
     });
+    // confetti drifts down and swirls, respawns at the top
+    const cf = worldAnims.confetti;
+    if (cf) {
+      const p = cf.pts.geometry.attributes.position;
+      for (let i = 0; i < cf.n; i++) {
+        p.array[i*3+1] -= 0.035 + (i % 5) * 0.008; // fall
+        p.array[i*3]   += Math.sin(t * 1.5 + i * 1.7) * 0.02; // sway
+        p.array[i*3+2] += Math.cos(t * 1.2 + i * 2.3) * 0.015;
+        if (p.array[i*3+1] < 0) { // respawn at top
+          p.array[i*3]   = -45 + (Math.random() - 0.5) * 36;
+          p.array[i*3+1] = 12 + Math.random() * 4;
+          p.array[i*3+2] = -57 + (Math.random() - 0.5) * 30;
+        }
+      }
+      p.needsUpdate = true;
+    }
     // boat bobs gently at the dock when not riding
     if (!boat.riding) {
       boat.group.position.y = 0.35 + Math.sin(t * 1.8) * 0.07;
