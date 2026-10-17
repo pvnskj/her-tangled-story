@@ -48,6 +48,16 @@ body {
 }
 #zone-banner.show { opacity: 1; }
 
+/* ---------- guidance box: where to go next ---------- */
+#guide-box {
+  position: fixed; top: 108px; left: 50%; transform: translateX(-50%); z-index: 20;
+  max-width: 86%; padding: 8px 16px; text-align: center;
+  background: rgba(30, 20, 50, 0.72); border: 1px solid rgba(245, 214, 123, 0.45);
+  border-radius: 14px; color: #ffe9b8; font-size: 14px; line-height: 1.35;
+  pointer-events: none; backdrop-filter: blur(4px);
+}
+#guide-box.hidden { display: none; }
+
 /* ---------- dialogue bubble ---------- */
 #dialogue {
   position: fixed; z-index: 25; max-width: 240px; transform: translate(-50%, -110%);
@@ -116,7 +126,16 @@ body.touch #joystick.started { display: block; }
 .panel button:active { transform: scale(0.96); }
 .controls-note { font-size: 13px; opacity: .7; margin-top: 14px; }
 
-#photo-head, #finale-head { color: var(--gold); font-size: 19px; margin-bottom: 12px; letter-spacing: .5px; }
+#photo-head, #finale-head, #riddle-head { color: var(--gold); font-size: 19px; margin-bottom: 12px; letter-spacing: .5px; }
+#riddle-prompt { font-size: 22px; letter-spacing: 2px; margin: 16px 0; color: #fff; }
+#riddle-input-row { display: flex; gap: 10px; justify-content: center; align-items: center; margin: 12px 0; }
+#riddle-input {
+  width: 90px; font-size: 28px; text-align: center; text-transform: uppercase;
+  padding: 10px; border-radius: 12px; border: 2px solid var(--gold);
+  background: rgba(255,255,255,0.1); color: #fff; font-family: inherit; letter-spacing: 4px;
+}
+#riddle-error { color: #ff9a9a; font-size: 14px; }
+#riddle-error.hidden { display: none; }
 #photo-frame { position: relative; overflow: hidden; border-radius: 12px; }
 #photo-frame img, #finale-frame img {
   width: 100%; border-radius: 12px; border: 1px solid var(--gold); display: block;

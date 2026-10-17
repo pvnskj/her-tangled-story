@@ -424,15 +424,15 @@ export function buildNPCs(scene) {
         c.position.z += (dz / d) * Math.min(sp * dt, d);
         c.rotation.y = Math.atan2(dx, dz);
       }
-      chameleon.hop += dt * (chameleon.excited ? 15 : 6);
+      chameleon.hop += dt * (chameleon.excited ? 8 : 6);
       const exc = chameleon.excited;
-      c.position.y = Math.abs(Math.sin(chameleon.hop)) * (exc ? 0.7 : 0.12);
-      const pulse = exc ? 1 + Math.sin(t * 9) * 0.12 : 1;
+      c.position.y = Math.abs(Math.sin(chameleon.hop)) * (exc ? 0.25 : 0.12);
+      const pulse = exc ? 1 + Math.sin(t * 4) * 0.06 : 1;
       c.scale.setScalar(pulse);
       chameleon.exclaim.visible = exc;
       chameleon.spark.visible = exc;
       if (exc) {
-        chameleon.exclaim.position.y = 1.7 + Math.sin(t * 7) * 0.14;
+        chameleon.exclaim.position.y = 1.7 + Math.sin(t * 3) * 0.08;
         chameleon.spark.material.opacity = 0.5 + Math.sin(t * 11) * 0.4;
         chameleon.spark.scale.setScalar(1.3 + Math.sin(t * 11) * 0.5);
       }

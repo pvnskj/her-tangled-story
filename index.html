@@ -28,6 +28,8 @@
     <button id="sound-toggle" aria-label="toggle sound">🔊</button>
   </div>
   <div id="zone-banner"></div>
+  <!-- guidance box: tells her where to go next -->
+  <div id="guide-box" class="hidden"><span id="guide-text"></span></div>
 
   <!-- dialogue bubble -->
   <div id="dialogue" class="hidden"><strong id="dlg-name"></strong><span id="dlg-text"></span></div>
@@ -57,6 +59,19 @@
       <div id="photo-frame"></div>
       <p id="photo-caption"></p>
       <button id="photo-close">Keep exploring ✨</button>
+    </div>
+  </div>
+
+  <!-- riddle modal: fill in the blank to unlock a memory -->
+  <div id="riddle-modal" class="modal hidden">
+    <div class="panel memory">
+      <div id="riddle-head">✨ A memory stirs… ✨</div>
+      <p id="riddle-prompt"></p>
+      <div id="riddle-input-row">
+        <input id="riddle-input" maxlength="2" autocomplete="off" autocapitalize="characters" />
+        <button id="riddle-submit">Unlock</button>
+      </div>
+      <p id="riddle-error" class="hidden">Not quite — try again!</p>
     </div>
   </div>
 

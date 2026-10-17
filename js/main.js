@@ -175,11 +175,32 @@ const found = new Set();
 let modalOpen = false;
 let currentZoneId = null;
 
-function discover(clue) {
+// guidance: what to show in the guide box for the next undiscovered clue
+const GUIDES = {
+  1: "🦎 Follow the chameleon! It's excited about something behind the tower…",
+  2: "✨ Look around the tower — golden sparkles hide nearby.",
+  3: "🗣️ Maro the traveler has a hint for you.",
+  4: "✨ Check the open field by the tower.",
+  5: "🐇 Follow the rabbit!",
+  6: "✨ Into the forest — look for sparkles in the clearing.",
+};
+function updateGuide() {
+  const next = CLUES.find((c) => !found.has(c.id));
+  if (!next) { UI.setGuide(null); return; }
+  UI.setGuide(GUIDES[next.id] || `✨ Find memory ${next.id} of 33 — explore the ${next.zone}!`);
+}
+
+async function discover(clue) {
   if (found.has(clue.id) || modalOpen) return;
+  modalOpen = true;
+  // Clue 1: fill in the blank — "I'm a T__DLER"
+  if (clue.id === 1) {
+    const ok = await UI.riddleModal("I'm a T__DLER", "OD");
+    if (!ok) { modalOpen = false; return; }
+  }
   found.add(clue.id);
   UI.setCounter(found.size);
-  modalOpen = true;
+  updateGuide();
   const marker = clueMarkers.get(clue.id);
   if (marker) marker.group.visible = false;
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
@@ -224,7 +245,11 @@ function interactWith(target) {
   if (target.kind === "clue") {
     const clue = target.clue;
     const d = Math.hypot(p.x - clue.x, p.z - clue.z);
-    if (d > CONFIG.INTERACT_RADIUS) return;
+    if (d > CONFIG.INTERACT_RADIUS) {
+      UI.setGuide(`🚶 Walk closer to the sparkles! (${Math.ceil(d)} steps away)`);
+      setTimeout(() => updateGuide(), 2500); // restore the real hint after
+      return;
+    }
     UI.blip();
     discover(clue);
   }
@@ -385,7 +410,9 @@ function keyVector() {
 
 // ---------- UI ----------
 UI.init();
-UI.onBegin = () => { /* world already running behind overlay */ };
+UI.onBegin = () => {
+  updateGuide(); // show the first hint: follow the chameleon!
+};
 
 if (DEBUG) {
   window.__game = {

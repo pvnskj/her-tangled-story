@@ -139,6 +139,13 @@ export const UI = {
 
   // ---------- HUD ----------
   setCounter(found) { el("found-count").textContent = found; },
+  // guidance box: small text telling her where to go next
+  setGuide(text) {
+    const box = el("guide-box"), t = el("guide-text");
+    if (!text) { box.classList.add("hidden"); return; }
+    t.textContent = text;
+    box.classList.remove("hidden");
+  },
 
   banner(text) {
     const b = el("zone-banner");
@@ -180,6 +187,30 @@ export const UI = {
     frame.classList.remove("reveal");
     void frame.offsetWidth;
     frame.classList.add("reveal");
+  },
+
+  // riddle: fill in the blank to unlock — returns a promise resolving true/false
+  riddleModal(prompt, answer) {
+    return new Promise((resolve) => {
+      el("riddle-prompt").textContent = prompt;
+      el("riddle-input").value = "";
+      el("riddle-error").classList.add("hidden");
+      el("riddle-modal").classList.remove("hidden");
+      setTimeout(() => el("riddle-input").focus(), 100);
+      const submit = () => {
+        const val = el("riddle-input").value.trim().toUpperCase();
+        if (val === answer.toUpperCase()) {
+          el("riddle-modal").classList.add("hidden");
+          el("riddle-submit").onclick = null;
+          resolve(true);
+        } else {
+          el("riddle-error").classList.remove("hidden");
+          el("riddle-input").select();
+        }
+      };
+      el("riddle-submit").onclick = submit;
+      el("riddle-input").onkeydown = (e) => { if (e.key === "Enter") submit(); };
+    });
   },
 
   finaleModal(photo, message) {
