@@ -7,8 +7,8 @@ const P = (n) => `assets/photos/${n}`;
 
 export const CLUES = [
   // ---- Tower Hill (1-5) ----
-  { id: 1, zone: "tower", x: -6, z: -92, kind: "hidden", photo: P("01-toddler-garden.jpg"), caption: "The littlest explorer — where it all began." },
-  { id: 2, zone: "tower", x: 3, z: -89, kind: "hidden", photo: P("02-toddler-temple.jpg"), caption: "Tiny feet on ancient stones." },
+  { id: 1, zone: "tower", x: -11, z: -88, kind: "hidden", photo: P("01-toddler-garden.jpg"), caption: "The littlest explorer — where it all began." },
+  { id: 2, zone: "tower", x: 9, z: -87, kind: "hidden", photo: P("02-toddler-temple.jpg"), caption: "Tiny feet on ancient stones." },
   { id: 3, zone: "tower", x: 8, z: -84, kind: "villager", photo: P("03-girl-palms.jpg"), caption: "Growing up under the palms.",
     npc: "Maro the traveler", hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
   { id: 4, zone: "tower", x: -7, z: -100, kind: "hidden", photo: P("04-toddler-field.jpg"), caption: "Wild and free in the open field." },
