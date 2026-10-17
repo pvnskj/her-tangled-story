@@ -149,6 +149,26 @@ export class Player {
         } else {
           this._nudgeDir = 0;
         }
+        // PATH ATTRACTION: gentle pull toward the nearest dirt path (she prefers roads!)
+        if (this.world.paths) {
+          let bestPx = 0, bestPz = 0, bestD = 1e9;
+          for (const [pax0, paz0, pbx0, pbz0] of this.world.paths) {
+            const dxs = pbx0 - pax0, dzs = pbz0 - paz0;
+            const L2 = dxs * dxs + dzs * dzs || 1e-6;
+            let t = ((p.x - pax0) * dxs + (p.z - paz0) * dzs) / L2;
+            t = Math.max(0, Math.min(1, t));
+            const qx = pax0 + dxs * t, qz = paz0 + dzs * t;
+            const dd = Math.hypot(p.x - qx, p.z - qz);
+            if (dd < bestD) { bestD = dd; bestPx = qx; bestPz = qz; }
+          }
+          if (bestD < 10 && bestD > 2) {
+            // gentle nudge toward the path
+            const pax = (bestPx - p.x) / bestD, paz = (bestPz - p.z) / bestD;
+            dx += pax * 0.8; dz += paz * 0.8;
+            const dl2 = Math.hypot(dx, dz) || 1;
+            dx /= dl2; dz /= dl2;
+          }
+        }
         // combine: seek + avoidance, renormalize
         dx += ax; dz += az;
         const dl = Math.hypot(dx, dz) || 1;
@@ -159,10 +179,9 @@ export class Player {
       if (manual || realD < 1.8) {
         this.autoTarget = null; // arrived or user took over
       } else {
-        // steer toward the target (slower in first-person — feels too fast up close)
+        // WALKTHROUGH = SWIFT AND MAGICAL, not a hike! 2.2x speed.
         // (dx, dz) is already the normalized steering direction
-        const speedMul = this.camMode === 'first' ? 0.55 : 0.85;
-        const sp = CONFIG.PLAYER_SPEED * speedMul;
+        const sp = CONFIG.PLAYER_SPEED * 2.2;
         this.svel.x += (dx * sp - this.svel.x) * Math.min(1, dt * 6);
         this.svel.z += (dz * sp - this.svel.z) * Math.min(1, dt * 6);
         this.moving = true;
