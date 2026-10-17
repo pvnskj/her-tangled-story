@@ -58,6 +58,7 @@ export class Player {
       // first-person: drag to look around (drag right = turn right)
       this.fpYaw += dx * 0.005;
       this.fpPitch = THREE.MathUtils.clamp(this.fpPitch + dy * 0.004, -0.6, 0.6);
+      this._lastManualLook = performance.now() / 1000; // pause auto-turn after manual look
     } else {
       this.orbit.yaw -= dx * 0.0052;
       this.orbit.pitch = THREE.MathUtils.clamp(this.orbit.pitch + dy * 0.0052, -0.55, 0.55);
@@ -157,13 +158,17 @@ export class Player {
         this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * 0.12;
         // face the direction of travel
         this.group.rotation.y = Math.atan2(dx, dz);
-        // in first-person, turn the camera to face where she's walking
+        // in first-person, gently turn the camera toward movement — but NOT if
+        // the user recently dragged to look (respect their control)
         if (this.camMode === 'first') {
-          const targetYaw = Math.atan2(dx, dz);
-          let dy = targetYaw - this.fpYaw;
-          while (dy > Math.PI) dy -= Math.PI * 2;
-          while (dy < -Math.PI) dy += Math.PI * 2;
-          this.fpYaw += dy * Math.min(1, dt * 3); // smooth turn
+          const sinceLook = (performance.now() / 1000) - (this._lastManualLook || 0);
+          if (sinceLook > 3) {
+            const targetYaw = Math.atan2(dx, dz);
+            let dy = targetYaw - this.fpYaw;
+            while (dy > Math.PI) dy -= Math.PI * 2;
+            while (dy < -Math.PI) dy += Math.PI * 2;
+            this.fpYaw += dy * Math.min(1, dt * 1.5); // gentle, not snappy
+          }
         }
         // move + collide (shared with manual below)
         const prev = p.clone();

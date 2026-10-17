@@ -310,6 +310,7 @@ export function buildWorld(scene) {
       r.position.set(x, s * 0.35, z);
       r.rotation.set(rand() * 3, rand() * 3, rand() * 3);
       scene.add(r);
+      addCollider(x, z, s * 0.8); // rocks block movement!
     });
     // footprints: clue 1 (-12,-104) → clue 2 (-15,-85), guiding her forward
     {
