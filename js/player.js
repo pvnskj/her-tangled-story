@@ -33,13 +33,14 @@ export class Player {
     // drag-to-look offsets (radians): yaw/pitch added around the follow target
     this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
     // camera modes: 'third' (diorama), 'first' (her POV), 'top' (royalty view)
-    this.camMode = 'third';
+    this.camMode = 'first'; // default: her eyes
     this.fpYaw = 0; // first-person look direction (radians)
     this.fpPitch = 0;
   }
 
   cycleCamMode() {
-    this.camMode = this.camMode === 'third' ? 'first' : this.camMode === 'first' ? 'top' : 'third';
+    // only two views: first-person ↔ bird's-eye (top-down)
+    this.camMode = this.camMode === 'first' ? 'top' : 'first';
     // hide her sprite in first-person so you don't see the back of her head
     if (this.sprite) this.sprite.visible = this.camMode !== 'first';
     // when entering first-person, face her current movement direction
@@ -102,8 +103,9 @@ export class Player {
       if (manual || d < 1.8) {
         this.autoTarget = null; // arrived or user took over
       } else {
-        // steer toward the target
-        const sp = CONFIG.PLAYER_SPEED * 0.85;
+        // steer toward the target (slower in first-person — feels too fast up close)
+        const speedMul = this.camMode === 'first' ? 0.55 : 0.85;
+        const sp = CONFIG.PLAYER_SPEED * speedMul;
         this.svel.x += ((dx / d) * sp - this.svel.x) * Math.min(1, dt * 6);
         this.svel.z += ((dz / d) * sp - this.svel.z) * Math.min(1, dt * 6);
         this.moving = true;
@@ -111,6 +113,14 @@ export class Player {
         this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * 0.12;
         // face the direction of travel
         this.group.rotation.y = Math.atan2(dx, dz);
+        // in first-person, turn the camera to face where she's walking
+        if (this.camMode === 'first') {
+          const targetYaw = Math.atan2(dx, dz);
+          let dy = targetYaw - this.fpYaw;
+          while (dy > Math.PI) dy -= Math.PI * 2;
+          while (dy < -Math.PI) dy += Math.PI * 2;
+          this.fpYaw += dy * Math.min(1, dt * 3); // smooth turn
+        }
         // move + collide (shared with manual below)
         const prev = p.clone();
         p.x += this.svel.x * dt; p.z += this.svel.z * dt;
@@ -144,7 +154,9 @@ export class Player {
     // desired velocity (analog from joystick, digital from keys)
     const nx = len > 1e-4 ? ix / Math.max(1, len) : 0;
     const nz = len > 1e-4 ? iz / Math.max(1, len) : 0;
-    const sp = CONFIG.PLAYER_SPEED * Math.min(1, len);
+    // slower in first-person — full speed feels frantic up close
+    const speedMul = this.camMode === 'first' ? 0.6 : 1;
+    const sp = CONFIG.PLAYER_SPEED * Math.min(1, len) * speedMul;
     // smooth acceleration / gentle glide to a stop — playful, not mechanical
     const k = 1 - Math.pow(len > 0.05 ? 0.0008 : 0.02, dt);
     this.svel.x += (nx * sp - this.svel.x) * k;
@@ -216,54 +228,7 @@ export class Player {
       camera.lookAt(this.lookSm);
       return;
     }
-    // pull back on narrow (portrait phone) screens so more world is visible
-    const wide = 1 + Math.max(0, 1 - camera.aspect) * 0.55;
-    // look-ahead: shift the frame toward her movement direction so landmarks
-    // ahead of her stay visible — she "sees what the world is"
-    const mx = this.moveVec.x, mz = this.moveVec.z;
-    const ml = Math.hypot(mx, mz);
-    const lead = ml > 0.05 ? Math.min(1, ml) : 0;
-    const lx = lead ? (mx / ml) * 5.5 * lead : 0;
-    const lz = lead ? (mz / ml) * 5.5 * lead : 0;
-    // bruno-simon-style high diorama angle (~47° down): the world reads as a
-    // tiny luminous miniature she walks through — shallow enough on phones
-    // that sky, landmarks and horizon stay in frame
-    const target = new THREE.Vector3(p.x + lx, 15.5 * wide, p.z + lz + 14.5 * wide);
-    camera.position.lerp(target, 1 - Math.pow(0.0015, dt));
-    // smoothed look-at target: buttery, no jitter. Aimed a little high so
-    // landmarks and sky stay in frame — she "sees what the world is" from
-    // the very first frame. (Portrait keeps the framing that worked; desktop
-    // gets a slight forward bias toward her tower.)
-    const portrait = camera.aspect < 1;
-    // ADAPTIVE look height: when the user drags to a low angle (looking up at
-    // buildings/trees), lower the target so the view stays level instead of
-    // tilting steeply up. When high, raise it for the diorama feel.
-    const orbitPitch = this.orbit.pitch || 0;
-    const pitchT = THREE.MathUtils.clamp((orbitPitch + 0.5) / 1.0, 0, 1);
-    const lookH = THREE.MathUtils.lerp(2.2, portrait ? 5 : 5.5, pitchT);
-    const biasZ = portrait ? 0 : -4;
-    if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x, lookH, p.z + biasZ);
-    this.lookSm.lerp(new THREE.Vector3(p.x + lx * 0.7, lookH, p.z + lz * 0.7 + biasZ), 1 - Math.pow(0.004, dt));
-    // drag-to-look: rotate the camera offset around the smoothed target.
-    // idle 5s and it eases back to the curated framing (tower/sky in frame).
-    const nowS = performance.now() / 1000;
-    if (nowS - this.orbit.lastDrag > 5) {
-      const e = 1 - Math.pow(0.05, dt);
-      this.orbit.yaw *= (1 - e);
-      this.orbit.pitch *= (1 - e);
-    }
-    {
-      const off = camera.position.clone().sub(this.lookSm);
-      const L = Math.max(1, off.length());
-      const basePitch = Math.asin(THREE.MathUtils.clamp(off.y / L, -1, 1));
-      const baseYaw = Math.atan2(off.x, off.z);
-      const D = THREE.MathUtils.degToRad;
-      // clamp total elevation: 15° (low, looking up at the tower) .. 75° (high diorama)
-      const pitch = THREE.MathUtils.clamp(basePitch + this.orbit.pitch, D(15), D(75));
-      const yaw = baseYaw + this.orbit.yaw;
-      off.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(L);
-      camera.position.copy(this.lookSm).add(off);
-    }
+    // (third-person removed — only first-person and top-down remain)
     camera.lookAt(this.lookSm);
   }
 
