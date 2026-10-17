@@ -163,7 +163,8 @@ for (const n of npcs) {
     hitMeshes.push(n.group);
   }
 }
-refreshMarkers(); // show only clue 1 at the start
+const found = new Set();
+refreshMarkers(); // show only clue 1 at the start (found is defined above)
 world.boat.group.userData.interact = { kind: "boat" };
 hitMeshes.push(world.boat.group);
 
@@ -181,7 +182,6 @@ if (DEBUG) {
 }
 
 // ---------- discovery ----------
-const found = new Set();
 let modalOpen = false;
 let currentZoneId = null;
 
