@@ -176,7 +176,7 @@ export class Player {
             dz = dz * 0.85 + (tz - p.z) / (directD || 1) * 0.15;
             const dlp = Math.hypot(dx, dz) || 1;
             dx /= dlp; dz /= dlp;
-            ax = 0; az = 0; // path is clear, no avoidance needed
+            // NOTE: keep avoidance (ax, az) — the path can pass near the tower!
           }
         }
         // combine: seek + avoidance, renormalize
@@ -189,9 +189,9 @@ export class Player {
       if (manual || realD < 1.8) {
         this.autoTarget = null; // arrived or user took over
       } else {
-        // WALKTHROUGH: brisk but graceful — 1.4x, she glides along the path
+        // WALKTHROUGH: brisk but graceful — 1.25x, she glides along the path
         // (dx, dz) is already the normalized steering direction
-        const sp = CONFIG.PLAYER_SPEED * 1.4;
+        const sp = CONFIG.PLAYER_SPEED * 1.25;
         this.svel.x += (dx * sp - this.svel.x) * Math.min(1, dt * 6);
         this.svel.z += (dz * sp - this.svel.z) * Math.min(1, dt * 6);
         this.moving = true;
