@@ -98,10 +98,39 @@ export class Player {
       const p = this.group.position;
       // cancel if the player grabs the joystick/keys
       const manual = Math.hypot(this.moveVec.x, this.moveVec.z) > 0.15;
-      const dx = this.autoTarget.x - p.x, dz = this.autoTarget.z - p.z;
+      // waypoint routing: if the straight path hits a collider, go around it
+      let tx = this.autoTarget.x, tz = this.autoTarget.z;
+      if (!this._wp || Math.hypot(tx - this._wp.x, tz - this._wp.z) > 0.5) {
+        this._wp = null; // target changed, recalculate
+      }
+      if (!this._wp) {
+        for (const c of this.world.colliders) {
+          // does segment p→target pass within (c.r + 2) of the collider?
+          const dxs = tx - p.x, dzs = tz - p.z;
+          const len2 = dxs * dxs + dzs * dzs;
+          if (len2 < 1e-4) break;
+          let t = ((c.x - p.x) * dxs + (c.z - p.z) * dzs) / len2;
+          t = Math.max(0, Math.min(1, t));
+          const px = p.x + t * dxs, pz = p.z + t * dzs;
+          const dist = Math.hypot(px - c.x, pz - c.z);
+          if (dist < c.r + 2.5) {
+            // route around: waypoint perpendicular to the path, outside the collider
+            const ang = Math.atan2(pz - c.z, px - c.x);
+            const wr = c.r + 4;
+            this._wp = { x: c.x + Math.cos(ang) * wr, z: c.z + Math.sin(ang) * wr };
+            break;
+          }
+        }
+      }
+      if (this._wp) { tx = this._wp.x; tz = this._wp.z; }
+      const dx = tx - p.x, dz = tz - p.z;
       const d = Math.hypot(dx, dz);
-      if (manual || d < 1.8) {
-        this.autoTarget = null; // arrived or user took over
+      // reached waypoint → clear it and head to the real target
+      if (this._wp && d < 2) this._wp = null;
+      // arrival: check distance to the REAL target (not the waypoint)
+      const realD = Math.hypot(this.autoTarget.x - p.x, this.autoTarget.z - p.z);
+      if (manual || realD < 1.8) {
+        this.autoTarget = null; this._wp = null; // arrived or user took over
       } else {
         // steer toward the target (slower in first-person — feels too fast up close)
         const speedMul = this.camMode === 'first' ? 0.55 : 0.85;

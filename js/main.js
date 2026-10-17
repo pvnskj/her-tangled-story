@@ -566,7 +566,12 @@ function animate() {
       if (n) {
         const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
         if (d < 3.5) {
-          player.autoTarget = null;
+          player.autoTarget = null; player._wp = null;
+          // face the NPC in first-person so the dialogue is on screen
+          if (player.camMode === 'first') {
+            const dx = n.group.position.x - p.x, dz = n.group.position.z - p.z;
+            player.fpYaw = Math.atan2(dx, dz);
+          }
           interactWith({ kind: "npc", npc: n });
         }
       }
