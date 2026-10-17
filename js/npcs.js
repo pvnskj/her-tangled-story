@@ -413,13 +413,18 @@ export function buildNPCs(scene) {
       const flap = Math.sin(t * 10 + b.a) * 0.6;
       b.wl.rotation.y = flap; b.wr.rotation.y = -flap;
     }
-    // chameleon follows + hops when excited (obvious hot/cold helper)
+    // chameleon LEADS when excited (runs toward the clue!), follows when calm
     {
       const c = chameleon.group;
-      const tx = playerPos.x - 1.6, tz = playerPos.z + 1.2;
+      let tx, tz, arriveDist;
+      if (chameleon.excited && chameleon.leadTarget) {
+        tx = chameleon.leadTarget.x; tz = chameleon.leadTarget.z; arriveDist = 2.5;
+      } else {
+        tx = playerPos.x - 1.6; tz = playerPos.z + 1.2; arriveDist = 0.6;
+      }
       const dx = tx - c.position.x, dz = tz - c.position.z, d = Math.hypot(dx, dz);
-      if (d > 0.6) {
-        const sp = chameleon.excited ? 9 : 5;
+      if (d > arriveDist) {
+        const sp = chameleon.excited ? 7 : 5;
         c.position.x += (dx / d) * Math.min(sp * dt, d);
         c.position.z += (dz / d) * Math.min(sp * dt, d);
         c.rotation.y = Math.atan2(dx, dz);

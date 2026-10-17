@@ -102,6 +102,10 @@ for (const clue of CLUES) {
   const g = new THREE.Group();
   g.position.set(clue.x, 0, clue.z);
   if (clue.kind === "hidden" || clue.kind === "boat") {
+    // golden ring ON THE GROUND — walk into it!
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.8, 32),
+      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.15; g.add(ring); g.userData.ring = ring;
     const s = new THREE.Sprite(new THREE.SpriteMaterial({
       map: sparkTex, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 0.85 }));
@@ -505,10 +509,22 @@ function animate() {
     if (u.crit) { u.crit.position.y = Math.abs(Math.sin(t * 4)) * 0.15; u.crit.rotation.y = Math.sin(t * 0.8) * 0.6; }
   }
 
-  // chameleon hot/cold — its own excited hops + sparkle guide her
+  // walk-into detection: step inside a clue ring to discover it (no tap needed!)
+  {
+    const p = player.group.position;
+    for (const clue of CLUES) {
+      if (found.has(clue.id) || modalOpen) break;
+      if (clue.kind !== "hidden" && clue.kind !== "reflection") continue;
+      const d = Math.hypot(p.x - clue.x, p.z - clue.z);
+      if (d < 2.0) { discover(clue); break; }
+    }
+  }
+
+  // chameleon hot/cold — LEADS her to the clue when excited!
   const p = player.group.position;
   const sense = nearestUndiscovered(p, CONFIG.CHAMELEON_SENSE);
   chameleon.excited = !!sense;
+  chameleon.leadTarget = sense ? { x: sense.x, z: sense.z } : null;
 
   // interaction prompts: boat board/hop-out, villager talk
   // (the prompt pill itself is tappable — the reliable phone interaction)
