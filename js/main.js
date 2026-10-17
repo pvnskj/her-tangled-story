@@ -133,6 +133,15 @@ for (const clue of CLUES) {
   } else if (clue.kind === "animal") {
     const crit = makeCritter(clue.critter || "rabbit");
     g.add(crit); g.userData.crit = crit;
+    // golden ring on the ground — walk into it!
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.8, 32),
+      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.15; g.add(ring); g.userData.ring = ring;
+    // vertical light beam — visible in ALL camera modes!
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 9, 10, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.28,
+        side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+    beam.position.y = 4.5; g.add(beam); g.userData.beam = beam;
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.5 }));
     s.scale.setScalar(1.1); s.position.y = 1.1; g.add(s); g.userData.spark = s;
   } else if (clue.kind === "finale") {

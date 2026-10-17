@@ -1635,7 +1635,7 @@ export function buildWorld(scene) {
     return best;
   }
 
-  return { colliders, waters, dockRect, boat, zoneAt, update, sun,
+  return { colliders, waters, dockRect, boat, zoneAt, update, sun, paths: PATHS,
            setLanternBoost: (b) => { worldAnims.lanternBoost = b; },
            // Finale: release the sky lanterns — the magical Tangled moment, only after clue 33
            releaseLanterns: () => {

@@ -93,15 +93,55 @@ export class Player {
       this.svel.multiplyScalar(Math.max(0, 1 - dt * 4));
       return;
     }
-    // WALKTHROUGH MODE: auto-walk with steering — seeks target, avoids obstacles
+    // WALKTHROUGH MODE: follow the path when far, steer direct when close
     if (this.autoTarget) {
       const p = this.group.position;
       // cancel if the player grabs the joystick/keys
       const manual = Math.hypot(this.moveVec.x, this.moveVec.z) > 0.15;
       const tx = this.autoTarget.x, tz = this.autoTarget.z;
-      let dx = tx - p.x, dz = tz - p.z;
+      const directD = Math.hypot(tx - p.x, tz - p.z);
+      // PATH FOLLOWING: when far (>18 units), stick to the dirt path network
+      let px = tx, pz = tz; // steering target (may be a path point)
+      if (directD > 18 && this.world.paths) {
+        const paths = this.world.paths;
+        // nearest point on path network to player and to target
+        const nearestOnPath = (x, z) => {
+          let best = null, bestD = 1e9;
+          for (const [ax, az, bx, bz] of paths) {
+            const dxs = bx - ax, dzs = bz - az;
+            const L2 = dxs * dxs + dzs * dzs || 1e-6;
+            let t = ((x - ax) * dxs + (z - az) * dzs) / L2;
+            t = Math.max(0, Math.min(1, t));
+            const qx = ax + dxs * t, qz = az + dzs * t;
+            const dd = Math.hypot(x - qx, z - qz);
+            if (dd < bestD) { bestD = dd; best = { x: qx, z: qz, ax, az, bx, bz, t }; }
+          }
+          return best;
+        };
+        const playerPath = nearestOnPath(p.x, p.z);
+        const targetPath = nearestOnPath(tx, tz);
+        if (playerPath && targetPath) {
+          // if not on the path yet, go to the nearest path point first
+          const offPath = Math.hypot(p.x - playerPath.x, p.z - playerPath.z);
+          if (offPath > 3) {
+            px = playerPath.x; pz = playerPath.z;
+          } else {
+            // on the path: walk along it toward the target's path point
+            // choose direction along current segment that gets closer to target
+            const segDx = playerPath.bx - playerPath.ax, segDz = playerPath.bz - playerPath.az;
+            const segLen = Math.hypot(segDx, segDz) || 1;
+            // direction to target's path point
+            const toTx = targetPath.x - playerPath.x, toTz = targetPath.z - playerPath.z;
+            const dot = (toTx * segDx + toTz * segDz) / segLen;
+            const dir = dot >= 0 ? 1 : -1;
+            px = playerPath.x + (segDx / segLen) * dir * 6;
+            pz = playerPath.z + (segDz / segLen) * dir * 6;
+          }
+        }
+      }
+      let dx = px - p.x, dz = pz - p.z;
       const d = Math.hypot(dx, dz);
-      // STEERING: blend seek (toward target) with avoidance (away from nearby colliders)
+      // STEERING: blend seek (toward steering target) with avoidance (away from nearby colliders)
       if (d > 1e-4) {
         dx /= d; dz /= d; // normalized seek direction
         // avoidance: push away from any collider within 4 units
@@ -231,12 +271,12 @@ export class Player {
     const p = this.group.position;
     // FIRST-PERSON: see through her eyes — drag to look, joystick moves relative to view
     if (this.camMode === 'first') {
-      const eyeH = 3.4; // raised for clearer vision over grass
+      const eyeH = 3.8; // raised for clearer vision over grass
       const sinY = Math.sin(this.fpYaw), cosY = Math.cos(this.fpYaw);
-      const lx = sinY * 14, lz = cosY * 14; // look further ahead
+      const lx = sinY * 16, lz = cosY * 16; // look further ahead
       const ly = eyeH + this.fpPitch * 10;
-      // pulled back 2.2 units for a slightly wider, less claustrophobic view
-      camera.position.set(p.x - sinY * 2.2, eyeH, p.z - cosY * 2.2);
+      // pulled back 3.5 units — wider view so she sees the world, not just grass
+      camera.position.set(p.x - sinY * 3.5, eyeH, p.z - cosY * 3.5);
       if (!this.lookSm) this.lookSm = new THREE.Vector3(p.x + lx, ly, p.z + lz);
       // snappy look (no heavy smoothing — first-person needs to feel direct)
       this.lookSm.lerp(new THREE.Vector3(p.x + lx, ly, p.z + lz), 1 - Math.pow(0.000001, dt));
