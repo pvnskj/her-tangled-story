@@ -29,7 +29,8 @@ function personMesh(bodyColor, scale = 1, seated = false) {
 
 const NAMED = [
   { name: "Maro the traveler", x: 8, z: -84, clueId: 3, color: 0x4a9a8a,
-    hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
+    hint: "They say golden sparkles hide behind the tower stairs… keep looking around here.",
+    patrol: [[8, -84], [15, -78], [5, -75], [-2, -82]] },
   { name: "Bram the thug", x: 80, z: 40, clueId: 12, color: 0x8a4a3a, seated: true,
     hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
   { name: "Old Tom", x: 98, z: 40, clueId: 14, color: 0x6a6a8a, seated: true,
@@ -315,9 +316,23 @@ export function buildNPCs(scene) {
   }
 
   function update(dt, t, playerPos) {
-    // named: gentle sway
+    // named: gentle sway, or patrol if they have a route (Maro walks!)
     for (const n of npcs) {
-      if (n.kind === "named" || n.kind === "thug") {
+      if (n.kind === "named" && n.patrol) {
+        n.patrolI = n.patrolI || 0;
+        const [px, pz] = n.patrol[n.patrolI];
+        const dx = px - n.group.position.x, dz = pz - n.group.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d < 1) {
+          n.patrolI = (n.patrolI + 1) % n.patrol.length;
+        } else {
+          n.group.position.x += (dx / d) * 2.2 * dt;
+          n.group.position.z += (dz / d) * 2.2 * dt;
+          n.group.rotation.y = Math.atan2(dx, dz);
+          n.group.position.y = Math.abs(Math.sin(t * 6 + n.phase)) * 0.08; // walking bob
+        }
+        facePlayer(n, dt, playerPos, 9);
+      } else if (n.kind === "named" || n.kind === "thug") {
         if (n.kind === "thug") {
           // mid-song: hearty rocking side to side (on terrain!)
           const by = n.baseY || 0;

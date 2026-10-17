@@ -189,27 +189,44 @@ export const UI = {
     frame.classList.add("reveal");
   },
 
-  // riddle: fill in the blank to unlock — returns a promise resolving true/false
-  riddleModal(prompt, answer) {
+  // riddle: fill in the blank OR multiple choice — resolves true (any answer works for choice)
+  riddleModal(prompt, answerOrOptions) {
     return new Promise((resolve) => {
       el("riddle-prompt").textContent = prompt;
-      el("riddle-input").value = "";
       el("riddle-error").classList.add("hidden");
+      const inputRow = el("riddle-input-row"), optBox = el("riddle-options");
       el("riddle-modal").classList.remove("hidden");
-      setTimeout(() => el("riddle-input").focus(), 100);
-      const submit = () => {
-        const val = el("riddle-input").value.trim().toUpperCase();
-        if (val === answer.toUpperCase()) {
-          el("riddle-modal").classList.add("hidden");
-          el("riddle-submit").onclick = null;
-          resolve(true);
-        } else {
-          el("riddle-error").classList.remove("hidden");
-          el("riddle-input").select();
-        }
+      const close = (val) => {
+        el("riddle-modal").classList.add("hidden");
+        el("riddle-submit").onclick = null;
+        optBox.innerHTML = "";
+        resolve(val);
       };
-      el("riddle-submit").onclick = submit;
-      el("riddle-input").onkeydown = (e) => { if (e.key === "Enter") submit(); };
+      if (Array.isArray(answerOrOptions)) {
+        // multiple choice — any option unlocks!
+        inputRow.classList.add("hidden");
+        optBox.classList.remove("hidden");
+        optBox.innerHTML = "";
+        answerOrOptions.forEach((opt) => {
+          const b = document.createElement("button");
+          b.textContent = opt;
+          b.onclick = () => close(true);
+          optBox.appendChild(b);
+        });
+      } else {
+        // fill in the blank
+        inputRow.classList.remove("hidden");
+        optBox.classList.add("hidden");
+        el("riddle-input").value = "";
+        setTimeout(() => el("riddle-input").focus(), 100);
+        const submit = () => {
+          const val = el("riddle-input").value.trim().toUpperCase();
+          if (val === answerOrOptions.toUpperCase()) close(true);
+          else { el("riddle-error").classList.remove("hidden"); el("riddle-input").select(); }
+        };
+        el("riddle-submit").onclick = submit;
+        el("riddle-input").onkeydown = (e) => { if (e.key === "Enter") submit(); };
+      }
     });
   },
 

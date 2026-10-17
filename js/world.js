@@ -311,6 +311,23 @@ export function buildWorld(scene) {
       r.rotation.set(rand() * 3, rand() * 3, rand() * 3);
       scene.add(r);
     });
+    // footprints: clue 1 (-12,-104) → clue 2 (-15,-85), guiding her forward
+    {
+      const fpGeo = new THREE.PlaneGeometry(0.5, 0.8);
+      const fpMat = new THREE.MeshBasicMaterial({ color: 0x8a6a4a, transparent: true, opacity: 0.55, depthWrite: false });
+      const x1 = -12, z1 = -104, x2 = -15, z2 = -85;
+      const steps = 12;
+      for (let i = 0; i <= steps; i++) {
+        const f = i / steps;
+        const fx = x1 + (x2 - x1) * f + (i % 2 ? 0.35 : -0.35); // alternating left/right
+        const fz = z1 + (z2 - z1) * f;
+        const fp = new THREE.Mesh(fpGeo, fpMat);
+        fp.rotation.x = -Math.PI / 2;
+        fp.rotation.z = Math.atan2(x2 - x1, z2 - z1) + (i % 2 ? 0.2 : -0.2);
+        fp.position.set(fx, 0.09, fz);
+        scene.add(fp);
+      }
+    }
     const wc = document.createElement("canvas"); wc.width = 64; wc.height = 128;
     {
       const g = wc.getContext("2d");

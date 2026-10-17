@@ -136,6 +136,12 @@ body.touch #joystick.started { display: block; }
 }
 #riddle-error { color: #ff9a9a; font-size: 14px; }
 #riddle-error.hidden { display: none; }
+#riddle-options { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+#riddle-options.hidden { display: none; }
+#riddle-options button {
+  font-size: 20px; padding: 12px 24px; letter-spacing: 1px;
+}
+#riddle-input-row.hidden { display: none; }
 #photo-frame { position: relative; overflow: hidden; border-radius: 12px; }
 #photo-frame img, #finale-frame img {
   width: 100%; border-radius: 12px; border: 1px solid var(--gold); display: block;

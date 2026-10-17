@@ -186,9 +186,9 @@ let currentZoneId = null;
 
 // guidance: what to show in the guide box for the next undiscovered clue
 const GUIDES = {
-  1: "🦎 Follow the chameleon! It's excited about something behind the tower…",
-  2: "✨ Look around the tower — golden sparkles hide nearby.",
-  3: "🗣️ Maro the traveler has a hint for you.",
+  1: "🦎 Follow the chameleon! It's excited about something behind the tower, by the rocks…",
+  2: "👣 Follow the footprints from the rocks!",
+  3: "🗣️ Find Maro the traveler — he wanders near the tower.",
   4: "✨ Check the open field by the tower.",
   5: "🐇 Follow the rabbit!",
   6: "✨ Into the forest — look for sparkles in the clearing.",
@@ -206,6 +206,10 @@ async function discover(clue) {
   if (clue.id === 1) {
     const ok = await UI.riddleModal("I'm a T__DLER", "OD");
     if (!ok) { modalOpen = false; return; }
+  }
+  // Clue 2: multiple choice — "What am I?" (any answer works!)
+  if (clue.id === 2 && clue.riddle) {
+    await UI.riddleModal(clue.riddle.prompt, clue.riddle.options);
   }
   found.add(clue.id);
   UI.setCounter(found.size);
