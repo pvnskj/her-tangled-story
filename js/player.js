@@ -28,6 +28,7 @@ export class Player {
     this.svel = new THREE.Vector3(); // smoothed velocity — the "delightful" in the movement
     this.moving = false;
     this.bobT = 0;
+    this.autoTarget = null; // walkthrough mode: auto-walk to a tapped clue
     this.lookSm = null; // smoothed look-at target for buttery camera
     // drag-to-look offsets (radians): yaw/pitch added around the follow target
     this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
@@ -90,6 +91,44 @@ export class Player {
     if (this.riding) { // boat drives; bleed off any leftover glide
       this.svel.multiplyScalar(Math.max(0, 1 - dt * 4));
       return;
+    }
+    // WALKTHROUGH MODE: auto-walk toward the tapped clue
+    if (this.autoTarget) {
+      const p = this.group.position;
+      // cancel if the player grabs the joystick/keys
+      const manual = Math.hypot(this.moveVec.x, this.moveVec.z) > 0.15;
+      const dx = this.autoTarget.x - p.x, dz = this.autoTarget.z - p.z;
+      const d = Math.hypot(dx, dz);
+      if (manual || d < 1.8) {
+        this.autoTarget = null; // arrived or user took over
+      } else {
+        // steer toward the target
+        const sp = CONFIG.PLAYER_SPEED * 0.85;
+        this.svel.x += ((dx / d) * sp - this.svel.x) * Math.min(1, dt * 6);
+        this.svel.z += ((dz / d) * sp - this.svel.z) * Math.min(1, dt * 6);
+        this.moving = true;
+        this.bobT += dt * 8;
+        this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * 0.12;
+        // face the direction of travel
+        this.group.rotation.y = Math.atan2(dx, dz);
+        // move + collide (shared with manual below)
+        const prev = p.clone();
+        p.x += this.svel.x * dt; p.z += this.svel.z * dt;
+        const B = CONFIG.WORLD_BOUND;
+        p.x = Math.max(-B, Math.min(B, p.x));
+        p.z = Math.max(-B, Math.min(B, p.z));
+        if (this.inWater(p.x, p.z) && !this.onDock(p.x, p.z)) p.copy(prev);
+        for (const c of this.world.colliders) {
+          const cx = p.x - c.x, cz = p.z - c.z;
+          const cd = Math.hypot(cx, cz), min = c.r + 0.55;
+          if (cd < min && cd > 1e-4) { p.x = c.x + (cx / cd) * min; p.z = c.z + (cz / cd) * min; }
+        }
+        if (window.terrainHeight) {
+          const targetY = window.terrainHeight(p.x, p.z);
+          p.y += (targetY - p.y) * Math.min(1, dt * 10);
+        }
+        return;
+      }
     }
     // in first-person, joystick moves relative to where you're looking
     // (up on stick = forward in view direction)

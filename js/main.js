@@ -270,14 +270,18 @@ function interactWith(target) {
   }
   if (target.kind === "clue") {
     const clue = target.clue;
+    const nextId = CLUES.find((c) => !found.has(c.id))?.id;
+    if (clue.id !== nextId) return; // only the story's next clue is tappable
     const d = Math.hypot(p.x - clue.x, p.z - clue.z);
-    if (d > CONFIG.INTERACT_RADIUS) {
-      UI.setGuide(`🚶 Walk closer to the sparkles! (${Math.ceil(d)} steps away)`);
-      setTimeout(() => updateGuide(), 2500); // restore the real hint after
-      return;
+    if (d < 2.0) {
+      UI.blip();
+      discover(clue);
+    } else {
+      // WALKTHROUGH MODE: tap the clue → she walks there automatically!
+      player.autoTarget = { x: clue.x, z: clue.z };
+      UI.setGuide(`🚶 Walking to the sparkles… (touch the joystick to take over)`);
+      UI.blip();
     }
-    UI.blip();
-    discover(clue);
   }
 }
 
@@ -537,7 +541,10 @@ function animate() {
     const next = CLUES.find((c) => !found.has(c.id));
     if (next && !modalOpen && (next.kind === "hidden" || next.kind === "reflection")) {
       const d = Math.hypot(p.x - next.x, p.z - next.z);
-      if (d < 2.0) discover(next);
+      if (d < 2.0) {
+        player.autoTarget = null; // stop walkthrough mode
+        discover(next);
+      }
     }
   }
 
