@@ -149,9 +149,10 @@ export class Player {
         } else {
           this._nudgeDir = 0;
         }
-        // PATH ATTRACTION: gentle pull toward the nearest dirt path (she prefers roads!)
-        if (this.world.paths) {
-          let bestPx = 0, bestPz = 0, bestD = 1e9;
+        // PATH FOLLOWING: if on/near a path and target is far, walk ALONG the path
+        // (not just attracted to it — actually follow it like a road)
+        if (this.world.paths && directD > 12) {
+          let best = null, bestD = 1e9;
           for (const [pax0, paz0, pbx0, pbz0] of this.world.paths) {
             const dxs = pbx0 - pax0, dzs = pbz0 - paz0;
             const L2 = dxs * dxs + dzs * dzs || 1e-6;
@@ -159,14 +160,23 @@ export class Player {
             t = Math.max(0, Math.min(1, t));
             const qx = pax0 + dxs * t, qz = paz0 + dzs * t;
             const dd = Math.hypot(p.x - qx, p.z - qz);
-            if (dd < bestD) { bestD = dd; bestPx = qx; bestPz = qz; }
+            if (dd < bestD) { bestD = dd; best = { qx, qz, dxs, dzs, t }; }
           }
-          if (bestD < 10 && bestD > 2) {
-            // gentle nudge toward the path
-            const pax = (bestPx - p.x) / bestD, paz = (bestPz - p.z) / bestD;
-            dx += pax * 0.8; dz += paz * 0.8;
-            const dl2 = Math.hypot(dx, dz) || 1;
-            dx /= dl2; dz /= dl2;
+          if (best && bestD < 6) {
+            // on the path: move along it in the direction toward the target
+            const segLen = Math.hypot(best.dxs, best.dzs) || 1;
+            const toTx = tx - best.qx, toTz = tz - best.qz;
+            const dot = (toTx * best.dxs + toTz * best.dzs) / segLen;
+            const dir = dot >= 0 ? 1 : -1;
+            // override: walk along the path, not toward target directly
+            dx = (best.dxs / segLen) * dir;
+            dz = (best.dzs / segLen) * dir;
+            // blend slightly toward target so she eventually leaves the path
+            dx = dx * 0.85 + (tx - p.x) / (directD || 1) * 0.15;
+            dz = dz * 0.85 + (tz - p.z) / (directD || 1) * 0.15;
+            const dlp = Math.hypot(dx, dz) || 1;
+            dx /= dlp; dz /= dlp;
+            ax = 0; az = 0; // path is clear, no avoidance needed
           }
         }
         // combine: seek + avoidance, renormalize
@@ -179,9 +189,9 @@ export class Player {
       if (manual || realD < 1.8) {
         this.autoTarget = null; // arrived or user took over
       } else {
-        // WALKTHROUGH = SWIFT AND MAGICAL, not a hike! 2.2x speed.
+        // WALKTHROUGH: brisk but graceful — 1.4x, she glides along the path
         // (dx, dz) is already the normalized steering direction
-        const sp = CONFIG.PLAYER_SPEED * 2.2;
+        const sp = CONFIG.PLAYER_SPEED * 1.4;
         this.svel.x += (dx * sp - this.svel.x) * Math.min(1, dt * 6);
         this.svel.z += (dz * sp - this.svel.z) * Math.min(1, dt * 6);
         this.moving = true;
