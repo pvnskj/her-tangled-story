@@ -106,6 +106,11 @@ for (const clue of CLUES) {
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.8, 32),
       new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.15; g.add(ring); g.userData.ring = ring;
+    // vertical light beam — visible in ALL 3 camera modes, even through tall grass!
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 9, 10, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: 0.28,
+        side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+    beam.position.y = 4.5; g.add(beam); g.userData.beam = beam;
     const s = new THREE.Sprite(new THREE.SpriteMaterial({
       map: sparkTex, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, opacity: 0.85 }));
@@ -505,7 +510,7 @@ function animate() {
     const u = group.userData;
     if (u.spark) { u.spark.material.opacity = 0.55 + Math.sin(t * 3 + group.position.x) * 0.3; }
     if (u.ring) { const s = 1 + Math.sin(t * 2.2) * 0.18; u.ring.scale.set(s, s, 1); }
-    if (u.beam) { u.beam.rotation.y = t * 0.6; }
+    if (u.beam) { u.beam.material.opacity = 0.22 + Math.sin(t * 2.5) * 0.1; u.beam.rotation.y = t * 0.8; }
     if (u.crit) { u.crit.position.y = Math.abs(Math.sin(t * 4)) * 0.15; u.crit.rotation.y = Math.sin(t * 0.8) * 0.6; }
   }
 

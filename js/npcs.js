@@ -418,7 +418,7 @@ export function buildNPCs(scene) {
       const c = chameleon.group;
       let tx, tz, arriveDist;
       if (chameleon.excited && chameleon.leadTarget) {
-        tx = chameleon.leadTarget.x; tz = chameleon.leadTarget.z; arriveDist = 2.5;
+        tx = chameleon.leadTarget.x; tz = chameleon.leadTarget.z; arriveDist = 4.0;
       } else {
         tx = playerPos.x - 1.6; tz = playerPos.z + 1.2; arriveDist = 0.6;
       }
