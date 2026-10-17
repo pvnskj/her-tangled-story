@@ -553,9 +553,9 @@ function animate() {
   {
     const p = player.group.position;
     const next = CLUES.find((c) => !found.has(c.id));
-    if (next && !modalOpen && (next.kind === "hidden" || next.kind === "reflection")) {
+    if (next && !modalOpen && ["hidden", "reflection", "animal", "boat"].includes(next.kind)) {
       const d = Math.hypot(p.x - next.x, p.z - next.z);
-      if (d < 2.0) {
+      if (d < 2.5) {
         player.autoTarget = null; // stop walkthrough mode
         discover(next);
       }
