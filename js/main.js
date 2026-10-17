@@ -163,6 +163,7 @@ for (const n of npcs) {
     hitMeshes.push(n.group);
   }
 }
+refreshMarkers(); // show only clue 1 at the start
 world.boat.group.userData.interact = { kind: "boat" };
 hitMeshes.push(world.boat.group);
 
@@ -183,6 +184,14 @@ if (DEBUG) {
 const found = new Set();
 let modalOpen = false;
 let currentZoneId = null;
+
+// SEQUENTIAL REVEAL: only the next undiscovered clue's marker is visible
+function refreshMarkers() {
+  const nextId = CLUES.find((c) => !found.has(c.id))?.id;
+  for (const [id, { group }] of clueMarkers) {
+    group.visible = (id === nextId);
+  }
+}
 
 // guidance: what to show in the guide box for the next undiscovered clue
 const GUIDES = {
@@ -214,8 +223,7 @@ async function discover(clue) {
   found.add(clue.id);
   UI.setCounter(found.size);
   updateGuide();
-  const marker = clueMarkers.get(clue.id);
-  if (marker) marker.group.visible = false;
+  refreshMarkers(); // reveal the next clue's marker, hide the found one
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
   if (clue.kind === "finale") {
     UI.fanfare();
@@ -243,9 +251,14 @@ function interactWith(target) {
     if (n.kind === "named") {
       const clue = CLUES.find((c) => c.id === n.clueId);
       const hw = npcHeadWorld(n);
-      if (clue && !found.has(clue.id)) {
+      const nextId = CLUES.find((c) => !found.has(c.id))?.id;
+      if (clue && !found.has(clue.id) && clue.id === nextId) {
+        // it's their turn in the story — give the hint and the clue
         UI.dialogue(n.name, n.hint, hw.x, hw.y, hw.z);
         setTimeout(() => discover(clue), 1700);
+      } else if (clue && !found.has(clue.id)) {
+        // not yet — tease the story without spoiling
+        UI.dialogue(n.name, "Keep following your heart — your story is still unfolding…", hw.x, hw.y, hw.z);
       } else {
         UI.dialogue(n.name, n.flavor, hw.x, hw.y, hw.z);
       }
@@ -518,22 +531,24 @@ function animate() {
     if (u.crit) { u.crit.position.y = Math.abs(Math.sin(t * 4)) * 0.15; u.crit.rotation.y = Math.sin(t * 0.8) * 0.6; }
   }
 
-  // walk-into detection: step inside a clue ring to discover it (no tap needed!)
+  // walk-into detection: step inside the NEXT clue's ring to discover it (guided story!)
   {
     const p = player.group.position;
-    for (const clue of CLUES) {
-      if (found.has(clue.id) || modalOpen) break;
-      if (clue.kind !== "hidden" && clue.kind !== "reflection") continue;
-      const d = Math.hypot(p.x - clue.x, p.z - clue.z);
-      if (d < 2.0) { discover(clue); break; }
+    const next = CLUES.find((c) => !found.has(c.id));
+    if (next && !modalOpen && (next.kind === "hidden" || next.kind === "reflection")) {
+      const d = Math.hypot(p.x - next.x, p.z - next.z);
+      if (d < 2.0) discover(next);
     }
   }
 
-  // chameleon hot/cold — LEADS her to the clue when excited!
+  // chameleon hot/cold — LEADS her to the NEXT story clue!
   const p = player.group.position;
-  const sense = nearestUndiscovered(p, CONFIG.CHAMELEON_SENSE);
-  chameleon.excited = !!sense;
-  chameleon.leadTarget = sense ? { x: sense.x, z: sense.z } : null;
+  const nextClue = CLUES.find((c) => !found.has(c.id));
+  const sense = nextClue ? nearestUndiscovered(p, CONFIG.CHAMELEON_SENSE) : null;
+  // only get excited if the next clue is within sense range
+  const nextInRange = nextClue && Math.hypot(p.x - nextClue.x, p.z - nextClue.z) < CONFIG.CHAMELEON_SENSE;
+  chameleon.excited = !!nextInRange;
+  chameleon.leadTarget = nextInRange ? { x: nextClue.x, z: nextClue.z } : null;
 
   // interaction prompts: boat board/hop-out, villager talk
   // (the prompt pill itself is tappable — the reliable phone interaction)
