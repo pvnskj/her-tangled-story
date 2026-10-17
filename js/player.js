@@ -93,68 +93,48 @@ export class Player {
       this.svel.multiplyScalar(Math.max(0, 1 - dt * 4));
       return;
     }
-    // WALKTHROUGH MODE: follow the path when far, steer direct when close
+    // WALKTHROUGH MODE: direct steering with strong obstacle avoidance + anti-stuck
     if (this.autoTarget) {
       const p = this.group.position;
       // cancel if the player grabs the joystick/keys
       const manual = Math.hypot(this.moveVec.x, this.moveVec.z) > 0.15;
       const tx = this.autoTarget.x, tz = this.autoTarget.z;
       const directD = Math.hypot(tx - p.x, tz - p.z);
-      // PATH FOLLOWING: when far (>18 units), stick to the dirt path network
-      let px = tx, pz = tz; // steering target (may be a path point)
-      if (directD > 18 && this.world.paths) {
-        const paths = this.world.paths;
-        // nearest point on path network to player and to target
-        const nearestOnPath = (x, z) => {
-          let best = null, bestD = 1e9;
-          for (const [ax, az, bx, bz] of paths) {
-            const dxs = bx - ax, dzs = bz - az;
-            const L2 = dxs * dxs + dzs * dzs || 1e-6;
-            let t = ((x - ax) * dxs + (z - az) * dzs) / L2;
-            t = Math.max(0, Math.min(1, t));
-            const qx = ax + dxs * t, qz = az + dzs * t;
-            const dd = Math.hypot(x - qx, z - qz);
-            if (dd < bestD) { bestD = dd; best = { x: qx, z: qz, ax, az, bx, bz, t }; }
-          }
-          return best;
-        };
-        const playerPath = nearestOnPath(p.x, p.z);
-        const targetPath = nearestOnPath(tx, tz);
-        if (playerPath && targetPath) {
-          // if not on the path yet, go to the nearest path point first
-          const offPath = Math.hypot(p.x - playerPath.x, p.z - playerPath.z);
-          if (offPath > 3) {
-            px = playerPath.x; pz = playerPath.z;
-          } else {
-            // on the path: walk along it toward the target's path point
-            // choose direction along current segment that gets closer to target
-            const segDx = playerPath.bx - playerPath.ax, segDz = playerPath.bz - playerPath.az;
-            const segLen = Math.hypot(segDx, segDz) || 1;
-            // direction to target's path point
-            const toTx = targetPath.x - playerPath.x, toTz = targetPath.z - playerPath.z;
-            const dot = (toTx * segDx + toTz * segDz) / segLen;
-            const dir = dot >= 0 ? 1 : -1;
-            px = playerPath.x + (segDx / segLen) * dir * 6;
-            pz = playerPath.z + (segDz / segLen) * dir * 6;
-          }
-        }
-      }
-      let dx = px - p.x, dz = pz - p.z;
+      let dx = tx - p.x, dz = tz - p.z;
       const d = Math.hypot(dx, dz);
-      // STEERING: blend seek (toward steering target) with avoidance (away from nearby colliders)
+      // ANTI-STUCK: if barely moving for a while, nudge perpendicular to break the deadlock
+      if (!this._stuckT) { this._stuckT = 0; this._lastP = { x: p.x, z: p.z }; this._nudge = 0; }
+      this._stuckT += 1/60;
+      if (this._stuckT > 1.5) {
+        const moved = Math.hypot(p.x - this._lastP.x, p.z - this._lastP.z);
+        if (moved < 1.5 && directD > 4) {
+          // stuck! pick a perpendicular nudge direction (alternate sides)
+          this._nudge = (this._nudge || 0) + 1;
+          this._nudgeDir = (this._nudge % 2 === 0) ? 1 : -1;
+          this._stuckT = 0;
+        }
+        this._lastP = { x: p.x, z: p.z };
+      }
+      // STEERING: seek target + strong avoidance + anti-stuck nudge
       if (d > 1e-4) {
-        dx /= d; dz /= d; // normalized seek direction
-        // avoidance: push away from any collider within 4 units
+        dx /= d; dz /= d;
         let ax = 0, az = 0;
         for (const c of this.world.colliders) {
           const ox = p.x - c.x, oz = p.z - c.z;
           const od = Math.hypot(ox, oz);
-          const safe = c.r + 2.5;
-          if (od < safe + 3 && od > 1e-4) {
-            const push = (1 - Math.max(0, od - c.r) / (safe + 3 - c.r)) * 2.2;
+          const safe = c.r + 3.5; // wider safety margin
+          if (od < safe + 4 && od > 1e-4) {
+            const push = (1 - Math.max(0, od - c.r) / (safe + 4 - c.r)) * 3.5; // stronger
             ax += (ox / od) * push;
             az += (oz / od) * push;
           }
+        }
+        // anti-stuck: perpendicular nudge
+        if (this._nudgeDir && this._stuckT < 1.0) {
+          const nx = -dz * this._nudgeDir, nz = dx * this._nudgeDir;
+          ax += nx * 2.0; az += nz * 2.0;
+        } else {
+          this._nudgeDir = 0;
         }
         // combine: seek + avoidance, renormalize
         dx += ax; dz += az;
