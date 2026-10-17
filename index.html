@@ -16,6 +16,14 @@
      runs fully offline from any static host. Pinned version, no build step. -->
 </head>
 <body>
+  <div id="err-overlay" style="display:none;position:fixed;top:0;left:0;right:0;background:#a00;color:#fff;padding:10px;z-index:999;font-size:12px;white-space:pre-wrap;"></div>
+  <script>
+  window.addEventListener('error', function(e) {
+    var d = document.getElementById('err-overlay');
+    d.style.display = 'block';
+    d.textContent = 'ERROR: ' + (e.message || e.error) + '\n' + (e.filename || '') + ':' + (e.lineno || '');
+  });
+  </script>
   <canvas id="game"></canvas>
   <div id="vignette"></div>
   <div id="grade"></div>
