@@ -271,17 +271,13 @@ function interactWith(target) {
   if (target.kind === "clue") {
     const clue = target.clue;
     const nextId = CLUES.find((c) => !found.has(c.id))?.id;
-    if (clue.id !== nextId) return; // only the story's next clue is tappable
+    if (clue.id !== nextId) return; // only the story's next clue matters
     const d = Math.hypot(p.x - clue.x, p.z - clue.z);
     if (d < 2.0) {
       UI.blip();
       discover(clue);
-    } else {
-      // WALKTHROUGH MODE: tap the clue → she walks there automatically!
-      player.autoTarget = { x: clue.x, z: clue.z };
-      UI.setGuide(`🚶 Walking to the sparkles… (touch the joystick to take over)`);
-      UI.blip();
     }
+    // (far taps do nothing — tap the guide text up top for walkthrough mode)
   }
 }
 
@@ -443,6 +439,24 @@ UI.init();
 UI.onBegin = () => {
   updateGuide(); // show the first hint: follow the chameleon!
 };
+// tap the guide text → she walks there automatically (walkthrough mode!)
+UI.onGuideTap(() => {
+  const next = CLUES.find((c) => !found.has(c.id));
+  if (!next || modalOpen) return;
+  if (next.kind === "villager") {
+    // walk to the villager NPC
+    const n = npcs.find((x) => x.clueId === next.id);
+    if (n) {
+      player.autoTarget = { x: n.group.position.x, z: n.group.position.z };
+      UI.setGuide(`🚶 Walking to ${n.name}… (touch the joystick to take over)`);
+      UI.blip();
+    }
+  } else {
+    player.autoTarget = { x: next.x, z: next.z };
+    UI.setGuide(`🚶 Walking to the sparkles… (touch the joystick to take over)`);
+    UI.blip();
+  }
+});
 
 if (DEBUG) {
   window.__game = {
@@ -544,6 +558,17 @@ function animate() {
       if (d < 2.0) {
         player.autoTarget = null; // stop walkthrough mode
         discover(next);
+      }
+    }
+    // walkthrough arrival at a villager → auto-talk to them
+    if (next && !modalOpen && next.kind === "villager" && player.autoTarget) {
+      const n = npcs.find((x) => x.clueId === next.id);
+      if (n) {
+        const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
+        if (d < 3.5) {
+          player.autoTarget = null;
+          interactWith({ kind: "npc", npc: n });
+        }
       }
     }
   }

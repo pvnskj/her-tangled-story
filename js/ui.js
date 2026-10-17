@@ -146,6 +146,8 @@ export const UI = {
     t.textContent = text;
     box.classList.remove("hidden");
   },
+  // tap the guide box → walkthrough mode (auto-walk to the next clue)
+  onGuideTap(fn) { el("guide-box").addEventListener("click", fn); },
 
   banner(text) {
     const b = el("zone-banner");

@@ -54,7 +54,8 @@ body {
   max-width: 86%; padding: 8px 16px; text-align: center;
   background: rgba(30, 20, 50, 0.72); border: 1px solid rgba(245, 214, 123, 0.45);
   border-radius: 14px; color: #ffe9b8; font-size: 14px; line-height: 1.35;
-  pointer-events: none; backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  cursor: pointer; /* tap me → walkthrough! */
 }
 #guide-box.hidden { display: none; }
 
