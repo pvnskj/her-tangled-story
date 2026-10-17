@@ -2,99 +2,52 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Her Tangled Story — a 3D birthday adventure</title>
-<link rel="stylesheet" href="css/style.css?v=20261011c">
-<script type="importmap">
-{
-  "imports": {
-    "three": "./js/vendor/three.module.js"
-  }
-}
-</script>
-<!-- Three.js r160 is vendored locally (js/vendor/three.module.js) so the game
-     runs fully offline from any static host. Pinned version, no build step. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#20132e">
+<meta name="description" content="A little birthday world, filled with memories and surprises just for you.">
+<title>Her Tangled Story — a world for you</title>
+<link rel="stylesheet" href="css/style.css?v=20261017g">
+<script type="importmap">{"imports":{"three":"./js/vendor/three.module.js"}}</script>
 </head>
 <body>
-  <canvas id="game"></canvas>
-  <div id="vignette"></div>
-  <div id="grade"></div>
-
-  <!-- HUD -->
-  <div id="hud" class="hidden">
-    <div id="clue-counter">✨ <span id="found-count">0</span> · 33</div>
-    <button id="map-toggle" aria-label="open map">🗺️</button>
-    <button id="cam-toggle" aria-label="change camera view">🦅</button>
-    <button id="sound-toggle" aria-label="toggle sound">🔊</button>
+<canvas id="game" aria-label="Your birthday valley"></canvas>
+<div id="vignette"></div><div id="grade"></div>
+<header id="hud" class="hidden">
+  <button id="map-toggle">Places</button><button id="album-toggle">Album</button>
+  <button id="cam-toggle" aria-label="Switch to overhead view">View</button>
+  <button id="sound-toggle" aria-label="Turn sound off">♪</button>
+</header>
+<div id="zone-banner" role="status"></div>
+<div id="dialogue" class="hidden"><strong id="dlg-name"></strong><span id="dlg-text"></span></div>
+<button id="interact-prompt" class="hidden"></button>
+<div id="joystick" aria-label="Drag to walk"><div id="stick"></div></div>
+<section id="journey-bar" class="hidden" aria-label="Your next surprise">
+  <div class="journey-label"><span id="journey-place"></span><span id="journey-count"></span></div>
+  <h2 id="journey-title"></h2>
+  <div class="journey-actions"><button id="journey-go" class="primary">Take me there</button><button id="walk-toggle" class="quiet" aria-pressed="false">Walk yourself</button></div>
+</section>
+<div id="travel-veil" aria-hidden="true"><span id="travel-label"></span></div>
+<div id="start-overlay" class="modal" role="dialog" aria-modal="true" aria-labelledby="start-title">
+  <div class="panel welcome">
+    <span class="eyebrow">A LITTLE WORLD, JUST FOR YOU</span><div class="welcome-star" aria-hidden="true">✧</div>
+    <h1 id="start-title">Her Tangled Story</h1>
+    <p>Six little surprises.<br>A lifetime of lovely moments.</p>
+    <p class="muted">Go wherever your heart takes you.<br>Everything here is yours to open.</p>
+    <button id="begin-btn" class="primary">Step inside ♡</button>
   </div>
-  <div id="zone-banner"></div>
-  <!-- guidance box: tells her where to go next -->
-  <div id="guide-box" class="hidden"><span id="guide-text"></span></div>
-
-  <!-- dialogue bubble -->
-  <div id="dialogue" class="hidden"><strong id="dlg-name"></strong><span id="dlg-text"></span></div>
-
-  <!-- floating interaction prompt (villagers, boat) -->
-  <div id="interact-prompt" class="hidden"></div>
-
-  <!-- virtual joystick -->
-  <div id="joystick"><div id="stick"></div></div>
-  <div id="hint-tap">Wander — and see what you find ✨</div>
-
-  <!-- start overlay -->
-  <div id="start-overlay">
-    <div class="panel">
-      <h1>Her Tangled Story</h1>
-      <p class="sub">A 3D birthday adventure</p>
-      <p>Wander the valley. Talk to everyone.<br>33 hidden memories are waiting to be found.</p>
-      <button id="begin-btn">Begin ✨</button>
-      <p class="controls-note">📱 joystick to walk · drag to look around &nbsp;·&nbsp; ⌨️ WASD / arrows · E to talk</p>
-    </div>
-  </div>
-
-  <!-- photo modal -->
-  <div id="photo-modal" class="modal hidden">
-    <div class="panel memory">
-      <div id="photo-head">Memory <span id="photo-num"></span> of 33</div>
-      <div id="photo-frame"></div>
-      <p id="photo-caption"></p>
-      <button id="photo-close">Keep exploring ✨</button>
-    </div>
-  </div>
-
-  <!-- riddle modal: fill in the blank OR pick an option to unlock a memory -->
-  <div id="riddle-modal" class="modal hidden">
-    <div class="panel memory">
-      <div id="riddle-head">✨ A memory stirs… ✨</div>
-      <p id="riddle-prompt"></p>
-      <div id="riddle-input-row">
-        <input id="riddle-input" maxlength="2" autocomplete="off" autocapitalize="characters" />
-        <button id="riddle-submit">Unlock</button>
-      </div>
-      <div id="riddle-options" class="hidden"></div>
-      <p id="riddle-error" class="hidden">Not quite — try again!</p>
-    </div>
-  </div>
-
-  <!-- finale modal -->
-  <div id="finale-modal" class="modal hidden">
-    <div class="panel finale">
-      <div id="finale-head">💜 The Final Memory 💜</div>
-      <div id="finale-frame"></div>
-      <p id="finale-message"></p>
-      <button id="finale-replay">Relive the adventure ↺</button>
-    </div>
-  </div>
-
-  <!-- world map overlay -->
-  <div id="map-overlay" class="modal hidden">
-    <div class="panel map-panel">
-      <div id="map-head">🗺️ Valley Map</div>
-      <canvas id="map-canvas" width="340" height="340"></canvas>
-      <button id="map-close">Close ✕</button>
-    </div>
-  </div>
-
-  <script type="module" src="js/main.js?v=20261011c"></script>
-</body>
-</html>
+</div>
+<div id="places-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="places-title">
+ <div class="panel places-panel"><button class="close" data-close aria-label="Close places">×</button><span class="eyebrow">YOUR LITTLE WORLD</span><h2 id="places-title">Where shall we go?</h2><p class="muted">Choose any place. Stay as long as you like.</p><div id="places-grid"></div></div>
+</div>
+<div id="gift-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="gift-title">
+ <div class="panel gift-panel"><button class="close" data-close aria-label="Return to the valley">×</button><span id="gift-place" class="eyebrow"></span><h2 id="gift-title"></h2>
+ <div id="gift-sealed"><button id="unwrap-btn" class="parcel" aria-label="Unwrap your surprise"><span class="parcel-lid"></span><span class="parcel-ribbon"></span><span class="parcel-bow">♡</span></button><p class="muted">A little something, just for you.</p><button id="unwrap-text" class="primary">Unwrap your surprise</button></div>
+ <div id="gift-open" class="hidden"><div id="gift-photos"></div><p id="gift-note"></p><div id="real-gift" class="hidden"></div>
+ <div id="wish-area" class="hidden"><label for="wish-input">A wish, just for you</label><textarea id="wish-input" rows="2" maxlength="240" placeholder="What are you wishing for?"></textarea><p class="small">Your words disappear when you release them.</p><button id="wish-release" class="quiet">Release my wish ✧</button><p id="wish-status" role="status"></p></div>
+ <button id="lantern-release" class="primary hidden">Light up the sky ✦</button><div id="gift-actions"><button id="gift-next" class="primary">Another little surprise →</button><button id="gift-stay" class="quiet">Stay here awhile</button></div></div>
+ </div>
+</div>
+<div id="album-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="album-title"><div class="panel album-panel"><button class="close" data-close aria-label="Close album">×</button><span class="eyebrow">KEEP THESE CLOSE</span><h2 id="album-title">Your memory album</h2><p class="muted">Every photograph, yours to revisit.</p><div id="album-grid"></div></div></div>
+<div id="lightbox" class="modal hidden" role="dialog" aria-modal="true" aria-label="Photograph viewer"><button id="lightbox-close" class="close" aria-label="Close photograph">×</button><figure><img id="lightbox-img" alt=""><figcaption id="lightbox-caption"></figcaption></figure><nav class="photo-nav"><button id="photo-prev" aria-label="Previous photograph">←</button><span id="photo-position" aria-live="polite"></span><button id="photo-next" aria-label="Next photograph">→</button></nav></div>
+<script type="module" src="js/main.js?v=20261017g"></script>
+</body></html>

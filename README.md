@@ -1,57 +1,66 @@
-# Her Tangled Story — a 3D birthday adventure
+# Her Tangled Story — a world for you
 
-A real explorable 3D birthday game: she roams a continuous low-poly valley as
-her Tangled-style avatar, hunting **33 hidden photo-clues** embedded in a living
-world (villagers, tavern thugs, animals, lake reflections, a rowboat, and a
-lantern-festival finale).
+The original six-place 3D valley, presented as an open birthday journey. Choose
+any place, unwrap a keepsake, revisit the photo album, or wander at your own
+pace. The scenery, terrain, buildings, paths, lighting and world layout remain
+in `js/world.js` unchanged.
 
-## Run it
+## The birthday experience
 
-No build step. Any static server works:
+- Six surprises, available in any order. No riddles, sequential locks or empty photo cards.
+- One-tap travel fades to a collision-checked arrival point. Walking is optional.
+- A faceless lavender-and-gold 3D heroine. Villagers sweep, arrange flowers,
+  carry bread, tend lanterns, read, or fish with animated arms and props.
+- Ten original photos in paper frames, with uncropped full-screen viewing,
+  previous/next controls, keyboard arrows, and horizontal swipes.
+- A private, ephemeral wish at the lake and a lantern celebration at the festival.
+- Opened keepsakes and last destination resume on this browser when local storage
+  is available. Private browsing/storage restrictions may prevent persistence.
 
-```bash
-cd tangled-birthday-game
-python3 -m http.server 8123
-# open http://localhost:8123
+## Controls
+
+**Places** travels directly to any destination; **Album** opens all ten photos.
+**View** switches between a calm elevated follow camera and overhead view.
+Drag the world to orbit the camera. On phones, choose **Walk yourself** to show
+the joystick; on desktop use WASD/arrows. Press **E** or tap the nearby prompt
+to greet a worker or board the existing boat. **Back to shore** is always
+available while boating. Escape closes a dialog/photo viewer.
+
+## Add the actual birthday presents
+
+The six wrapped keepsakes are ready. Actual purchased gifts have deliberately
+not been invented. In `js/journey.js`, replace a chapter's `gift: null` with:
+
+```js
+gift: {
+  title: 'The title of your real present',
+  message: 'Your personal reveal, or where she can find the wrapped present.'
+}
 ```
 
-Three.js r160 is vendored in `js/vendor/` and loaded via importmap — the game
-runs fully offline from any static host. Pinned version, no build step.
+The gift message appears only after unwrapping and can be reopened. Edit each
+chapter's `note` for your own words. Edit the festival note for the final birthday
+letter. This is a public static site: do not put passwords, voucher redemption
+codes, private addresses, or other secrets in its source.
 
-**Controls:** virtual joystick (touch) · WASD / arrow keys (desktop) · tap
-glowing spots & people (or press **E**) to discover clues.
+Photos live in `assets/photos/`; their captions and chapter groupings are in
+`js/journey.js`. Add a photo to a chapter's `photos` array to include it in both
+the chapter and album. Keep every photo's `src` unique.
 
-**Debug mode:** open with `?debug=1` — clue markers become visible, keys
-**1–6** teleport to each zone, clue list prints to the console.
+## Run and verify
 
-## Customize
+No build step or external dependencies. Serve this folder with any static server.
+Three.js r160 is vendored locally. GitHub Pages serves the root `index.html`.
+The separate `v2/` prototype has not been changed.
 
-- **Final message:** edit `FINAL_MESSAGE` in `js/config.js` — it appears with
-  the 33rd photo.
-- **Photos 11–32:** drop the real photos into `assets/photos/` and set the
-  `photo` field on clues 11–32 in `js/clues.js` (replace `null`). Captions live
-  in the same entries.
-- **Clue layout:** all 33 clues are data in `js/clues.js`
-  (`{id, zone, x, z, kind, photo, caption, npc?, hint?}`) — move, reword, or
-  rekindle without touching game code.
+With Node 24:
 
-## Files
+```bash
+node --loader ./tests/three-loader.mjs --test tests/journey.test.mjs
+```
 
-| File | What |
-|---|---|
-| `index.html` | Shell, importmap (Three.js 0.160.0 pinned), HUD & modal DOM |
-| `css/style.css` | Mobile-first UI styling |
-| `js/main.js` | Boot, game loop, discovery, boat ride, interaction |
-| `js/world.js` | Terrain, 6 zones, props, water, boat, ambient animation |
-| `js/player.js` | Sprite avatar, movement, collisions, follow camera |
-| `js/npcs.js` | Villagers, thugs, rabbits, birds, chameleon companion |
-| `js/clues.js` | All 33 clue entries (data-driven) |
-| `js/ui.js` | HUD, joystick, dialogue, modals, sounds |
-| `js/config.js` | Tunables + `FINAL_MESSAGE` |
-| `assets/sprite.png` | Her transparent chibi avatar |
-| `assets/photos/` | Clue photos (01–10 real, 11–32 pending) |
+These checks build the actual seeded world geometry to validate every arrival
+point, collisions, avatar/camera state, NPC activities, photo paths, and progress
+storage. They do not render WebGL or replace mobile Safari visual testing.
 
-## Deploy
-
-Copy the folder to any static host (GitHub Pages, Netlify, Cloudflare Pages).
-No server-side code, no build.
+Use `?debug=1` to expose a diagnostic `window.__game` during local testing.

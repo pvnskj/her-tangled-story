@@ -5,8 +5,7 @@
 export const CONFIG = {
   FINAL_MESSAGE:
     "Happy birthday, my love. Every step of this valley holds a piece of " +
-    "your story — and every piece led me to you. (Jordan: replace this " +
-    "text with your own message.)",
+    "your story — and every piece led me to you. Happy birthday, my love.",
 
   WORLD_BOUND: 114,      // playable half-extent (world is ~240x240)
   PLAYER_SPEED: 11,       // units per second

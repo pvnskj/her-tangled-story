@@ -23,6 +23,14 @@ function personMesh(bodyColor, scale = 1, seated = false) {
   const hair = new THREE.Mesh(new THREE.SphereGeometry(0.36, 10, 8, 0, Math.PI * 2, 0, 1.4),
     mat([0x3a2a1a, 0x6a4a2a, 0x8a8a8a, 0x2a1a2a][Math.floor(Math.random() * 4)]));
   hair.position.y = head.position.y + 0.06; g.add(hair);
+  const arms = [-1, 1].map(side => {
+    const pivot = new THREE.Group(); pivot.position.set(side * .43, seated ? .94 : 1.5, 0);
+    const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(.12, .42, 4, 8), mat(bodyColor));
+    sleeve.position.y = -.25; pivot.add(sleeve);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(.13, 8, 6), mat(0xe8b88a));
+    hand.position.y = -.56; pivot.add(hand); g.add(pivot); return pivot;
+  });
+  g.userData.arms = arms;
   g.scale.setScalar(scale);
   return { group: g, headY: head.position.y * scale + 0.5 };
 }
@@ -304,6 +312,39 @@ export function buildNPCs(scene) {
     return { group: g, excited: false, hop: 0, exclaim, spark };
   })();
 
+  // Small carried props and purposeful gestures; scenery and buildings stay untouched.
+  const roles = ['flowers', 'sweep', 'lantern', 'bread'];
+  function giveActivity(n, role) {
+    const prop = new THREE.Group();
+    const add = (geo, color, x,y,z) => { const mesh = new THREE.Mesh(geo, mat(color)); mesh.position.set(x,y,z); prop.add(mesh); return mesh; };
+    if (role === 'sweep') {
+      add(new THREE.CylinderGeometry(.04,.04,1.8,6),0x9a754e,0,.9,0);
+      add(new THREE.BoxGeometry(.48,.2,.16),0xd4b272,0,.08,0);
+      prop.position.set(.65,0,.5);
+    } else if (role === 'flowers') {
+      add(new THREE.ConeGeometry(.3,.65,7),0xc5a778,0,.05,0);
+      for(let i=0;i<5;i++){const a=i*1.256;add(new THREE.SphereGeometry(.15,8,6),[0xe7a2c6,0xf3d57f,0xb99bdb][i%3],Math.cos(a)*.22,.42,Math.sin(a)*.2);}
+      prop.position.set(0,1.2,.63);
+    } else if (role === 'lantern') {
+      const lantern=add(new THREE.CylinderGeometry(.25,.23,.48,8),0xffdb93,0,0,0);
+      lantern.material.emissive.setHex(0x80501c);lantern.material.emissiveIntensity=.4;
+      add(new THREE.TorusGeometry(.18,.025,5,12),0x8d6546,0,.34,0);prop.position.set(.58,1.2,.5);
+    } else if (role === 'book') {
+      add(new THREE.BoxGeometry(.7,.07,.45),0xe8d6b6,0,0,0);add(new THREE.BoxGeometry(.74,.04,.49),0x785375,0,-.05,0);prop.position.set(0,1.1,.6);prop.rotation.x=.3;
+    } else {
+      add(new THREE.CylinderGeometry(.43,.43,.07,12),0x956b4a,0,0,0);
+      for(const x of [-.18,.18]){const loaf=add(new THREE.SphereGeometry(.22,8,6),0xe1ad69,x,.16,0);loaf.scale.set(.7,.6,1.2);}prop.position.set(0,1.08,.6);
+    }
+    n.group.add(prop);n.activity={role,prop,baseY:prop.position.y};
+    n.activityLine={flowers:'A few flowers for a very special birthday.',sweep:'Making the path lovely for your evening stroll.',lantern:'Getting the lanterns ready for your birthday.',bread:'Something warm from the oven. Enjoy the evening!',book:'A quiet moment and a favorite story.'}[role];
+    if(n.kind==='wanderer')n.name={flowers:'Flower gatherer',sweep:'Caretaker',lantern:'Lantern keeper',bread:'Baker'}[role];
+  }
+  npcs.forEach((n,i)=>{
+    if(n.kind==='fisher')return;
+    const role=n.name==='Sella the baker'?'bread':n.name==='Mira'||n.name==='Pip'?'flowers':n.name==='Elder Asha'?'lantern':n.kind==='thug'||n.name==='Old Tom'?'book':n.kind==='vendor'?roles[i%4]:roles[i%4];
+    giveActivity(n,role);
+  });
+
   function facePlayer(n, dt, playerPos, maxD) {
     const dx = playerPos.x - n.group.position.x, dz = playerPos.z - n.group.position.z;
     if (Math.hypot(dx, dz) > maxD) return;
@@ -317,7 +358,23 @@ export function buildNPCs(scene) {
   function update(dt, t, playerPos) {
     // named: gentle sway, or patrol if they have a route (Maro walks!)
     for (const n of npcs) {
-      if (n.kind === "named" && n.patrol) {
+      if (n.activity) {
+        const { role, prop, baseY } = n.activity;
+        const phase = t * (role === 'sweep' ? 2 : 1.4) + n.phase;
+        const arms = n.group.userData.arms;
+        if(role === 'sweep') {
+          prop.rotation.x = Math.sin(phase) * .32;
+          prop.rotation.z = -.15;
+          arms[0].rotation.x = -.6 + Math.sin(phase) * .2;
+          arms[1].rotation.x = -.9 + Math.sin(phase) * .32;
+        } else {
+          prop.position.y = baseY + Math.sin(phase) * .035;
+          prop.rotation.z = Math.sin(phase) * .035;
+          arms.forEach((a,i)=>a.rotation.x=-.9 + Math.sin(phase+i*.6)*.09);
+        }
+        // Settled at their task: no drifting into houses or rotating away from work.
+        n.group.position.y = window.terrainHeight?.(n.group.position.x,n.group.position.z) || 0;
+      } else if (n.kind === "named" && n.patrol) {
         n.patrolI = n.patrolI || 0;
         const [px, pz] = n.patrol[n.patrolI];
         const dx = px - n.group.position.x, dz = pz - n.group.position.z;
