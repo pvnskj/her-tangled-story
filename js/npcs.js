@@ -29,8 +29,7 @@ function personMesh(bodyColor, scale = 1, seated = false) {
 
 const NAMED = [
   { name: "Maro the traveler", x: 8, z: -84, clueId: 3, color: 0x4a9a8a,
-    hint: "They say golden sparkles hide behind the tower stairs… keep looking around here.",
-    patrol: [[8, -84], [15, -78], [5, -75], [-2, -82]] },
+    hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
   { name: "Bram the thug", x: 80, z: 40, clueId: 12, color: 0x8a4a3a, seated: true,
     hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
   { name: "Old Tom", x: 98, z: 40, clueId: 14, color: 0x6a6a8a, seated: true,

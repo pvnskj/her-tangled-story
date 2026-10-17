@@ -457,11 +457,13 @@ UI.onGuideTap(() => {
     const n = npcs.find((x) => x.clueId === next.id);
     if (n) {
       player.autoTarget = { x: n.group.position.x, z: n.group.position.z };
+      player._stuckT = 0; player._nudgeDir = 0; // reset anti-stuck
       UI.setGuide(`🚶 Walking to ${n.name}… (touch the joystick to take over)`);
       UI.blip();
     }
   } else {
     player.autoTarget = { x: next.x, z: next.z };
+    player._stuckT = 0; player._nudgeDir = 0; // reset anti-stuck
     UI.setGuide(`🚶 Walking to the sparkles… (touch the joystick to take over)`);
     UI.blip();
   }
@@ -564,7 +566,10 @@ function animate() {
     const next = CLUES.find((c) => !found.has(c.id));
     if (next && !modalOpen && ["hidden", "reflection", "animal", "boat"].includes(next.kind)) {
       const d = Math.hypot(p.x - next.x, p.z - next.z);
-      if (d < 2.5) {
+      // water targets (lake reflections): trigger from shore — she's close enough to see it
+      const inWater = player.inWater(next.x, next.z);
+      const triggerD = inWater ? 12 : 2.5;
+      if (d < triggerD) {
         player.autoTarget = null; // stop walkthrough mode
         discover(next);
       }

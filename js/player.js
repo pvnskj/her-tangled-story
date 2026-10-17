@@ -99,7 +99,19 @@ export class Player {
       const p = this.group.position;
       // cancel if the player grabs the joystick/keys
       const manual = Math.hypot(this.moveVec.x, this.moveVec.z) > 0.15;
-      const tx = this.autoTarget.x, tz = this.autoTarget.z;
+      let tx = this.autoTarget.x, tz = this.autoTarget.z;
+      // WATER TARGETS: steer to the nearest shore point, not into the water
+      if (this.inWater(tx, tz)) {
+        // find shore point: step from target toward player until out of water
+        const dxs = p.x - tx, dzs = p.z - tz;
+        const dl = Math.hypot(dxs, dzs) || 1;
+        let sx = tx, sz = tz;
+        for (let i = 0; i < 50; i++) {
+          sx += (dxs / dl) * 1.5; sz += (dzs / dl) * 1.5;
+          if (!this.inWater(sx, sz)) break;
+        }
+        tx = sx; tz = sz;
+      }
       const directD = Math.hypot(tx - p.x, tz - p.z);
       let dx = tx - p.x, dz = tz - p.z;
       const d = Math.hypot(dx, dz);
