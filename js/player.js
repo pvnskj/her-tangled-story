@@ -33,14 +33,14 @@ export class Player {
     // drag-to-look offsets (radians): yaw/pitch added around the follow target
     this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
     // camera modes: 'third' (diorama), 'first' (her POV), 'top' (royalty view)
-    this.camMode = 'first'; // default: her eyes
+    this.camMode = 'top'; // default: bird's-eye — clearest for navigation
     this.fpYaw = 0; // first-person look direction (radians)
     this.fpPitch = 0;
   }
 
   cycleCamMode() {
-    // only two views: first-person ↔ bird's-eye (top-down)
-    this.camMode = this.camMode === 'first' ? 'top' : 'first';
+    // only two views: bird's-eye (top-down) ↔ first-person
+    this.camMode = this.camMode === 'top' ? 'first' : 'top';
     // hide her sprite in first-person so you don't see the back of her head
     if (this.sprite) this.sprite.visible = this.camMode !== 'first';
     // when entering first-person, face her current movement direction
@@ -236,9 +236,9 @@ export class Player {
     const p = this.group.position;
     // FIRST-PERSON: see through her eyes — drag to look, joystick moves relative to view
     if (this.camMode === 'first') {
-      const eyeH = 2.9;
+      const eyeH = 3.4; // raised for clearer vision over grass
       const sinY = Math.sin(this.fpYaw), cosY = Math.cos(this.fpYaw);
-      const lx = sinY * 12, lz = cosY * 12;
+      const lx = sinY * 14, lz = cosY * 14; // look further ahead
       const ly = eyeH + this.fpPitch * 10;
       // pulled back 2.2 units for a slightly wider, less claustrophobic view
       camera.position.set(p.x - sinY * 2.2, eyeH, p.z - cosY * 2.2);
@@ -248,10 +248,10 @@ export class Player {
       camera.lookAt(this.lookSm);
       return;
     }
-    // TOP-DOWN ROYALTY: high cinematic view of the whole diorama
+    // TOP-DOWN: clear bird's-eye for easy navigation — close enough to see details
     if (this.camMode === 'top') {
       const tx = p.x, tz = p.z;
-      camera.position.lerp(new THREE.Vector3(tx, 42, tz + 10), 1 - Math.pow(0.002, dt));
+      camera.position.lerp(new THREE.Vector3(tx, 28, tz + 7), 1 - Math.pow(0.002, dt));
       if (!this.lookSm) this.lookSm = new THREE.Vector3(tx, 0, tz);
       this.lookSm.lerp(new THREE.Vector3(tx, 0, tz), 1 - Math.pow(0.004, dt));
       camera.lookAt(this.lookSm);
