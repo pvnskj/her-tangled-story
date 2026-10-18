@@ -5,7 +5,7 @@ import { clueTarget } from "./navigation.js?v=20261018story";
 
 import * as THREE from "three";
 import { CONFIG, DEBUG } from "./config.js?v=20261018story";
-import { CLUES } from "./clues.js?v=20261018story";
+import { CLUES, INTERACTIONS } from "./clues.js?v=20261018story";
 import { buildWorld, ZONES } from "./star-world.js?v=20261018story";
 import { Player } from "./player.js?v=20261018story";
 import { buildNPCs } from "./star-npcs.js?v=20261018story";
@@ -296,6 +296,56 @@ function npcHeadWorld(n) {
   return { x: n.group.position.x, y: n.group.position.y + n.headY + 0.6, z: n.group.position.z };
 }
 
+// Run the clue's interaction: riddle, choice, game, or dialogue
+async function runInteraction(npc, clue) {
+  const inter = INTERACTIONS[clue.id];
+  if (!inter) {
+    // Fallback: just show the caption
+    const hw = npcHeadWorld(npc);
+    UI.dialogue(npc.name, clue.caption, hw.x, hw.y, hw.z);
+    await new Promise(r => setTimeout(r, 1500));
+    return;
+  }
+  if (inter.type === "riddle") {
+    // Riddles are handled in discover() for clues 1 & 2, skip here
+    return;
+  }
+  if (inter.type === "choice") {
+    await UI.choiceModal(npc.name, inter.prompt, inter.options, inter.responses, inter.outro);
+    return;
+  }
+  if (inter.type === "game") {
+    const titles = {
+      "paint-lantern": "Paint the Lantern",
+      "find-pascal": "Find Pascal!",
+      "flower-crown": "Flower Crown",
+      "tic-tac-toe": "Tic-Tac-Toe",
+      "light-lanterns": "Light the Lanterns"
+    };
+    if (inter.intro) {
+      const hw = npcHeadWorld(npc);
+      UI.dialogue(npc.name, inter.intro, hw.x, hw.y, hw.z);
+      await new Promise(r => setTimeout(r, 1800));
+    }
+    await UI.playGame(inter.game, titles[inter.game] || "Mini-Game", "");
+    if (inter.outro) {
+      const hw = npcHeadWorld(npc);
+      UI.dialogue(npc.name, inter.outro, hw.x, hw.y, hw.z);
+      await new Promise(r => setTimeout(r, 1800));
+    }
+    return;
+  }
+  if (inter.type === "dialogue") {
+    if (inter.silent) {
+      const hw = npcHeadWorld(npc);
+      UI.dialogue(npc.name, "...", hw.x, hw.y, hw.z);
+    } else {
+      await UI.dialogueModal(npc.name, inter.text);
+    }
+    return;
+  }
+}
+
 function interactWith(target) {
   if(lakeFinale.locked)return;
   const p = player.group.position;
@@ -314,10 +364,11 @@ function interactWith(target) {
       const hw = npcHeadWorld(n);
       const nextId = CLUES.find((c) => !found.has(c.id))?.id;
       if (clue && !found.has(clue.id) && clue.id === nextId) {
-        // it's their turn in the story — tell the story, then give the clue
-        UI.dialogue(n.name, clue.caption, hw.x, hw.y, hw.z);
-        if(clue.kind==='villager')setTimeout(() => discover(clue), 1700);
-        else walkToClue(clue);
+        // it's their turn — run the interaction (riddle/choice/game/dialogue), then discover
+        runInteraction(n, clue).then(() => {
+          if(clue.kind==='villager')setTimeout(() => discover(clue), 500);
+          else walkToClue(clue);
+        });
       } else if (clue && !found.has(clue.id)) {
         // not yet — tease the story without spoiling
         UI.dialogue(n.name, "Keep following your heart — your story is still unfolding…", hw.x, hw.y, hw.z);

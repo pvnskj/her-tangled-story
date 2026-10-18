@@ -195,3 +195,31 @@ body.touch #joystick.started { display: block; }
 .map-help { font-size: 12px; color: var(--gold); margin: 10px 0; }
 #map-destinations { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 #map-destinations button { font-size: 12px; min-height: 44px; padding: 7px 10px; margin: 0; }
+
+/* Mini-game styles */
+.game-panel { max-width: 92vw; }
+#game-area { min-height: 200px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 0; }
+.game-colors { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.color-dot { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+.color-dot.selected { border-color: #fff; transform: scale(1.15); }
+.lantern-svg { width: 140px; height: 180px; cursor: pointer; }
+.lantern-section { transition: fill 0.3s; }
+.bush-row { display: flex; gap: 16px; justify-content: center; }
+.bush { font-size: 64px; cursor: pointer; transition: transform 0.2s; }
+.bush:hover { transform: scale(1.1); }
+.bush.found { animation: bounce 0.5s; }
+@keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+.flower-options { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.flower-btn { font-size: 40px; cursor: pointer; padding: 8px; border-radius: 12px; border: 2px solid var(--gold); background: rgba(255,255,255,0.1); }
+.flower-btn.used { opacity: 0.3; pointer-events: none; }
+.crown-display { font-size: 48px; letter-spacing: 4px; min-height: 60px; }
+.ttt-board { display: grid; grid-template-columns: repeat(3, 70px); gap: 8px; }
+.ttt-cell { width: 70px; height: 70px; font-size: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border: 2px solid var(--gold); border-radius: 12px; cursor: pointer; }
+.ttt-cell.winner { background: rgba(255,215,0,0.3); animation: bounce 0.5s; }
+.lantern-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.mini-lantern { font-size: 48px; cursor: pointer; opacity: 0.3; transition: all 0.3s; filter: grayscale(1); }
+.mini-lantern.lit { opacity: 1; filter: none; transform: scale(1.1); }
+#choice-options { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+#choice-options button { padding: 12px; font-size: 16px; border-radius: 12px; border: 2px solid var(--gold); background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
+#choice-options button:hover { background: rgba(255,215,0,0.2); }
+#choice-response { font-style: italic; color: #fde68a; margin: 12px 0; }

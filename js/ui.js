@@ -246,6 +246,54 @@ export const UI = {
     el("finale-modal").classList.remove("hidden");
   },
 
+  // Choice modal: question with options, shows response, then continue
+  choiceModal(speaker, prompt, options, responses, outro) {
+    return new Promise((resolve) => {
+      el("choice-speaker").textContent = speaker;
+      el("choice-prompt").textContent = prompt;
+      el("choice-response").classList.add("hidden");
+      el("choice-continue").classList.add("hidden");
+      const optBox = el("choice-options");
+      optBox.innerHTML = "";
+      el("choice-modal").classList.remove("hidden");
+      options.forEach((opt, i) => {
+        const b = document.createElement("button");
+        b.textContent = opt;
+        b.onclick = () => {
+          // Show response
+          optBox.innerHTML = "";
+          const resp = el("choice-response");
+          resp.textContent = responses[i] + (outro ? " " + outro : "");
+          resp.classList.remove("hidden");
+          el("choice-continue").classList.remove("hidden");
+          el("choice-continue").onclick = () => {
+            el("choice-modal").classList.add("hidden");
+            resolve(i);
+          };
+        };
+        optBox.appendChild(b);
+      });
+    });
+  },
+
+  // Dialogue modal: just shows text with a continue button (for supportive narrative)
+  dialogueModal(speaker, text) {
+    return new Promise((resolve) => {
+      el("choice-speaker").textContent = speaker;
+      el("choice-prompt").textContent = text;
+      el("choice-options").innerHTML = "";
+      el("choice-response").classList.add("hidden");
+      const btn = el("choice-continue");
+      btn.textContent = "Continue 💜";
+      btn.classList.remove("hidden");
+      el("choice-modal").classList.remove("hidden");
+      btn.onclick = () => {
+        el("choice-modal").classList.add("hidden");
+        resolve(true);
+      };
+    });
+  },
+
   // ---------- sounds ----------
   _ensureAudio() {
     if (!this._audio) {
@@ -267,4 +315,210 @@ export const UI = {
   blip() { this._tone(660, 0, 0.09, "triangle"); },
   chime() { this._tone(880, 0, 0.25); this._tone(1318, 0.12, 0.35); },
   fanfare() { [523, 659, 784, 1046, 1318].forEach((f, i) => this._tone(f, i * 0.14, 0.4)); },
+
+  // ===== MINI-GAMES =====
+
+  playGame(gameId, title, intro) {
+    return new Promise((resolve) => {
+      el("game-title").textContent = title;
+      el("game-intro").textContent = intro;
+      el("game-outro").classList.add("hidden");
+      el("game-done").classList.add("hidden");
+      el("game-modal").classList.remove("hidden");
+      const area = el("game-area");
+      area.innerHTML = "";
+
+      const done = () => {
+        el("game-done").classList.remove("hidden");
+        el("game-done").onclick = () => {
+          el("game-modal").classList.add("hidden");
+          resolve(true);
+        };
+      };
+
+      if (gameId === "paint-lantern") this._gamePaintLantern(area, done);
+      else if (gameId === "find-pascal") this._gameFindPascal(area, done);
+      else if (gameId === "flower-crown") this._gameFlowerCrown(area, done);
+      else if (gameId === "tic-tac-toe") this._gameTicTacToe(area, done);
+      else if (gameId === "light-lanterns") this._gameLightLanterns(area, done);
+    });
+  },
+
+  setGameOutro(text) {
+    const o = el("game-outro");
+    o.textContent = text;
+    o.classList.remove("hidden");
+  },
+
+  _gamePaintLantern(area, done) {
+    const colors = ["#ff6b6b", "#feca57", "#48dbfb", "#ff9ff3", "#54a0ff", "#5f27cd", "#1dd1a1", "#ffd700"];
+    let selected = colors[0];
+    const pal = document.createElement("div");
+    pal.className = "game-colors";
+    colors.forEach((c, i) => {
+      const d = document.createElement("div");
+      d.className = "color-dot" + (i === 0 ? " selected" : "");
+      d.style.background = c;
+      d.onclick = () => {
+        selected = c;
+        pal.querySelectorAll(".color-dot").forEach(x => x.classList.remove("selected"));
+        d.classList.add("selected");
+      };
+      pal.appendChild(d);
+    });
+    area.appendChild(pal);
+    // Lantern SVG with 4 paintable sections
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "lantern-svg");
+    svg.setAttribute("viewBox", "0 0 100 130");
+    svg.innerHTML = `
+      <rect x="35" y="5" width="30" height="10" fill="#8b5a2b" rx="3"/>
+      <rect class="lantern-section" x="25" y="18" width="50" height="25" fill="#ddd" stroke="#8b5a2b" stroke-width="2" rx="8"/>
+      <rect class="lantern-section" x="25" y="45" width="50" height="25" fill="#ddd" stroke="#8b5a2b" stroke-width="2" rx="8"/>
+      <rect class="lantern-section" x="25" y="72" width="50" height="25" fill="#ddd" stroke="#8b5a2b" stroke-width="2" rx="8"/>
+      <rect x="35" y="100" width="30" height="8" fill="#8b5a2b" rx="3"/>
+      <circle cx="50" cy="115" r="4" fill="#ffd700"/>
+    `;
+    let painted = 0;
+    svg.querySelectorAll(".lantern-section").forEach(sec => {
+      sec.onclick = () => {
+        if (sec.getAttribute("fill") === "#ddd") painted++;
+        sec.setAttribute("fill", selected);
+        if (painted >= 3) {
+          this.setGameOutro("Beautiful! Your lantern glows!");
+          this._tone(880, 0, 0.3); this._tone(1318, 0.15, 0.4);
+          setTimeout(done, 800);
+        }
+      };
+    });
+    area.appendChild(svg);
+    const hint = document.createElement("p");
+    hint.textContent = "Tap a color, then tap the lantern to paint!";
+    hint.style.fontSize = "14px"; hint.style.opacity = "0.8";
+    area.appendChild(hint);
+  },
+
+  _gameFindPascal(area, done) {
+    const row = document.createElement("div");
+    row.className = "bush-row";
+    let picks = 0;
+    for (let i = 0; i < 3; i++) {
+      const b = document.createElement("div");
+      b.className = "bush";
+      b.textContent = "🌿";
+      b.onclick = () => {
+        picks++;
+        if (picks === 2) {
+          b.textContent = "🦎";
+          b.classList.add("found");
+          this.setGameOutro("Ack! You found me!");
+          this._tone(660, 0, 0.2); this._tone(880, 0.1, 0.3);
+          setTimeout(done, 800);
+        } else {
+          b.textContent = "🍃";
+          b.style.opacity = "0.5";
+          b.style.pointerEvents = "none";
+        }
+      };
+      row.appendChild(b);
+    }
+    area.appendChild(row);
+    const hint = document.createElement("p");
+    hint.textContent = "Pascal is hiding behind a bush! Tap to find him!";
+    hint.style.fontSize = "14px"; hint.style.opacity = "0.8";
+    area.appendChild(hint);
+  },
+
+  _gameFlowerCrown(area, done) {
+    const flowers = ["🌹", "🌼", "🌸", "🌻", "🌷", "💮"];
+    const crown = document.createElement("div");
+    crown.className = "crown-display";
+    crown.textContent = "⭕⭕⭕⭕⭕";
+    area.appendChild(crown);
+    const opts = document.createElement("div");
+    opts.className = "flower-options";
+    let placed = 0;
+    const crownArr = ["⭕","⭕","⭕","⭕","⭕"];
+    flowers.forEach(f => {
+      const btn = document.createElement("div");
+      btn.className = "flower-btn";
+      btn.textContent = f;
+      btn.onclick = () => {
+        if (placed < 5) {
+          crownArr[placed] = f;
+          crown.textContent = crownArr.join("");
+          btn.classList.add("used");
+          placed++;
+          this._tone(500 + placed * 100, 0, 0.15);
+          if (placed >= 5) {
+            this.setGameOutro("Beautiful crown! We're twins!");
+            setTimeout(done, 800);
+          }
+        }
+      };
+      opts.appendChild(btn);
+    });
+    area.appendChild(opts);
+  },
+
+  _gameTicTacToe(area, done) {
+    const board = document.createElement("div");
+    board.className = "ttt-board";
+    // Pre-set: X X _ / O O _ / _ _ _
+    const state = ["X", "X", "", "O", "O", "", "", "", ""];
+    const cells = [];
+    state.forEach((val, i) => {
+      const c = document.createElement("div");
+      c.className = "ttt-cell";
+      c.textContent = val;
+      if (!val) {
+        c.onclick = () => {
+          c.textContent = "X";
+          c.classList.add("winner");
+          // Highlight the winning row
+          cells[0].classList.add("winner");
+          cells[1].classList.add("winner");
+          this.setGameOutro("You win! Varian's calculations were correct!");
+          this.fanfare();
+          setTimeout(done, 1000);
+        };
+      }
+      cells.push(c);
+      board.appendChild(c);
+    });
+    area.appendChild(board);
+    const hint = document.createElement("p");
+    hint.textContent = "Tap the empty spot to complete three X's!";
+    hint.style.fontSize = "14px"; hint.style.opacity = "0.8";
+    area.appendChild(hint);
+  },
+
+  _gameLightLanterns(area, done) {
+    const grid = document.createElement("div");
+    grid.className = "lantern-grid";
+    let lit = 0;
+    for (let i = 0; i < 7; i++) {
+      const l = document.createElement("div");
+      l.className = "mini-lantern";
+      l.textContent = "🏮";
+      l.onclick = () => {
+        if (!l.classList.contains("lit")) {
+          l.classList.add("lit");
+          lit++;
+          this._tone(400 + lit * 80, 0, 0.2);
+          if (lit >= 7) {
+            this.setGameOutro("All lanterns lit! They float up to the sky...");
+            this.fanfare();
+            setTimeout(done, 1200);
+          }
+        }
+      };
+      grid.appendChild(l);
+    }
+    area.appendChild(grid);
+    const hint = document.createElement("p");
+    hint.textContent = "Tap each lantern to light it!";
+    hint.style.fontSize = "14px"; hint.style.opacity = "0.8";
+    area.appendChild(hint);
+  },
 };

@@ -85,3 +85,278 @@ export const CLUES = PLACEMENT.map(([zone,x,z],i)=>{
  return {id,zone,...movePoint(zone,{x,z}),kind:discovery?(id===2||id===28?'reflection':'hidden'):'villager',...(discovery?{discovery:{label:discovery[0],activity:discovery[1]}}:{}),characters,npc:characters.map(getCharacter).map(c=>c.name).join(' & '),hint,photo:memory.photo,caption:memory.caption,...(memory.riddle?{riddle:memory.riddle}:{}),...(id===32?{finale:true}:{})};
 });
 export const getClue = id => CLUES.find(c=>c.id===id);
+
+export const INTERACTIONS = {
+  "1": {
+    "type": "game",
+    "game": "paint-lantern",
+    "intro": "That's right! Now \u2014 every lantern needs color. Paint yours!",
+    "outro": "Beautiful! That's the light you brought into the world."
+  },
+  "2": {
+    "type": "riddle"
+  },
+  "3": {
+    "type": "game",
+    "game": "find-pascal",
+    "intro": "Do you know why I follow you everywhere? Because we're best friends! But right now \u2014 I'm hiding! Can you find me?",
+    "outro": "Ack! You found me! Best friends always find each other."
+  },
+  "4": {
+    "type": "dialogue",
+    "text": "Look at you \u2014 running with no shoes, no fear. I guarded a kingdom for years. You were guarding something better: joy. Keep running, little one."
+  },
+  "5": {
+    "type": "choice",
+    "prompt": "Important question! For your official portrait: silly face or serious face?",
+    "options": [
+      "Silly face!",
+      "Serious face"
+    ],
+    "responses": [
+      "Ha! That's the one! The queen of silly faces!",
+      "Oh, very dignified. Very royal. I like it!"
+    ],
+    "outro": "Either way, you nailed it."
+  },
+  "6": {
+    "type": "choice",
+    "prompt": "Okay, be honest \u2014 on that bridge, were you thinking about jumping in?",
+    "options": [
+      "Yes!",
+      "No way!"
+    ],
+    "responses": [
+      "Ha! I knew it! The captain says don't, but I get it.",
+      "Smart. The water's cold. But I bet you wanted to."
+    ],
+    "outro": "That adventurous spark? Never lose it."
+  },
+  "7": {
+    "type": "dialogue",
+    "text": "Arms crossed, chin up. You already knew your own mind at that age. Owl and I respect that. The forest is for the free \u2014 and you were the freest."
+  },
+  "8": {
+    "type": "choice",
+    "prompt": "You were peeking through the roses like a little spy. Were you hiding, or were you...",
+    "options": [
+      "Hunting for adventure!",
+      "Just playing!"
+    ],
+    "responses": [
+      "I knew it! A fellow adventurer!",
+      "The best kind of playing \u2014 the kind with imagination."
+    ],
+    "outro": "Either way, you found the magic."
+  },
+  "9": {
+    "type": "choice",
+    "prompt": "Quick! If you could have one talent \u2014 piano like me, or sword fighting?",
+    "options": [
+      "Piano!",
+      "Sword fighting!"
+    ],
+    "responses": [
+      "YES! Music! Hook Hand approves!",
+      "Ha! A warrior! I like your spirit!"
+    ],
+    "outro": "You look like you could do both, honestly."
+  },
+  "10": {
+    "type": "dialogue",
+    "text": "A giraffe! Butterflies! Look how grown up you are here. The Snuggly Duckling raises a glass to every young dreamer \u2014 especially you."
+  },
+  "11": {
+    "type": "choice",
+    "prompt": "I collect ceramic unicorns. But this photo \u2014 you with the panda \u2014 where should I put it?",
+    "options": [
+      "With the treasures!",
+      "In your heart!"
+    ],
+    "responses": [
+      "Yes! Right next to my favorite unicorn!",
+      "Oh... that's the best answer. Right here. *taps chest*"
+    ],
+    "outro": "Some things are too wonderful for a shelf."
+  },
+  "12": {
+    "type": "dialogue",
+    "text": "A Barbie crown at McDonald's! I bake cupcakes for a living, and even I know \u2014 that's iconic. You were always the kind of person who makes ordinary moments magical."
+  },
+  "13": {
+    "type": "dialogue",
+    "text": "...",
+    "silent": true
+  },
+  "14": {
+    "type": "choice",
+    "prompt": "Beach kiss under a palm tree! Okay, I have to ask \u2014 was it romantic?",
+    "options": [
+      "Very!",
+      "A little!",
+      "None of your business!"
+    ],
+    "responses": [
+      "Awww! Shorty loves love!",
+      "A little is perfect! Just enough!",
+      "Ha! Fair! Shorty respects privacy!"
+    ],
+    "outro": "Love looks good on you."
+  },
+  "15": {
+    "type": "dialogue",
+    "text": "Peace sign among the plants. You look so calm here, so at peace with yourself. My puppets do a little dance every time I show them this photo."
+  },
+  "16": {
+    "type": "choice",
+    "prompt": "I have a riddle! What gets bigger the more you kick it?",
+    "options": [
+      "A sand cloud!",
+      "My energy!"
+    ],
+    "responses": [
+      "Yes! Like in your desert photo! You're good at this!",
+      "Ha! Also true! You have endless energy!"
+    ],
+    "outro": "That desert day \u2014 pure joy in motion."
+  },
+  "17": {
+    "type": "choice",
+    "prompt": "Red coat, autumn mountains. If you could conquer one thing \u2014 a mountain or a fear?",
+    "options": [
+      "A mountain!",
+      "A fear!"
+    ],
+    "responses": [
+      "With that coat? Already done!",
+      "Brave answer. The mountains are easier, honestly."
+    ],
+    "outro": "You look like you could do both."
+  },
+  "18": {
+    "type": "dialogue",
+    "text": "Black and white. Timeless. Some photos capture a moment \u2014 this one captures you. Elegant, strong, unforgettable. The cave is dark, but you never were."
+  },
+  "19": {
+    "type": "choice",
+    "prompt": "I design clothes. That lattice wall, the flower crown \u2014 if you could wear one color forever, what would it be?",
+    "options": [
+      "Pink!",
+      "Blue!",
+      "Every color!"
+    ],
+    "responses": [
+      "Classic! Feminine! Powerful!",
+      "Bold! Calm! Like the ocean!",
+      "Yes! Why choose? You're a rainbow!"
+    ],
+    "outro": "Whatever you wear, you make it fashion."
+  },
+  "20": {
+    "type": "dialogue",
+    "text": "Cherry blossoms. You, glowing under them. I used to brawl for a living \u2014 now I arrange flowers. The most beautiful things bloom without trying. Like you."
+  },
+  "21": {
+    "type": "choice",
+    "prompt": "Blue florals in the forest \u2014 you look like a princess. If I sewed you a ribbon for this moment, it would say...",
+    "options": [
+      "Brave!",
+      "Free!"
+    ],
+    "responses": [
+      "Brave! Strong! Beautiful!",
+      "Free! Wild! Wonderful!"
+    ],
+    "outro": "I'd sew it in gold thread."
+  },
+  "22": {
+    "type": "game",
+    "game": "flower-crown",
+    "intro": "You look like a forest princess! I weave flowers into braids \u2014 can we make a crown together?",
+    "outro": "We're twins now! When I grow up, I want to be just like you."
+  },
+  "23": {
+    "type": "dialogue",
+    "text": "That green saree. The gold. You don't just wear royalty \u2014 you are royalty. A true queen of Corona doesn't follow paths. She makes them."
+  },
+  "24": {
+    "type": "choice",
+    "prompt": "Oh, my dear. This photo is a treasure. If you could keep one memory in a lantern forever, would it be this one?",
+    "options": [
+      "Yes!",
+      "I have better ones!"
+    ],
+    "responses": [
+      "Then I'll light two lanterns \u2014 one for the memory, one for you.",
+      "Oh, I can't wait to see them. This one's still pretty wonderful."
+    ],
+    "outro": "You shine brighter than any lantern."
+  },
+  "25": {
+    "type": "game",
+    "game": "tic-tac-toe",
+    "intro": "Okay, science time! I calculated a 100% win probability for you. See this tic-tac-toe board?",
+    "outro": "My calculations were correct! Science is never wrong! Ruddiger gives it fourteen thumbs up!"
+  },
+  "26": {
+    "type": "dialogue",
+    "text": "White saree among yellow flowers. Light in the darkness. I ruled the Dark Kingdom for years \u2014 I know darkness. And I know light when I see it. You bring it everywhere."
+  },
+  "27": {
+    "type": "choice",
+    "prompt": "Arms open to the sunset. I've crossed deserts, seen magic most people dream of. But tell me \u2014 what were you feeling?",
+    "options": [
+      "Free!",
+      "Happy!",
+      "Alive!"
+    ],
+    "responses": [
+      "Freedom. The greatest magic.",
+      "Happiness. Rarer than any jewel.",
+      "Alive. That's the whole point, isn't it?"
+    ],
+    "outro": "Whatever it was \u2014 hold onto it."
+  },
+  "28": {
+    "type": "choice",
+    "prompt": "I am the enchanted reflection. Answer me this: what do you see when you look at yourself?",
+    "options": [
+      "Strength!",
+      "Love!",
+      "Me!"
+    ],
+    "responses": [
+      "Yes. It radiates from you.",
+      "The most powerful magic.",
+      "Exactly. And that's enough."
+    ],
+    "outro": "The reflection is pleased. So am I."
+  },
+  "29": {
+    "type": "dialogue",
+    "text": "Mountains behind you, peace sign up! The Sundrop flower only blooms for the brightest hearts. It bloomed the day this photo was taken \u2014 I know, I was there."
+  },
+  "30": {
+    "type": "choice",
+    "prompt": "Picnic time! If you could eat one thing forever \u2014 pizza or tacos?",
+    "options": [
+      "Pizza!",
+      "Tacos!"
+    ],
+    "responses": [
+      "Classic! Eugene would agree!",
+      "Bold! Spicy! I like it!"
+    ],
+    "outro": "With that smile, everything tastes better."
+  },
+  "31": {
+    "type": "game",
+    "game": "light-lanterns",
+    "intro": "He knows that smile. That's the look of someone who's found their person.",
+    "outro": "Beautiful. Just like you. Come on \u2014 Flynn's waiting at the pier. Let's go."
+  },
+  "32": {
+    "type": "dialogue",
+    "text": "I collected every version of you \u2014 the toddler in the garden, the dreamer with the panda, the queen in the saree. And I'd choose every single one of them again. Now... how about that boat ride?"
+  }
+};
