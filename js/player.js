@@ -2,11 +2,13 @@
 // collisions (bounds, circle colliders, water unless boating/on dock).
 
 import * as THREE from "three";
-import { CONFIG } from "./config.js";
+import { CONFIG } from "./config.js?v=20261018story";
+import { navigationFor } from "./navigation.js?v=20261018story";
 
 export class Player {
   constructor(scene, world) {
     this.world = world;
+    this.navigation = navigationFor(world, CONFIG.WORLD_BOUND);
     const tex = new THREE.TextureLoader().load("assets/sprite.png");
     tex.colorSpace = THREE.SRGBColorSpace;
     this.sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
@@ -94,142 +96,56 @@ export class Player {
       this.svel.multiplyScalar(Math.max(0, 1 - dt * 4));
       return;
     }
-    // WALKTHROUGH MODE: direct steering with strong obstacle avoidance + anti-stuck
+    // Walk an obstacle-cleared route at the original 1x pace. Manual input cancels it.
     if (this.autoTarget) {
-      const p = this.group.position;
-      // cancel if the player grabs the joystick/keys
-      const manual = Math.hypot(this.moveVec.x, this.moveVec.z) > 0.15;
-      let tx = this.autoTarget.x, tz = this.autoTarget.z;
-      // WATER TARGETS: steer to the nearest shore point, not into the water
-      if (this.inWater(tx, tz)) {
-        // find shore point: step from target toward player until out of water
-        const dxs = p.x - tx, dzs = p.z - tz;
-        const dl = Math.hypot(dxs, dzs) || 1;
-        let sx = tx, sz = tz;
-        for (let i = 0; i < 50; i++) {
-          sx += (dxs / dl) * 1.5; sz += (dzs / dl) * 1.5;
-          if (!this.inWater(sx, sz)) break;
-        }
-        tx = sx; tz = sz;
-      }
-      const directD = Math.hypot(tx - p.x, tz - p.z);
-      let dx = tx - p.x, dz = tz - p.z;
-      const d = Math.hypot(dx, dz);
-      // ANTI-STUCK: if barely moving for a while, nudge perpendicular to break the deadlock
-      if (!this._stuckT) { this._stuckT = 0; this._lastP = { x: p.x, z: p.z }; this._nudge = 0; }
-      this._stuckT += 1/60;
-      if (this._stuckT > 1.5) {
-        const moved = Math.hypot(p.x - this._lastP.x, p.z - this._lastP.z);
-        if (moved < 1.5 && directD > 4) {
-          // stuck! pick a perpendicular nudge direction (alternate sides)
-          this._nudge = (this._nudge || 0) + 1;
-          this._nudgeDir = (this._nudge % 2 === 0) ? 1 : -1;
-          this._stuckT = 0;
-        }
-        this._lastP = { x: p.x, z: p.z };
-      }
-      // STEERING: seek target + strong avoidance + anti-stuck nudge
-      if (d > 1e-4) {
-        dx /= d; dz /= d;
-        let ax = 0, az = 0;
-        for (const c of this.world.colliders) {
-          const ox = p.x - c.x, oz = p.z - c.z;
-          const od = Math.hypot(ox, oz);
-          const safe = c.r + 3.5; // wider safety margin
-          if (od < safe + 4 && od > 1e-4) {
-            const push = (1 - Math.max(0, od - c.r) / (safe + 4 - c.r)) * 3.5; // stronger
-            ax += (ox / od) * push;
-            az += (oz / od) * push;
-          }
-        }
-        // anti-stuck: perpendicular nudge
-        if (this._nudgeDir && this._stuckT < 1.0) {
-          const nx = -dz * this._nudgeDir, nz = dx * this._nudgeDir;
-          ax += nx * 2.0; az += nz * 2.0;
-        } else {
-          this._nudgeDir = 0;
-        }
-        // PATH FOLLOWING: if on/near a path and target is far, walk ALONG the path
-        // (not just attracted to it — actually follow it like a road)
-        if (this.world.paths && directD > 12) {
-          let best = null, bestD = 1e9;
-          for (const [pax0, paz0, pbx0, pbz0] of this.world.paths) {
-            const dxs = pbx0 - pax0, dzs = pbz0 - paz0;
-            const L2 = dxs * dxs + dzs * dzs || 1e-6;
-            let t = ((p.x - pax0) * dxs + (p.z - paz0) * dzs) / L2;
-            t = Math.max(0, Math.min(1, t));
-            const qx = pax0 + dxs * t, qz = paz0 + dzs * t;
-            const dd = Math.hypot(p.x - qx, p.z - qz);
-            if (dd < bestD) { bestD = dd; best = { qx, qz, dxs, dzs, t }; }
-          }
-          if (best && bestD < 6) {
-            // on the path: move along it in the direction toward the target
-            const segLen = Math.hypot(best.dxs, best.dzs) || 1;
-            const toTx = tx - best.qx, toTz = tz - best.qz;
-            const dot = (toTx * best.dxs + toTz * best.dzs) / segLen;
-            const dir = dot >= 0 ? 1 : -1;
-            // override: walk along the path, not toward target directly
-            dx = (best.dxs / segLen) * dir;
-            dz = (best.dzs / segLen) * dir;
-            // blend slightly toward target so she eventually leaves the path
-            dx = dx * 0.85 + (tx - p.x) / (directD || 1) * 0.15;
-            dz = dz * 0.85 + (tz - p.z) / (directD || 1) * 0.15;
-            const dlp = Math.hypot(dx, dz) || 1;
-            dx /= dlp; dz /= dlp;
-            // NOTE: keep avoidance (ax, az) — the path can pass near the tower!
-          }
-        }
-        // combine: seek + avoidance, renormalize
-        dx += ax; dz += az;
-        const dl = Math.hypot(dx, dz) || 1;
-        dx /= dl; dz /= dl;
-      }
-      // arrival: check distance to the REAL target (not the waypoint)
-      const realD = Math.hypot(this.autoTarget.x - p.x, this.autoTarget.z - p.z);
-      if (manual || realD < 1.8) {
-        this.autoTarget = null; // arrived or user took over
+      if (Math.hypot(this.moveVec.x, this.moveVec.z) > .15) {
+        this.autoTarget = null; this._routeTarget = null; this.svel.set(0, 0, 0);
+        this.onWalkCancel?.();
       } else {
-        // WALKTHROUGH: normal walking pace — 1x, calm and natural
-        // (dx, dz) is already the normalized steering direction
-        const sp = CONFIG.PLAYER_SPEED;
-        this.svel.x += (dx * sp - this.svel.x) * Math.min(1, dt * 6);
-        this.svel.z += (dz * sp - this.svel.z) * Math.min(1, dt * 6);
-        this.moving = true;
-        this.bobT += dt * 8;
-        this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * 0.12;
-        // face the direction of travel
-        this.group.rotation.y = Math.atan2(dx, dz);
-        // in first-person, gently turn the camera toward movement — but NOT if
-        // the user recently dragged to look (respect their control)
-        if (this.camMode === 'first') {
-          const sinceLook = (performance.now() / 1000) - (this._lastManualLook || 0);
-          if (sinceLook > 3) {
-            const targetYaw = Math.atan2(dx, dz);
-            let dy = targetYaw - this.fpYaw;
-            while (dy > Math.PI) dy -= Math.PI * 2;
-            while (dy < -Math.PI) dy += Math.PI * 2;
-            this.fpYaw += dy * Math.min(1, dt * 1.5); // gentle, not snappy
+        const p = this.group.position;
+        if (this._routeTarget !== this.autoTarget) {
+          this._routeTarget = this.autoTarget;
+          this._route = this.navigation.route(p, this.autoTarget);
+          this._routeIndex = 0;
+          this.svel.set(0, 0, 0);
+          if (!this._route) {
+            this.autoTarget = null; this.onWalkBlocked?.(); return;
           }
         }
-        // move + collide (shared with manual below)
-        const prev = p.clone();
-        p.x += this.svel.x * dt; p.z += this.svel.z * dt;
-        const B = CONFIG.WORLD_BOUND;
-        p.x = Math.max(-B, Math.min(B, p.x));
-        p.z = Math.max(-B, Math.min(B, p.z));
-        if (this.inWater(p.x, p.z) && !this.onDock(p.x, p.z)) p.copy(prev);
-        for (const c of this.world.colliders) {
-          const cx = p.x - c.x, cz = p.z - c.z;
-          const cd = Math.hypot(cx, cz), min = c.r + 0.55;
-          if (cd < min && cd > 1e-4) { p.x = c.x + (cx / cd) * min; p.z = c.z + (cz / cd) * min; }
+        const walkSpeed=Math.min(CONFIG.PLAYER_SPEED,this.autoWalkSpeed||CONFIG.PLAYER_SPEED);
+        let remaining = walkSpeed * dt, dx = 0, dz = 0;
+        while (remaining > 0 && this._routeIndex < this._route.length) {
+          const q = this._route[this._routeIndex], distance = Math.hypot(q.x - p.x, q.z - p.z);
+          if (distance < .001) { this._routeIndex++; continue; }
+          dx = (q.x - p.x) / distance; dz = (q.z - p.z) / distance;
+          const step = Math.min(remaining, distance), next = {x: p.x + dx * step, z: p.z + dz * step};
+          if (!this.navigation.segmentClear(p, next)) {
+            this._routeTarget = null; this.svel.set(0, 0, 0); return;
+          }
+          p.x = next.x; p.z = next.z; remaining -= step;
+          if (step === distance) this._routeIndex++;
         }
-        if (window.terrainHeight) {
-          const targetY = window.terrainHeight(p.x, p.z);
-          p.y += (targetY - p.y) * Math.min(1, dt * 10);
+        this.moving = remaining < walkSpeed * dt;
+        this.svel.set(0, 0, 0); // no glide past the arrival point or into a photo
+        if (this.moving) {
+          this.bobT += dt * 8;
+          this.sprite.position.y = 1.8 + Math.abs(Math.sin(this.bobT)) * .12;
+          this.group.rotation.y = Math.atan2(dx, dz);
+          if (this.camMode === 'first' && performance.now() / 1000 - (this._lastManualLook || 0) > 3) {
+            let yaw = Math.atan2(dx, dz) - this.fpYaw;
+            while (yaw > Math.PI) yaw -= Math.PI * 2;
+            while (yaw < -Math.PI) yaw += Math.PI * 2;
+            this.fpYaw += yaw * Math.min(1, dt * 1.5);
+          }
         }
+        if (window.terrainHeight) p.y += (window.terrainHeight(p.x, p.z) - p.y) * Math.min(1, dt * 10);
+        if (this._routeIndex >= this._route.length && this.autoTarget.destinationId) {
+          const target=this.autoTarget;this.autoTarget=null;this.onPlaceArrival?.(target.destinationId);
+        }
+        // Keep the target until main.js dispatches the matching clue/NPC interaction.
         return;
       }
-    }
+    } else this._routeTarget = null;
     // in first-person, joystick moves relative to where you're looking
     // (up on stick = forward in view direction)
     let ix = this.moveVec.x, iz = this.moveVec.z;
@@ -269,21 +185,16 @@ export class Player {
     }
 
     const p = this.group.position;
-    // world bounds
-    const B = CONFIG.WORLD_BOUND;
-    p.x = Math.max(-B, Math.min(B, p.x));
-    p.z = Math.max(-B, Math.min(B, p.z));
-    // water: blocked unless on the dock
-    if (this.inWater(p.x, p.z) && !this.onDock(p.x, p.z)) {
-      p.copy(prev);
-    }
-    // circle colliders: push out
-    for (const c of this.world.colliders) {
-      const dx = p.x - c.x, dz = p.z - c.z;
-      const d = Math.hypot(dx, dz), min = c.r + 0.55;
-      if (d < min && d > 1e-4) {
-        p.x = c.x + (dx / d) * min;
-        p.z = c.z + (dz / d) * min;
+    const desired = {x: p.x, z: p.z};
+    p.copy(prev);
+    const distance = Math.hypot(desired.x - prev.x, desired.z - prev.z);
+    const steps = Math.max(1, Math.ceil(distance / .2));
+    const dx = (desired.x - prev.x) / steps, dz = (desired.z - prev.z) / steps;
+    for (let i = 0; i < steps; i++) {
+      if (this.navigation.canWalk(p.x + dx, p.z + dz)) { p.x += dx; p.z += dz; }
+      else {
+        if (this.navigation.canWalk(p.x + dx, p.z)) p.x += dx;
+        if (this.navigation.canWalk(p.x, p.z + dz)) p.z += dz;
       }
     }
     // follow the terrain — feel the slopes!

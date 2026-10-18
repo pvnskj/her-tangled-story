@@ -1,0 +1,13 @@
+import * as THREE from 'three';
+const ctx=new Proxy({}, {get:(o,k)=>o[k]??(k==='createRadialGradient'||k==='createLinearGradient'?()=>({addColorStop(){}}):()=>{}),set:(o,k,v)=>(o[k]=v,true)});
+globalThis.document={createElement:()=>({width:1,height:1,getContext:()=>ctx})};
+globalThis.window={innerWidth:390};Object.defineProperty(globalThis,'navigator',{value:{userAgent:'iPhone',maxTouchPoints:1},configurable:true});
+globalThis.location={search:''};
+THREE.TextureLoader.prototype.load=()=>new THREE.Texture();
+const {buildWorld}=await import('../js/star-world.js');
+const {buildNPCs}=await import('../js/star-npcs.js');
+export const scene=new THREE.Scene(),world=buildWorld(scene),actors=buildNPCs(scene,world);
+export const {Player}=await import('../js/player.js');
+export const {CLUES}=await import('../js/clues.js');
+const {clueTarget}=await import('../js/navigation.js');
+export const targetFor=clue=>clueTarget(clue,actors.npcs,world);

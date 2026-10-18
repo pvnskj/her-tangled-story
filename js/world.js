@@ -3,17 +3,12 @@
 
 import * as THREE from "three";
 
-export const ZONES = [
-  { id: "tower",    name: "Tower Hill",           x: 0,   z: -90, r: 36 },
-  { id: "forest",   name: "The Forest",           x: 80,  z: -40, r: 40 },
-  { id: "tavern",   name: "The Snuggly Duckling", x: 85,  z: 45,  r: 32 },
-  { id: "village",  name: "Corona Village",       x: 0,   z: 90,  r: 42 },
-  { id: "lake",     name: "The Lake",             x: -80, z: 20,  r: 44 },
-  { id: "festival", name: "Lantern Festival",     x: -45, z: -60, r: 36 },
-];
+import { ZONES, FESTIVAL, PATHS, LAKE, WORLD_BOUND, BRIDGES, DRY_ISLANDS, segmentDistance, inLake } from './landmark-layout.js?v=20261018story';
+import { buildExpansion } from './world-expansion.js?v=20261018story';
+export { ZONES };
 
 // walking-path network: dirt strips connecting the six zones (also grass exclusions)
-const PATHS = [
+const ORIGINAL_PATHS = [
   [0, -90, -45, -60],    // tower -> festival
   [-45, -60, -36, 20],   // festival -> lake pier (stops AT the shore, not in water)
   [-36, 20, 0, 82],      // lake pier -> village (stops BEFORE the well, not in it!)
@@ -36,7 +31,7 @@ function terrainHeight(x, z) {
 }
 window.terrainHeight = terrainHeight;
 function onPath(x, z, halfW) {
-  for (const [ax, az, bx, bz] of PATHS)
+  for (const [ax, az, bx, bz] of ORIGINAL_PATHS)
     if (distToSeg(x, z, ax, az, bx, bz) < halfW) return true;
   return false;
 }
@@ -53,7 +48,7 @@ export function buildWorld(scene) {
   const rand = lcg(20261026);
   const colliders = [];   // {x,z,r}
   const waters = [];      // {x,z,rx,rz}
-  const addCollider = (x, z, r) => colliders.push({ x, z, r });
+  const addCollider = (x, z, r, region) => colliders.push({ x, z, r, ...(region ? {region} : {}) });
   // registry of animated bits the per-frame update() drives
   const worldAnims = { mist: [], swayCanopy: null, petals: null, streaks: [], flags: [],
                        waterfallTex: null, lanterns: null, lanternGlowPts: null, fireflies: null, fireflyBase: null,
@@ -180,7 +175,7 @@ export function buildWorld(scene) {
 
   // ---------- terrain ----------
   {
-    const geo = new THREE.PlaneGeometry(240, 240, 56, 56);
+    const geo = new THREE.PlaneGeometry(432, 432, 100, 100);
     geo.rotateX(-Math.PI / 2);
     const p = geo.attributes.position;
     const colors = new Float32Array(p.count * 3);
@@ -192,12 +187,12 @@ export function buildWorld(scene) {
       const n = Math.sin(x * 0.35) * Math.cos(z * 0.3) + Math.sin(x * 0.08 + z * 0.11);
       tmp.copy(cGrass).lerp(n > 0.4 ? cDry : cDark, Math.min(0.55, Math.abs(n) * 0.4));
       // sandy rim near the lake
-      const ldx = (x + 80) / 44, ldz = (z - 20) / 34;
+      const ldx = (x - LAKE.x) / (LAKE.rx + 2), ldz = (z - LAKE.z) / (LAKE.rz + 2);
       const ld = ldx * ldx + ldz * ldz;
       if (ld < 1.7) tmp.lerp(cSand, Math.max(0, 1 - ld / 1.7) * 0.65);
       // diorama edge: dissolve the rim into mist so it feels like a tiny world
       const edge = Math.max(Math.abs(x), Math.abs(z));
-      if (edge > 100) tmp.lerp(cMist, Math.min(1, (edge - 100) / 20));
+      if (edge > 194) tmp.lerp(cMist, Math.min(1, (edge - 194) / 22));
       colors[i*3] = tmp.r; colors[i*3+1] = tmp.g; colors[i*3+2] = tmp.b;
     }
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
@@ -206,7 +201,7 @@ export function buildWorld(scene) {
     scene.add(ground);
     // diorama plinth: the world sits like a miniature on a dusky base
     const plinth = new THREE.Mesh(
-      new THREE.CylinderGeometry(168, 178, 12, 48),
+      new THREE.CylinderGeometry(300, 310, 12, 64),
       new THREE.MeshStandardMaterial({ color: 0x241f38, roughness: 1 }));
     plinth.position.y = -6.4; scene.add(plinth);
   }
@@ -689,7 +684,7 @@ export function buildWorld(scene) {
       m.rotation.x = -Math.PI / 2;
       m.rotation.z = -Math.atan2(bz - az, bx - ax);
       m.position.set((ax + bx) / 2, 0.08, (az + bz) / 2);
-      m.receiveShadow = true;
+      m.receiveShadow = true; m.name = "Brown connecting path"; m.userData.pathSegment = [ax, az, bx, bz];
       scene.add(m);
     }
   }
@@ -901,7 +896,7 @@ export function buildWorld(scene) {
       m.rotation.x = -Math.PI / 2; m.scale.set(rx, rz, 1); m.position.set(x, 0.06, z);
       scene.add(m); waters.push({ x, z, rx, rz }); return m;
     };
-    lakeMesh = mkWater(42, 32, -80, 20); // BIG — borders the west map edge
+    lakeMesh = mkWater(LAKE.rx, LAKE.rz, LAKE.x, LAKE.z); // BIG — borders the west map edge
     pondMesh = mkWater(8, 6, 98, -28); // off the tavern→forest path (was blocking it)
     // lantern reflection streaks on the lake (vertical warm gradients)
     const sc = document.createElement("canvas"); sc.width = 32; sc.height = 128;
@@ -1391,7 +1386,31 @@ export function buildWorld(scene) {
   }
 
   // ---------- per-frame animation (everything alive) ----------
+  const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3();
+  const blockedByExpansion = (x,z) => inLake(x,z) || PATHS.some(p => segmentDistance(x,z,p) < 2.3);
+  scene.traverse(object => {
+    if (!object.isInstancedMesh || object === worldAnims.lanterns?.inst) return;
+    for (let i=0;i<object.count;i++) {
+      object.getMatrixAt(i,matrix); matrix.decompose(position,rotation,scale);
+      if (!blockedByExpansion(position.x,position.z)) continue;
+      scale.set(0,0,0);matrix.compose(position,rotation,scale);object.setMatrixAt(i,matrix);
+    }
+    object.instanceMatrix.needsUpdate=true;
+  });
+  for (const tree of worldAnims.swayCanopy.swayData) if(blockedByExpansion(tree.x,tree.z)) tree.s=0;
+  // Small trunks/props cleared from the brown road; buildings retain full collision.
+  for(let i=colliders.length-1;i>=0;i--) {
+    const c=colliders[i];
+    if(inLake(c.x,c.z)||(c.r<=1.2&&PATHS.some(p=>segmentDistance(c.x,c.z,p)<c.r+1.1))) {
+      // A cleared lantern post/rock must disappear visually as well as physically.
+      for(const object of scene.children)if(!object.isInstancedMesh&&object.position.y<9&&Math.hypot(object.position.x-c.x,object.position.z-c.z)<.05)object.visible=false;
+      colliders.splice(i,1);
+    }
+  }
+  const expansion=buildExpansion(scene,{mat,box,cyl,addGlow,addPool,addCollider,waters});
+
   function update(dt, t, px, pz) {
+    expansion.update(t);
     // per-zone sky moods — the sky shifts as she travels
     if (px !== undefined && worldAnims.updateSky) worldAnims.updateSky(px, pz);
     // rising lanterns: climb, sway, fade out at the top, respawn over home turf
@@ -1629,14 +1648,14 @@ export function buildWorld(scene) {
 
   function zoneAt(x, z) {
     let best = null, bd = 1e9;
-    for (const zn of ZONES) {
+    for (const zn of [...ZONES, FESTIVAL]) {
       const d = Math.hypot(x - zn.x, z - zn.z);
       if (d < zn.r && d < bd) { bd = d; best = zn; }
     }
     return best;
   }
 
-  return { colliders, waters, dockRect, boat, zoneAt, update, sun, paths: PATHS,
+  return { colliders, waters, dockRect, boat, zoneAt, update, sun, paths: PATHS, bound: WORLD_BOUND, zones: ZONES, festival: FESTIVAL, bridges: BRIDGES, dryIslands: DRY_ISLANDS, landmarks: expansion.landmarks,
            setLanternBoost: (b) => { worldAnims.lanternBoost = b; },
            // Finale: release the sky lanterns — the magical Tangled moment, only after clue 33
            releaseLanterns: () => {

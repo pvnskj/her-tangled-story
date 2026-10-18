@@ -1,12 +1,15 @@
+import {buildDiscoveries} from './story-discoveries.js?v=20261018story';
+import {createLakeFinale} from './lake-finale.js?v=20261018story';
+import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
 
 import * as THREE from "three";
-import { CONFIG, DEBUG } from "./config.js?v=20261011c";
-import { CLUES } from "./clues.js?v=20261011c";
-import { buildWorld, ZONES } from "./world.js?v=20261011c";
-import { Player } from "./player.js?v=20261011c";
-import { buildNPCs } from "./npcs.js?v=20261011c";
-import { UI } from "./ui.js?v=20261011c";
+import { CONFIG, DEBUG } from "./config.js?v=20261018story";
+import { CLUES } from "./clues.js?v=20261018story";
+import { buildWorld, ZONES } from "./star-world.js?v=20261018story";
+import { Player } from "./player.js?v=20261018story";
+import { buildNPCs } from "./star-npcs.js?v=20261018story";
+import { UI } from "./ui.js?v=20261018story";
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById("game");
@@ -37,7 +40,7 @@ const world = buildWorld(scene);
 const player = new Player(scene, world);
 window.__player = player; // for camera toggle button
 camera.position.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);
-const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene);
+const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene,world);
 
 // soft diorama shadows: solid meshes cast, transparent ones don't
 scene.traverse((o) => {
@@ -94,6 +97,8 @@ function makeCritter(kind) {
   }
   return g;
 }
+
+const updateDiscoveries=buildDiscoveries(scene,CLUES,npcs);
 
 // marker per clue; villagers use their NPC instead
 const clueMarkers = new Map(); // id -> {group, clue}
@@ -173,6 +178,9 @@ for (const n of npcs) {
   }
 }
 const found = new Set();
+const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),onComplete:()=>{
+ modalOpen=true;UI.fanfare();const last=CLUES.at(-1);UI.finaleModal(last.photo,CONFIG.FINAL_MESSAGE);
+}});
 refreshMarkers(); // show only clue 1 at the start (found is defined above)
 world.boat.group.userData.interact = { kind: "boat" };
 hitMeshes.push(world.boat.group);
@@ -203,23 +211,16 @@ function refreshMarkers() {
 }
 
 // guidance: what to show in the guide box for the next undiscovered clue
-const GUIDES = {
-  1: "🦎 Follow the chameleon! It's excited about something behind the tower, by the rocks…",
-  2: "👣 Follow the footprints from the rocks!",
-  3: "🗣️ Find Maro the traveler — he wanders near the tower.",
-  4: "✨ Check the open field by the tower.",
-  5: "🐇 Follow the rabbit!",
-  6: "✨ Into the forest — look for sparkles in the clearing.",
-};
 function updateGuide() {
   const next = CLUES.find((c) => !found.has(c.id));
   if (!next) { UI.setGuide(null); return; }
-  UI.setGuide(GUIDES[next.id] || `✨ Find memory ${next.id} of 33 — explore the ${next.zone}!`);
+  UI.setGuide(next.id===32&&found.has(31)?"🐴 Follow Maximus to Flynn at the lake — tap to walk there.":`✨ Memory ${next.id} of ${CLUES.length} — ${next.discovery?'look for '+next.discovery.label:'find '+next.npc}. Tap to walk there.`);
 }
 
 async function discover(clue) {
-  if (found.has(clue.id) || modalOpen) return;
+  if (found.has(clue.id) || modalOpen || CLUES.find(c=>!found.has(c.id))?.id!==clue.id) return;
   modalOpen = true;
+  player.autoTarget = null; player.svel.set(0, 0, 0);
   // Clue 1: fill in the blank — "I'm a T__DLER"
   if (clue.id === 1) {
     const ok = await UI.riddleModal("I'm a T__DLER", "OD");
@@ -234,28 +235,31 @@ async function discover(clue) {
   updateGuide();
   refreshMarkers(); // reveal the next clue's marker, hide the found one
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
-  if (clue.kind === "finale") {
-    UI.fanfare();
-    world.releaseLanterns(); // the sky fills with lanterns — the Tangled moment!
-    setTimeout(() => UI.finaleModal(clue.photo, CONFIG.FINAL_MESSAGE), 350);
+  if (clue.finale) {
+    modalOpen=false;lakeFinale.startBoat();
   } else {
     UI.chime();
     setTimeout(() => UI.photoModal(clue), 350);
   }
 }
-UI.onModalClose = () => { modalOpen = false; };
+UI.onModalClose = () => { modalOpen = false; if(found.has(31)&&!found.has(32))lakeFinale.startEscort(); };
 
 function npcHeadWorld(n) {
   return { x: n.group.position.x, y: n.group.position.y + n.headY + 0.6, z: n.group.position.z };
 }
 
 function interactWith(target) {
+  if(lakeFinale.locked)return;
   const p = player.group.position;
   if (target.kind === "boat") { tapBoat(); return; }
   if (target.kind === "npc") {
     const n = target.npc;
     const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
-    if (d > CONFIG.INTERACT_RADIUS + 2) return;
+    if (d > CONFIG.INTERACT_RADIUS + 2) {
+      const next = CLUES.find(c => !found.has(c.id));
+      if (next?.id === n.clueId) walkToClue(next);
+      return;
+    }
     UI.blip();
     if (n.kind === "named") {
       const clue = CLUES.find((c) => c.id === n.clueId);
@@ -264,7 +268,8 @@ function interactWith(target) {
       if (clue && !found.has(clue.id) && clue.id === nextId) {
         // it's their turn in the story — give the hint and the clue
         UI.dialogue(n.name, n.hint, hw.x, hw.y, hw.z);
-        setTimeout(() => discover(clue), 1700);
+        if(clue.kind==='villager')setTimeout(() => discover(clue), 1700);
+        else walkToClue(clue);
       } else if (clue && !found.has(clue.id)) {
         // not yet — tease the story without spoiling
         UI.dialogue(n.name, "Keep following your heart — your story is still unfolding…", hw.x, hw.y, hw.z);
@@ -282,16 +287,16 @@ function interactWith(target) {
     const nextId = CLUES.find((c) => !found.has(c.id))?.id;
     if (clue.id !== nextId) return; // only the story's next clue matters
     const d = Math.hypot(p.x - clue.x, p.z - clue.z);
-    if (d < 2.0) {
+    if (d < clueTarget(clue, npcs, world).radius) {
       UI.blip();
       discover(clue);
     }
-    // (far taps do nothing — tap the guide text up top for walkthrough mode)
+    else walkToClue(clue);
   }
 }
 
 // ---------- boat ride (free rowing on the lake) ----------
-const BOAT_PARK = { x: -50, z: 15 }; // beside the pier, visible on approach
+const BOAT_PARK = world.boatPark; // beside the pier, visible on approach
 function boatNearShore() {
   const b = world.boat.group.position;
   if (Math.hypot(b.x - BOAT_PARK.x, b.z - BOAT_PARK.z) < 8) return true;
@@ -300,32 +305,36 @@ function boatNearShore() {
   return (nx * nx + nz * nz) > 0.70; // close to the water's rim
 }
 function tapBoat() {
-  const clue26 = CLUES.find((c) => c.id === 26);
-  if (!found.has(26)) { discover(clue26); return; }
+  if(lakeFinale.locked)return;
+  if(!found.has(32)){
+    const next=CLUES.find(c=>!found.has(c.id));
+    if(next?.id===32)walkToClue(next);else UI.banner('Flynn is saving the boat ride for your final memory ✨');
+    return;
+  }
   if (modalOpen) return;
   const p = player.group.position, b = world.boat.group.position;
   if (!player.riding) {
     if (Math.hypot(p.x - b.x, p.z - b.z) > 9) return;
     UI.blip();
+    player.autoTarget = null; player.svel.set(0, 0, 0); updateGuide();
     player.riding = true; world.boat.riding = true;
     player.sprite.position.y = 1.0; // seated in the hull
     UI.banner("Rowing the lake ⛵ — hop out near the shore");
   } else if (boatNearShore()) {
+    const landing = player.navigation.nearestWalkable(b, 16);
+    if (!landing) { UI.banner("Row a little closer to a clear shore ✨"); return; }
     UI.blip();
     player.riding = false; world.boat.riding = false;
     player.sprite.position.y = 1.8;
-    // step onto the nearest dry land: just outside the lake ellipse
-    const w = world.waters[0];
-    let nx = (b.x - w.x) / w.rx, nz = (b.z - w.z) / w.rz;
-    const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
-    player.group.position.set(w.x + nx * (w.rx + 2.4), 0, w.z + nz * (w.rz + 2.4));
+    // Land beside the boat on clear ground/pier, never inside trees or out of bounds.
+    player.group.position.set(landing.x, 0, landing.z);
     player.svel.set(0, 0, 0);
     UI.banner("Back on dry land ✨");
   }
 }
 function updateBoat(dt, t) {
   const b = world.boat;
-  if (!b.riding) return;
+  if (!b.riding || lakeFinale.phase!=='idle') return;
   let ix = player.moveVec.x, iz = player.moveVec.z;
   // in first-person, boat steers relative to view (like walking)
   if (player.camMode === 'first') {
@@ -409,7 +418,8 @@ window.addEventListener("keydown", (e) => {
     for (const n of npcs) {
       if (n.kind !== "named" && n.kind !== "wanderer" && n.kind !== "thug") continue;
       const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
-      if (d < CONFIG.INTERACT_RADIUS + 2 && d < bd) { bd = d; bn = n; }
+      const score=d-(n.clueId===CLUES.find(c=>!found.has(c.id))?.id?20:0);
+      if (d < CONFIG.INTERACT_RADIUS + 2 && score < bd) { bd = score; bn = n; }
     }
     if (bn) { interactWith({ kind: "npc", npc: bn }); return; }
     if (player.riding) { tapBoat(); return; } // E hops out near shore
@@ -449,25 +459,26 @@ UI.onBegin = () => {
   updateGuide(); // show the first hint: follow the chameleon!
 };
 // tap the guide text → she walks there automatically (walkthrough mode!)
-UI.onGuideTap(() => {
-  const next = CLUES.find((c) => !found.has(c.id));
-  if (!next || modalOpen) return;
-  if (next.kind === "villager") {
-    // walk to the villager NPC
-    const n = npcs.find((x) => x.clueId === next.id);
-    if (n) {
-      player.autoTarget = { x: n.group.position.x, z: n.group.position.z };
-      player._stuckT = 0; player._nudgeDir = 0; // reset anti-stuck
-      UI.setGuide(`🚶 Walking to ${n.name}… (touch the joystick to take over)`);
-      UI.blip();
-    }
-  } else {
-    player.autoTarget = { x: next.x, z: next.z };
-    player._stuckT = 0; player._nudgeDir = 0; // reset anti-stuck
-    UI.setGuide(`🚶 Walking to the sparkles… (touch the joystick to take over)`);
-    UI.blip();
-  }
-});
+function walkToClue(next) {
+  if (!next || modalOpen || lakeFinale.locked) return;
+  if (player.riding) { UI.banner("Hop out near the shore to follow the next clue ✨"); return; }
+  const target = clueTarget(next, npcs, world);
+  if (!target) return;
+  player.autoTarget = target;
+  const n = next.kind === 'villager' && npcs.find(n => n.clueId === next.id);
+  UI.setGuide(`🚶 Walking to ${n ? n.name : 'the sparkles'}… (touch the joystick to take over)`);
+  UI.blip();
+}
+UI.onGuideTap(() => walkToClue(CLUES.find(c => !found.has(c.id))));
+UI.onPlaceSelect = place => {
+  if(modalOpen||lakeFinale.locked)return;
+  if(player.riding){UI.banner("Hop out near the shore to explore on foot ✨");return;}
+  player.autoTarget={...place.entry,radius:1.1,zone:place.id,destinationId:place.id};
+  UI.setGuide(`🚶 Walking to ${place.name}… (touch the joystick to take over)`);
+};
+player.onPlaceArrival = id => {updateGuide();UI.banner(`Welcome to ${ZONES.find(p=>p.id===id).name} ✨`);};
+player.onWalkCancel = updateGuide;
+player.onWalkBlocked = () => { updateGuide(); UI.banner("Try moving into the clearing, then tap the clue again ✨"); };
 
 if (DEBUG) {
   window.__game = {
@@ -540,14 +551,18 @@ function animate() {
   // input
   const kv = keyVector();
   const jx = UI.joystick.x + kv.x, jz = UI.joystick.y + kv.z;
-  player.setInput(jx, jz);
+  player.setInput(lakeFinale.locked?0:jx, lakeFinale.locked?0:jz);
   player.keyLook(dt, keys);
 
-  player.update(dt);
-  updateBoat(dt, t);
+  if (!modalOpen && !UI.isMapOpen()) {
+    player.update(dt);
+    updateBoat(dt, t);
+  } else player.svel.set(0, 0, 0);
   world.update(dt, t, player.group.position.x, player.group.position.z);
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
+  updateDiscoveries(t);
+  lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
   player.updateCamera(camera, dt);
 
   // clue marker idle animation
@@ -564,11 +579,10 @@ function animate() {
   {
     const p = player.group.position;
     const next = CLUES.find((c) => !found.has(c.id));
-    if (next && !modalOpen && ["hidden", "reflection", "animal", "boat"].includes(next.kind)) {
+    if (next && !modalOpen && ["hidden", "reflection", "animal", "boat", "finale"].includes(next.kind)) {
       const d = Math.hypot(p.x - next.x, p.z - next.z);
       // water targets (lake reflections): trigger from shore — she's close enough to see it
-      const inWater = player.inWater(next.x, next.z);
-      const triggerD = inWater ? 12 : 2.5;
+      const triggerD = clueTarget(next, npcs, world).radius;
       if (d < triggerD) {
         player.autoTarget = null; // stop walkthrough mode
         discover(next);
@@ -598,7 +612,7 @@ function animate() {
   const sense = nextClue ? nearestUndiscovered(p, CONFIG.CHAMELEON_SENSE) : null;
   // only get excited if the next clue is within sense range
   const nextInRange = nextClue && Math.hypot(p.x - nextClue.x, p.z - nextClue.z) < CONFIG.CHAMELEON_SENSE;
-  chameleon.excited = !!nextInRange;
+  chameleon.excited = !!nextInRange && nextClue?.id!==3;
   chameleon.leadTarget = nextInRange ? { x: nextClue.x, z: nextClue.z } : null;
 
   // interaction prompts: boat board/hop-out, villager talk
@@ -610,14 +624,15 @@ function animate() {
     const bd = Math.hypot(p.x - bp.x, p.z - bp.z);
     if (player.riding) {
       if (boatNearShore()) { text = "⛵ Tap to hop out"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" }; }
-    } else if (bd < 9) {
+    } else if (bd < 9 && found.has(32)) {
       text = "⛵ Tap to board"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" };
     } else {
       let bn = null, bnd = 1e9;
       for (const n of npcs) {
         if (n.kind !== "named" && n.kind !== "wanderer" && n.kind !== "thug") continue;
         const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
-        if (d < CONFIG.PROMPT_RADIUS && d < bnd) { bnd = d; bn = n; }
+        const score=d-(n.clueId===nextClue?.id?20:0);
+        if (d < CONFIG.PROMPT_RADIUS && score < bnd) { bnd = score; bn = n; }
       }
       if (bn) {
         text = `💬 Talk to ${bn.name}`;
@@ -625,7 +640,7 @@ function animate() {
         target = { kind: "npc", npc: bn };
       }
     }
-    if (text && !modalOpen && !UI.isMapOpen()) {
+    if (text && !modalOpen && !UI.isMapOpen() && !lakeFinale.locked) {
       const s = project(wx, wy, wz);
       // keep the pill on-screen even when its target is at the frame edge
       const cx = Math.max(70, Math.min(window.innerWidth - 70, s.x));
@@ -654,7 +669,7 @@ function animate() {
   }
 
   UI.updateDialogue(dt, project);
-  if (UI.isMapOpen()) UI.drawMap(ZONES, CLUES, found, p.x, p.z);
+  if (UI.isMapOpen()) UI.drawMap(ZONES, CLUES, found, p.x, p.z, world);
   renderer.render(scene, camera);
 }
 animate();
