@@ -64,7 +64,7 @@ const ORIGINAL_CLUES = [
 ];
 
 // Shared encounters give every one of the 34 characters a role in 32 clues.
-const PLACEMENT = [["tower", -20, -110],["tower", 15, -100],["tower", 0, -70],["forest", 55, -55],["forest", 105, -55],["forest", 55, -25],["forest", 105, -25],["forest", 80, -70],["tavern", 70, 30],["tavern", 110, 30],["tavern", 70, 60],["tavern", 110, 60],["tavern", 90, 20],["cave", 120, 45],["cave", 155, 45],["cave", 120, 65],["cave", 155, 65],["cave", 138, 35],["village", -25, 75],["village", 25, 75],["village", -25, 105],["village", 25, 105],["castle", -20, 145],["castle", 20, 145],["castle", 0, 175],["dark", 125, -140],["dark", 165, -140],["dark", 145, -105],["sundrop", -140, -50],["sundrop", -115, -25],["lake", -35, 5],["lake", -35, 35],];
+const PLACEMENT = [["tower", -25, -115],["tower", 20, -105],["tower", 0, -60],["forest", 55, -55],["forest", 105, -55],["forest", 55, -25],["forest", 105, -25],["forest", 80, -70],["tavern", 70, 30],["tavern", 110, 30],["tavern", 70, 60],["tavern", 110, 60],["tavern", 90, 20],["cave", 120, 45],["cave", 155, 45],["cave", 120, 65],["cave", 155, 65],["cave", 138, 35],["village", -25, 75],["village", 25, 75],["village", -25, 105],["village", 25, 105],["castle", -20, 145],["castle", 20, 145],["castle", 0, 175],["dark", 125, -140],["dark", 165, -140],["dark", 145, -105],["sundrop", -140, -50],["sundrop", -115, -25],["lake", -35, 5],["lake", -35, 35],];
 // Location discoveries share a chapter with their hosts, rather than requiring
 // 32 conversations. The original ring/sparkle and photo interactions remain.
 const DISCOVERIES = {
