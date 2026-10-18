@@ -2,6 +2,8 @@
 // and the chameleon companion (hot/cold clue helper).
 
 import * as THREE from "three";
+import { getCharacter, CLUE_CAST, WANDER_CAST, TAVERN_CAST } from "./cast.js?v=20261018cast";
+import { dressCharacter, animateCharacter, installAnimalCast, animateAnimal } from "./cast-models.js?v=20261018cast";
 
 const FLAVOR = [
   "Lovely evening for lanterns, no?",
@@ -304,6 +306,16 @@ export function buildNPCs(scene) {
     return { group: g, excited: false, hop: 0, exclaim, spark };
   })();
 
+  // Identity and model changes are isolated from the live clue/walkthrough engine.
+  let castWanderer = 0, castRuffian = 0;
+  for (const n of npcs) {
+    const id = n.kind === "named" ? CLUE_CAST[n.clueId]
+      : n.kind === "wanderer" ? WANDER_CAST[castWanderer++]
+      : n.kind === "thug" ? TAVERN_CAST[castRuffian++] : null;
+    if (id) dressCharacter(n, getCharacter(id));
+  }
+  installAnimalCast(scene, npcs, chameleon);
+
   function facePlayer(n, dt, playerPos, maxD) {
     const dx = playerPos.x - n.group.position.x, dz = playerPos.z - n.group.position.z;
     if (Math.hypot(dx, dz) > maxD) return;
@@ -317,6 +329,7 @@ export function buildNPCs(scene) {
   function update(dt, t, playerPos) {
     // named: gentle sway, or patrol if they have a route (Maro walks!)
     for (const n of npcs) {
+      if (n.castAnimal) { animateAnimal(n, t); continue; }
       if (n.kind === "named" && n.patrol) {
         n.patrolI = n.patrolI || 0;
         const [px, pz] = n.patrol[n.patrolI];
@@ -381,6 +394,7 @@ export function buildNPCs(scene) {
         facePlayer(n, dt, playerPos, 6);
       }
     }
+    for (const n of npcs) animateCharacter(n, t);
     // rabbits hop (with ear twitches and happy binkies!)
     for (const r of rabbits) {
       const dx = r.tx - r.group.position.x, dz = r.tz - r.group.position.z;

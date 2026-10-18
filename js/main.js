@@ -1,12 +1,12 @@
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
 
 import * as THREE from "three";
-import { CONFIG, DEBUG } from "./config.js?v=20261011c";
-import { CLUES } from "./clues.js?v=20261011c";
-import { buildWorld, ZONES } from "./world.js?v=20261011c";
-import { Player } from "./player.js?v=20261011c";
-import { buildNPCs } from "./npcs.js?v=20261011c";
-import { UI } from "./ui.js?v=20261011c";
+import { CONFIG, DEBUG } from "./config.js?v=20261018cast";
+import { CLUES } from "./clues.js?v=20261018cast";
+import { buildWorld, ZONES } from "./world.js?v=20261018cast";
+import { Player } from "./player.js?v=20261018cast";
+import { buildNPCs } from "./npcs.js?v=20261018cast";
+import { UI } from "./ui.js?v=20261018cast";
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById("game");
@@ -204,9 +204,9 @@ function refreshMarkers() {
 
 // guidance: what to show in the guide box for the next undiscovered clue
 const GUIDES = {
-  1: "🦎 Follow the chameleon! It's excited about something behind the tower, by the rocks…",
+  1: "🦎 Follow Pascal! It's excited about something behind the tower, by the rocks…",
   2: "👣 Follow the footprints from the rocks!",
-  3: "🗣️ Find Maro the traveler — he wanders near the tower.",
+  3: "🗣️ Find Eugene Fitzherbert (Flynn Rider) — he wanders near the tower.",
   4: "✨ Check the open field by the tower.",
   5: "🐇 Follow the rabbit!",
   6: "✨ Into the forest — look for sparkles in the clearing.",

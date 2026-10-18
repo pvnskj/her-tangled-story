@@ -11,7 +11,7 @@ export const CLUES = [
   { id: 2, zone: "tower", x: -15, z: -85, kind: "hidden", photo: P("02-toddler-temple.jpg"), caption: "Tiny feet on ancient stones.",
     riddle: { prompt: "What am I?", options: ["Tiny", "TINY", "TinY"] } },
   { id: 3, zone: "tower", x: 8, z: -84, kind: "villager", photo: P("03-girl-palms.jpg"), caption: "Growing up under the palms.",
-    npc: "Maro the traveler", hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
+    npc: "Eugene Fitzherbert (Flynn Rider)", hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
   { id: 4, zone: "tower", x: -7, z: -100, kind: "hidden", photo: P("04-toddler-field.jpg"), caption: "Wild and free in the open field." },
   { id: 5, zone: "tower", x: 10, z: -95, kind: "animal", photo: P("05-mountains.jpg"), caption: "Standing tall with the mountains.", critter: "rabbit" },
 
@@ -25,30 +25,30 @@ export const CLUES = [
 
   // ---- Tavern (12-16) ----
   { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Bram the thug", hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
+    npc: "Hook Hand", hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
   { id: 13, zone: "tavern", x: 96, z: 52, kind: "hidden", photo: null, caption: "A new memory is on its way…" },
   { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Old Tom", hint: "Somethin' shiny under the bench where I nap. Don't tell the others." },
+    npc: "Shorty", hint: "Somethin' shiny under the bench where I nap. Don't tell the others." },
   { id: 15, zone: "tavern", x: 85, z: 50, kind: "hidden", photo: null, caption: "A new memory is on its way…" },
   { id: 16, zone: "tavern", x: 93, z: 49.5, kind: "hidden", photo: null, caption: "A new memory is on its way…" },
 
   // ---- Village (17-23) ----
   { id: 17, zone: "village", x: -8, z: 84, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Mira", hint: "The old well keeps secrets behind it. I saw sparkles there at dusk." },
+    npc: "Queen Arianna", hint: "The old well keeps secrets behind it. I saw sparkles there at dusk." },
   { id: 18, zone: "village", x: 3, z: 93, kind: "hidden", photo: null, caption: "A new memory is on its way…" },
   { id: 19, zone: "village", x: 10, z: 98, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Sella the baker", hint: "Check under my market stall — mind the pies, they're hot!" },
+    npc: "Attila", hint: "Check under my market stall — mind the pies, they're hot!" },
   { id: 20, zone: "village", x: -12, z: 96, kind: "hidden", photo: null, caption: "A new memory is on its way…" },
   { id: 21, zone: "village", x: 5, z: 80, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Pip", hint: "I saw sparkles by the flower cart! Shiny shiny!" },
+    npc: "Little Girl with Braids", hint: "I saw sparkles by the flower cart! Shiny shiny!" },
   { id: 22, zone: "village", x: -5, z: 100, kind: "hidden", photo: null, caption: "A new memory is on its way…" },
   { id: 23, zone: "village", x: -10, z: 88, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Elder Asha", hint: "The festival stage holds the greatest treasure of all. You'll see." },
+    npc: "King Frederic", hint: "The festival stage holds the greatest treasure of all. You'll see." },
 
   // ---- Lake (24-28) ----
   { id: 24, zone: "lake", x: -56, z: 24, kind: "reflection", photo: null, caption: "A new memory is on its way…" },
   { id: 25, zone: "lake", x: -50, z: 16, kind: "villager", photo: null, caption: "A new memory is on its way…",
-    npc: "Dev the fisher", hint: "The lake shows memories in its reflection. And the old boat? It remembers too." },
+    npc: "Lance Strongbow", hint: "The lake shows memories in its reflection. And the old boat? It remembers too." },
   { id: 26, zone: "lake", x: -62, z: 20, kind: "boat", photo: null, caption: "A new memory is on its way…" },
   { id: 27, zone: "lake", x: -62, z: 36, kind: "reflection", photo: null, caption: "A new memory is on its way…" },
   { id: 28, zone: "lake", x: -66, z: 24, kind: "animal", photo: null, caption: "A new memory is on its way…", critter: "duck" },

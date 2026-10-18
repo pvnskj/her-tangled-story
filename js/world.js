@@ -4,10 +4,10 @@
 import * as THREE from "three";
 
 export const ZONES = [
-  { id: "tower",    name: "Tower Hill",           x: 0,   z: -90, r: 36 },
+  { id: "tower",    name: "Rapunzel’s Tower",           x: 0,   z: -90, r: 36 },
   { id: "forest",   name: "The Forest",           x: 80,  z: -40, r: 40 },
   { id: "tavern",   name: "The Snuggly Duckling", x: 85,  z: 45,  r: 32 },
-  { id: "village",  name: "Corona Village",       x: 0,   z: 90,  r: 42 },
+  { id: "village",  name: "The Kingdom of Corona",       x: 0,   z: 90,  r: 42 },
   { id: "lake",     name: "The Lake",             x: -80, z: 20,  r: 44 },
   { id: "festival", name: "Lantern Festival",     x: -45, z: -60, r: 36 },
 ];
