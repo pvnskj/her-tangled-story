@@ -1,12 +1,13 @@
+import { clueTarget } from "./navigation.js?v=20261018nav";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
 
 import * as THREE from "three";
-import { CONFIG, DEBUG } from "./config.js?v=20261018cast";
-import { CLUES } from "./clues.js?v=20261018cast";
-import { buildWorld, ZONES } from "./world.js?v=20261018cast";
-import { Player } from "./player.js?v=20261018cast";
-import { buildNPCs } from "./npcs.js?v=20261018cast";
-import { UI } from "./ui.js?v=20261018cast";
+import { CONFIG, DEBUG } from "./config.js?v=20261018nav";
+import { CLUES } from "./clues.js?v=20261018nav";
+import { buildWorld, ZONES } from "./world.js?v=20261018nav";
+import { Player } from "./player.js?v=20261018nav";
+import { buildNPCs } from "./npcs.js?v=20261018nav";
+import { UI } from "./ui.js?v=20261018nav";
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById("game");
@@ -220,6 +221,7 @@ function updateGuide() {
 async function discover(clue) {
   if (found.has(clue.id) || modalOpen) return;
   modalOpen = true;
+  player.autoTarget = null; player.svel.set(0, 0, 0);
   // Clue 1: fill in the blank — "I'm a T__DLER"
   if (clue.id === 1) {
     const ok = await UI.riddleModal("I'm a T__DLER", "OD");
@@ -255,7 +257,11 @@ function interactWith(target) {
   if (target.kind === "npc") {
     const n = target.npc;
     const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
-    if (d > CONFIG.INTERACT_RADIUS + 2) return;
+    if (d > CONFIG.INTERACT_RADIUS + 2) {
+      const next = CLUES.find(c => !found.has(c.id));
+      if (next?.id === n.clueId) walkToClue(next);
+      return;
+    }
     UI.blip();
     if (n.kind === "named") {
       const clue = CLUES.find((c) => c.id === n.clueId);
@@ -282,11 +288,11 @@ function interactWith(target) {
     const nextId = CLUES.find((c) => !found.has(c.id))?.id;
     if (clue.id !== nextId) return; // only the story's next clue matters
     const d = Math.hypot(p.x - clue.x, p.z - clue.z);
-    if (d < 2.0) {
+    if (d < clueTarget(clue, npcs, world).radius) {
       UI.blip();
       discover(clue);
     }
-    // (far taps do nothing — tap the guide text up top for walkthrough mode)
+    else walkToClue(clue);
   }
 }
 
@@ -301,24 +307,31 @@ function boatNearShore() {
 }
 function tapBoat() {
   const clue26 = CLUES.find((c) => c.id === 26);
-  if (!found.has(26)) { discover(clue26); return; }
+  if (!found.has(26)) {
+    const next = CLUES.find(c => !found.has(c.id));
+    if (next?.id !== 26 || modalOpen) return;
+    const target = clueTarget(clue26, npcs, world), p = player.group.position;
+    if (Math.hypot(p.x - target.x, p.z - target.z) < target.radius) discover(clue26);
+    else walkToClue(clue26);
+    return;
+  }
   if (modalOpen) return;
   const p = player.group.position, b = world.boat.group.position;
   if (!player.riding) {
     if (Math.hypot(p.x - b.x, p.z - b.z) > 9) return;
     UI.blip();
+    player.autoTarget = null; player.svel.set(0, 0, 0); updateGuide();
     player.riding = true; world.boat.riding = true;
     player.sprite.position.y = 1.0; // seated in the hull
     UI.banner("Rowing the lake ⛵ — hop out near the shore");
   } else if (boatNearShore()) {
+    const landing = player.navigation.nearestWalkable(b, 16);
+    if (!landing) { UI.banner("Row a little closer to a clear shore ✨"); return; }
     UI.blip();
     player.riding = false; world.boat.riding = false;
     player.sprite.position.y = 1.8;
-    // step onto the nearest dry land: just outside the lake ellipse
-    const w = world.waters[0];
-    let nx = (b.x - w.x) / w.rx, nz = (b.z - w.z) / w.rz;
-    const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
-    player.group.position.set(w.x + nx * (w.rx + 2.4), 0, w.z + nz * (w.rz + 2.4));
+    // Land beside the boat on clear ground/pier, never inside trees or out of bounds.
+    player.group.position.set(landing.x, 0, landing.z);
     player.svel.set(0, 0, 0);
     UI.banner("Back on dry land ✨");
   }
@@ -449,25 +462,19 @@ UI.onBegin = () => {
   updateGuide(); // show the first hint: follow the chameleon!
 };
 // tap the guide text → she walks there automatically (walkthrough mode!)
-UI.onGuideTap(() => {
-  const next = CLUES.find((c) => !found.has(c.id));
+function walkToClue(next) {
   if (!next || modalOpen) return;
-  if (next.kind === "villager") {
-    // walk to the villager NPC
-    const n = npcs.find((x) => x.clueId === next.id);
-    if (n) {
-      player.autoTarget = { x: n.group.position.x, z: n.group.position.z };
-      player._stuckT = 0; player._nudgeDir = 0; // reset anti-stuck
-      UI.setGuide(`🚶 Walking to ${n.name}… (touch the joystick to take over)`);
-      UI.blip();
-    }
-  } else {
-    player.autoTarget = { x: next.x, z: next.z };
-    player._stuckT = 0; player._nudgeDir = 0; // reset anti-stuck
-    UI.setGuide(`🚶 Walking to the sparkles… (touch the joystick to take over)`);
-    UI.blip();
-  }
-});
+  if (player.riding) { UI.banner("Hop out near the shore to follow the next clue ✨"); return; }
+  const target = clueTarget(next, npcs, world);
+  if (!target) return;
+  player.autoTarget = target;
+  const n = next.kind === 'villager' && npcs.find(n => n.clueId === next.id);
+  UI.setGuide(`🚶 Walking to ${n ? n.name : 'the sparkles'}… (touch the joystick to take over)`);
+  UI.blip();
+}
+UI.onGuideTap(() => walkToClue(CLUES.find(c => !found.has(c.id))));
+player.onWalkCancel = updateGuide;
+player.onWalkBlocked = () => { updateGuide(); UI.banner("Try moving into the clearing, then tap the clue again ✨"); };
 
 if (DEBUG) {
   window.__game = {
@@ -543,8 +550,10 @@ function animate() {
   player.setInput(jx, jz);
   player.keyLook(dt, keys);
 
-  player.update(dt);
-  updateBoat(dt, t);
+  if (!modalOpen && !UI.isMapOpen()) {
+    player.update(dt);
+    updateBoat(dt, t);
+  } else player.svel.set(0, 0, 0);
   world.update(dt, t, player.group.position.x, player.group.position.z);
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
@@ -564,11 +573,10 @@ function animate() {
   {
     const p = player.group.position;
     const next = CLUES.find((c) => !found.has(c.id));
-    if (next && !modalOpen && ["hidden", "reflection", "animal", "boat"].includes(next.kind)) {
+    if (next && !modalOpen && ["hidden", "reflection", "animal", "boat", "finale"].includes(next.kind)) {
       const d = Math.hypot(p.x - next.x, p.z - next.z);
       // water targets (lake reflections): trigger from shore — she's close enough to see it
-      const inWater = player.inWater(next.x, next.z);
-      const triggerD = inWater ? 12 : 2.5;
+      const triggerD = clueTarget(next, npcs, world).radius;
       if (d < triggerD) {
         player.autoTarget = null; // stop walkthrough mode
         discover(next);

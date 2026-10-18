@@ -11,13 +11,16 @@ const current=p=>fs.readFileSync(new URL('../'+p,import.meta.url));
 const source=p=>original(p).toString();
 const asModule=s=>import('data:text/javascript;base64,'+Buffer.from(s).toString('base64'));
 
-test('Original player avatar, movement, camera, photo UI, styles and configuration remain byte-identical',()=>{
-  for(const file of ['js/player.js','assets/sprite.png','js/ui.js','css/style.css','js/config.js'])assert.ok(original(file).equals(current(file)),file);
+test('Original player artwork, photo UI, styles and configuration remain byte-identical',()=>{
+  for(const file of ['assets/sprite.png','js/ui.js','css/style.css','js/config.js'])assert.ok(original(file).equals(current(file)),file);
 });
-test('Main loop and walkthrough differ only in displayed character names and cache version',()=>{
-  const normalized=current('js/main.js').toString().replaceAll('v=20261018cast','v=20261011c').replaceAll('Eugene Fitzherbert (Flynn Rider)','Maro the traveler').replaceAll('Follow Pascal!','Follow the chameleon!');
-  assert.equal(normalized,source('js/main.js'));
-  assert.equal(current('index.html').toString().replaceAll('js/main.js?v=20261018cast','js/main.js?v=20261011c'),source('index.html'));
+test('Original avatar construction and camera controls remain intact',()=>{
+  const old=source('js/player.js'),now=current('js/player.js').toString();
+  const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
+  assert.equal(section(now,'    const tex =','    this.vel ='),section(old,'    const tex =','    this.vel ='));
+  assert.equal(section(now,'  cycleCamMode()','  update(dt)'),section(old,'  cycleCamMode()','  update(dt)'));
+  assert.equal(now.slice(now.indexOf('  updateCamera(')),old.slice(old.indexOf('  updateCamera(')));
+  assert.equal(current('index.html').toString().replaceAll('js/main.js?v=20261018nav','js/main.js?v=20261011c'),source('index.html'));
 });
 test('World geometry, forest, lake, boats, paths and scenery are unchanged; only two place labels differ',()=>{
   const normalized=current('js/world.js').toString().replaceAll('name: "Rapunzel’s Tower"','name: "Tower Hill"').replaceAll('name: "The Kingdom of Corona"','name: "Corona Village"');
