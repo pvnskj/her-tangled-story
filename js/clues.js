@@ -163,8 +163,19 @@ export const INTERACTIONS = {
     "outro": "You look like you could do both, honestly."
   },
   "10": {
-    "type": "dialogue",
-    "text": "A giraffe! Butterflies! Look how grown up you are here. The Snuggly Duckling raises a glass to every young dreamer \u2014 especially you."
+    "type": "choice",
+    "prompt": "What is the animal you like?",
+    "options": [
+      "Giraffe",
+      "Me",
+      "You"
+    ],
+    "responses": [
+      "I knew you always have the Birds Eye!",
+      "I knew you always have the Birds Eye!",
+      "I knew you always have the Birds Eye!"
+    ],
+    "outro": "The Snuggly Duckling raises a glass to every young dreamer \u2014 especially you."
   },
   "11": {
     "type": "choice",
