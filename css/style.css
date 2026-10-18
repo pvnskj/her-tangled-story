@@ -146,7 +146,7 @@ body.touch #joystick.started { display: block; }
 #photo-frame { position: relative; overflow: hidden; border-radius: 12px; }
 #photo-frame img, #finale-frame img {
   width: 100%; border-radius: 12px; border: 1px solid var(--gold); display: block;
-  max-height: 46vh; object-fit: cover;
+  max-height: 62vh; object-fit: contain; background: #1a0f2e;
 }
 /* dreamy memory reveal: soft fade-in with a light shimmer sweep */
 #photo-frame.reveal img, #photo-frame.reveal .placeholder-card {

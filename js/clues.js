@@ -15,20 +15,20 @@ const ORIGINAL_CLUES = [
   { id: 3, zone: "tower", x: 8, z: -84, kind: "villager", photo: P("04-toddler-field.jpg"), caption: "Growing up under the palms.",
     npc: "Eugene Fitzherbert (Flynn Rider)", hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
   { id: 4, zone: "tower", x: -7, z: -100, kind: "hidden", photo: P("11-toddler-overalls.jpg"), caption: "Wild and free in the open field." },
-  { id: 5, zone: "tower", x: 10, z: -95, kind: "animal", photo: P("03-girl-palms.jpg"), caption: "Standing tall with the mountains.", critter: "rabbit" },
+  { id: 5, zone: "tower", x: 10, z: -95, kind: "animal", photo: P("18-museum-bears.jpg"), caption: "Standing tall with the mountains.", critter: "rabbit" },
 
   // ---- Forest (6-11) ----
-  { id: 6, zone: "forest", x: 70, z: -30, kind: "hidden", photo: P("09-girl-bushes.jpg"), caption: "Grace in green." },
-  { id: 7, zone: "forest", x: 88, z: -48, kind: "animal", photo: P("12-child-pink-traditional.jpg"), caption: "That confident smile.", critter: "rabbit" },
-  { id: 8, zone: "forest", x: 78, z: -22, kind: "hidden", photo: P("13-teen-giraffe.jpg"), caption: "Elegant in white." },
-  { id: 9, zone: "forest", x: 95, z: -32, kind: "hidden", photo: P("14-panda-festival.jpg"), caption: "Peeking through the bushes." },
-  { id: 10, zone: "forest", x: 72, z: -52, kind: "animal", photo: P("15-barbie-crown.jpg"), caption: "A favorite memory, framed forever.", critter: "chameleon" },
-  { id: 11, zone: "forest", x: 85, z: -15, kind: "reflection", photo: P("16-restaurant-umbrellas.jpg"), caption: "A new memory is on its way…" },
+  { id: 6, zone: "forest", x: 70, z: -30, kind: "hidden", photo: P("03-girl-palms.jpg"), caption: "Grace in green." },
+  { id: 7, zone: "forest", x: 88, z: -48, kind: "animal", photo: P("09-girl-bushes.jpg"), caption: "That confident smile.", critter: "rabbit" },
+  { id: 8, zone: "forest", x: 78, z: -22, kind: "hidden", photo: P("12-child-pink-traditional.jpg"), caption: "Elegant in white." },
+  { id: 9, zone: "forest", x: 95, z: -32, kind: "hidden", photo: P("13-teen-giraffe.jpg"), caption: "Peeking through the bushes." },
+  { id: 10, zone: "forest", x: 72, z: -52, kind: "animal", photo: P("14-panda-festival.jpg"), caption: "A favorite memory, framed forever.", critter: "chameleon" },
+  { id: 11, zone: "forest", x: 85, z: -15, kind: "reflection", photo: P("15-barbie-crown.jpg"), caption: "A new memory is on its way…" },
 
   // ---- Tavern (12-16) ----
-  { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: P("17-car-selfie.jpg"), caption: "A new memory is on its way…",
+  { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: P("16-restaurant-umbrellas.jpg"), caption: "A new memory is on its way…",
     npc: "Hook Hand", hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
-  { id: 13, zone: "tavern", x: 96, z: 52, kind: "hidden", photo: P("18-museum-bears.jpg"), caption: "A new memory is on its way…" },
+  { id: 13, zone: "tavern", x: 96, z: 52, kind: "hidden", photo: P("17-car-selfie.jpg"), caption: "A new memory is on its way…" },
   { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: P("19-beach-couple.jpg"), caption: "A new memory is on its way…",
     npc: "Shorty", hint: "Somethin' shiny under the bench where I nap. Don't tell the others." },
   { id: 15, zone: "tavern", x: 85, z: 50, kind: "hidden", photo: P("20-lavender-dress.jpg"), caption: "A new memory is on its way…" },
@@ -64,7 +64,7 @@ const ORIGINAL_CLUES = [
 ];
 
 // Shared encounters give every one of the 34 characters a role in 32 clues.
-const PLACEMENT = [["tower", -25, -115],["tower", 20, -105],["tower", 0, -60],["forest", 55, -55],["forest", 105, -55],["forest", 55, -25],["forest", 105, -25],["forest", 80, -70],["tavern", 70, 30],["tavern", 110, 30],["tavern", 70, 60],["tavern", 110, 60],["tavern", 90, 20],["cave", 120, 45],["cave", 155, 45],["cave", 120, 65],["cave", 155, 65],["cave", 138, 35],["village", -25, 75],["village", 25, 75],["village", -25, 105],["village", 25, 105],["castle", -20, 145],["castle", 20, 145],["castle", 0, 175],["dark", 125, -140],["dark", 165, -140],["dark", 145, -105],["sundrop", -140, -50],["sundrop", -115, -25],["lake", -35, 5],["lake", -35, 35],];
+const PLACEMENT = [["tower", -20, -110],["tower", 15, -100],["tower", 0, -70],["forest", 55, -55],["forest", 105, -55],["forest", 55, -25],["forest", 105, -25],["forest", 80, -70],["tavern", 70, 30],["tavern", 110, 30],["tavern", 70, 60],["tavern", 110, 60],["tavern", 90, 20],["cave", 120, 45],["cave", 155, 45],["cave", 120, 65],["cave", 155, 65],["cave", 138, 35],["village", -25, 75],["village", 25, 75],["village", -25, 105],["village", 25, 105],["castle", -20, 145],["castle", 20, 145],["castle", 0, 175],["dark", 125, -140],["dark", 165, -140],["dark", 145, -105],["sundrop", -140, -50],["sundrop", -115, -25],["lake", -35, 5],["lake", -35, 35],];
 // Location discoveries share a chapter with their hosts, rather than requiring
 // 32 conversations. The original ring/sparkle and photo interactions remain.
 const DISCOVERIES = {
