@@ -1,29 +1,27 @@
-# Navigation review — 18 October 2026
+# World and navigation review — 18 October 2026
 
-The original walker stalled before clue 3 in a deterministic run using the live world and player code. Its local steering could not route around scenery and chose a nearby path without planning how the paths connected.
+## Expanded world
 
-## Changes
+Nine main destinations: Rapunzel’s Tower, the Kingdom of Corona, the Snuggly Duckling, Corona Castle, the Secret Cave Tunnel, the Sundrop Enclave, the Dark Kingdom, the Forest and the Lake. The original lantern festival remains a clearing, with its five original clues.
 
-- Plan collision-cleared routes that favor the existing dirt paths; connect off-path clues with short safe approaches. Keep the original 11-unit/second walking pace.
-- Smooth route corners, avoid cutting through trees, and use swept manual movement with sliding instead of repeated collider push-outs.
-- Use the same approach targets for guide taps, distant marker/NPC taps, and arrival detection.
-- Reach original markers inside the tavern/barrels from the solid object's edge. Reach lake reflections from dry ground or the pier. Marker positions remain unchanged.
-- Include the final clue in arrival detection and preserve all 33 clues in order. Boat taps cannot reveal clue 26 early or from a distance.
-- Clear movement at discovery and pause walking/rowing while a riddle, photo, or map is open. Manual input immediately cancels automatic walking and restores the hint.
-- Disembark onto clear ground or the pier; stay aboard with guidance if no nearby playable shore is available.
+Four newly built areas use the existing faceted geometry, warm window/glow materials, purple roofs and dusk lighting. The castle includes an island, stone bridge, mosaic courtyard, towers, balcony and library loggia. The tunnel has rock walls, supports, rails, roots and a flooded end. The enclave contains the golden flower and basket. The Dark Kingdom has ruined towers and black-rock growths.
 
-## Preserved
+Ground expands from 240×240 to 432×432 units; playable bounds expand from 114 to 204 per axis. Lake radii grow from 42×32 to 70×46: approximately 2.4 times the water surface. Its center moves west to preserve the east shore and original pier. Existing trees/grass newly covered by water or corrected roads are cleared, while original procedural forest generation is retained.
 
-The original avatar sprite, construction and camera controls, world geometry, forest, lake, paths, photos, clue coordinates/order/text, riddles, UI and styling remain intact. The existing supporting-cast update is retained.
+## Brown paths and navigation
+
+The brown visible strips are the roads. Road geometry, the map and automatic travel share one segment network. Inter-place travel uses the road graph and each destination’s front entrance, rather than an off-road shortcut. Short collision-cleared approaches connect the avatar and each clue to that network. Visible road sections that crossed barrels, houses or the tavern are rerouted.
+
+The map has nine destination buttons that walk at the original pace, without teleporting. It displays the actual roads, water, islands, clue progress and player position. All 33 original clues, riddles, photos, captions and sequence remain intact, along with the original avatar asset, construction and camera controls. Photo/riddle UI and styling outside the map remain unchanged.
+
+Retained navigation fixes include safe edge/shore approaches for unreachable markers, distant clue taps, final-clue arrival, immediate manual takeover, overlay pausing, ordered boat discovery and clear-ground disembarking.
 
 ## Verification
 
-Run from the repository root:
-
 ```sh
-node --loader ./tests/three-loader.mjs --test tests/navigation.test.mjs tests/cast-preservation.test.mjs
+node --loader ./tests/three-loader.mjs --test tests/navigation.test.mjs tests/cast-preservation.test.mjs tests/world-expansion.test.mjs
 ```
 
-16 tests pass. Tests execute the actual interaction/discovery functions and player/world code for all 33 clues at 20, 30 and 60 fps, check collisions and speed every frame, and verify photo order. Additional checks cover off-path starts, narrow gaps, dirt-path preference, manual takeover, overlay pausing, boat sequence/landing, and preservation of the artwork/world/content.
+23 tests pass: all 33 clues at 20/30/60 fps; all 81 pairs of destination entrances on the brown network; continuous clearance and matching rendered orientation for every road; walking/arrival at nine map destinations; bridge/island water rules; narrow gaps and manual movement; boat landings; original content, avatar and style preservation; finite transforms and valid opacity.
 
-Browser limitation: the private preview required sign-in. On the public GitHub site, clicking Begin could not start the scene because this cloud browser reported WebGL disabled. These results are runtime simulations, not a completed visual browser walkthrough. Visual play-testing remains outstanding.
+Visual verification remains outstanding: this cloud browser has WebGL disabled, so the public game cannot get past Begin; the private preview also requires sign-in. Automated checks use the actual world/player and interaction code and are not a completed visual browser walkthrough.

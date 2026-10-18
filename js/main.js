@@ -1,13 +1,13 @@
-import { clueTarget } from "./navigation.js?v=20261018nav";
+import { clueTarget } from "./navigation.js?v=20261018world";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
 
 import * as THREE from "three";
-import { CONFIG, DEBUG } from "./config.js?v=20261018nav";
-import { CLUES } from "./clues.js?v=20261018nav";
-import { buildWorld, ZONES } from "./world.js?v=20261018nav";
-import { Player } from "./player.js?v=20261018nav";
-import { buildNPCs } from "./npcs.js?v=20261018nav";
-import { UI } from "./ui.js?v=20261018nav";
+import { CONFIG, DEBUG } from "./config.js?v=20261018world";
+import { CLUES } from "./clues.js?v=20261018world";
+import { buildWorld, ZONES } from "./world.js?v=20261018world";
+import { Player } from "./player.js?v=20261018world";
+import { buildNPCs } from "./npcs.js?v=20261018world";
+import { UI } from "./ui.js?v=20261018world";
 
 // ---------- renderer / scene ----------
 const canvas = document.getElementById("game");
@@ -473,6 +473,13 @@ function walkToClue(next) {
   UI.blip();
 }
 UI.onGuideTap(() => walkToClue(CLUES.find(c => !found.has(c.id))));
+UI.onPlaceSelect = place => {
+  if(modalOpen)return;
+  if(player.riding){UI.banner("Hop out near the shore to explore on foot ✨");return;}
+  player.autoTarget={...place.entry,radius:1.1,zone:place.id,destinationId:place.id};
+  UI.setGuide(`🚶 Walking to ${place.name}… (touch the joystick to take over)`);
+};
+player.onPlaceArrival = id => {updateGuide();UI.banner(`Welcome to ${ZONES.find(p=>p.id===id).name} ✨`);};
 player.onWalkCancel = updateGuide;
 player.onWalkBlocked = () => { updateGuide(); UI.banner("Try moving into the clearing, then tap the clue again ✨"); };
 
@@ -662,7 +669,7 @@ function animate() {
   }
 
   UI.updateDialogue(dt, project);
-  if (UI.isMapOpen()) UI.drawMap(ZONES, CLUES, found, p.x, p.z);
+  if (UI.isMapOpen()) UI.drawMap(ZONES, CLUES, found, p.x, p.z, world);
   renderer.render(scene, camera);
 }
 animate();

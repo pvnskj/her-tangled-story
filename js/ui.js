@@ -1,6 +1,7 @@
 // UI: HUD, joystick, dialogue bubbles, modals, banners, tiny WebAudio sounds.
 
-import { CONFIG } from "./config.js";
+import { CONFIG } from "./config.js?v=20261018world";
+import { ZONES } from "./world-layout.js?v=20261018world";
 
 function el(id) { return document.getElementById(id); }
 
@@ -36,6 +37,14 @@ export const UI = {
     el("finale-replay").addEventListener("click", () => location.reload());
     el("map-toggle").addEventListener("click", () => this.openMap());
     el("map-close").addEventListener("click", () => this.closeMap());
+    const destinations=el("map-destinations");
+    for(const [i,place] of ZONES.entries()) {
+      const button=document.createElement("button");button.type="button";
+      button.textContent=`${i+1}. ${place.name}`;
+      button.setAttribute("aria-label",`Walk to ${place.name}`);
+      button.addEventListener("click",()=>{this.closeMap();this.onPlaceSelect?.(place);});
+      destinations.appendChild(button);
+    }
     el("cam-toggle").addEventListener("click", () => {
       const mode = window.__player?.cycleCamMode();
       const labels = { first: "👁️", top: "🦅" };
@@ -54,10 +63,10 @@ export const UI = {
     this._mapOpen = false;
   },
   isMapOpen() { return this._mapOpen; },
-  drawMap(zones, clues, found, px, pz) {
+  drawMap(zones, clues, found, px, pz, world) {
     const cv = el("map-canvas");
     const g = cv.getContext("2d");
-    const S = cv.width, C = S / 2, R = S / 2 - 10, B = 114;
+    const S = cv.width, C = S / 2, R = S / 2 - 10, B = CONFIG.WORLD_BOUND + 8;
     const mx = (x) => C + (x / B) * R, mz = (z) => C + (z / B) * R;
     g.clearRect(0, 0, S, S);
     const bg = g.createRadialGradient(C, C, 10, C, C, R);
@@ -67,9 +76,13 @@ export const UI = {
     g.strokeStyle = "rgba(245,214,123,0.22)"; g.lineWidth = 1;
     g.beginPath(); g.arc(C, C, R * 0.66, 0, 7); g.stroke();
     g.beginPath(); g.arc(C, C, R * 0.33, 0, 7); g.stroke();
-    // lake hint
+    // Draw the actual water and the exact brown roads used by walking routes.
     g.fillStyle = "rgba(95,145,225,0.4)";
-    g.beginPath(); g.ellipse(mx(-80), mz(20), 28 * (R / B), 22 * (R / B), 0, 0, 7); g.fill();
+    for(const water of world.waters){g.beginPath();g.ellipse(mx(water.x),mz(water.z),water.rx*R/B,water.rz*R/B,0,0,7);g.fill();}
+    g.fillStyle="#726b62";
+    for(const island of world.dryIslands||[]){g.beginPath();g.arc(mx(island.x),mz(island.z),island.r*R/B,0,7);g.fill();}
+    g.strokeStyle="#9a8563";g.lineWidth=2.5;g.lineCap="round";
+    for(const [ax,az,bx,bz] of world.paths){g.beginPath();g.moveTo(mx(ax),mz(az));g.lineTo(mx(bx),mz(bz));g.stroke();}
     // valley — shaded corridor running forest → Snuggly Duckling on the east side
     g.fillStyle = "rgba(90,140,90,0.28)";
     const vx1 = mx(58), vx2 = mx(108), vz1 = mz(-45), vz2 = mz(50);
@@ -80,7 +93,7 @@ export const UI = {
     g.fillText("⛰ Valley", mx(83), mz(-52));
     // zones with per-zone clue progress
     g.textAlign = "center";
-    for (const zn of zones) {
+    for (const [index, zn] of zones.entries()) {
       const zx = mx(zn.x), zy = mz(zn.z);
       const total = clues.filter((c) => c.zone === zn.id).length;
       const got = clues.filter((c) => c.zone === zn.id && found.has(c.id)).length;
@@ -89,10 +102,13 @@ export const UI = {
       g.beginPath(); g.arc(zx, zy, done ? 9 : 7, 0, 7); g.fill();
       g.strokeStyle = "#7a5a20"; g.lineWidth = 2; g.stroke();
       g.fillStyle = "#f7ecd4"; g.font = "11px Georgia";
-      g.fillText(zn.name, zx, zy - 14);
+      g.fillText(["Tower","Corona","Duckling","Castle","Cave Tunnel","Sundrop","Dark Kingdom","Forest","Lake"][index], zx, zy - 14);
+      g.fillStyle="#332545";g.font="bold 10px Georgia";g.fillText(String(index+1),zx,zy+3);
       g.fillStyle = done ? "#ffd76a" : "rgba(247,236,212,0.8)"; g.font = "10px Georgia";
-      g.fillText(`${got}/${total}`, zx, zy + 22);
+      if(total)g.fillText(`${got}/${total}`, zx, zy + 22);
     }
+    const festival=world.festival;
+    if(festival){g.fillStyle="#eecb7e";g.font="10px Georgia";g.fillText("✦",mx(festival.x),mz(festival.z));g.fillText(`${clues.filter(c=>c.zone==='festival'&&found.has(c.id)).length}/5`,mx(festival.x),mz(festival.z)+13);}
     // her live marker (pulsing)
     const pulse = 6 + Math.sin(performance.now() * 0.006) * 2;
     g.fillStyle = "#ff6a9a";

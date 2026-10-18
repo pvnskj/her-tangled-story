@@ -8,7 +8,7 @@ export const CONFIG = {
     "your story — and every piece led me to you. (Jordan: replace this " +
     "text with your own message.)",
 
-  WORLD_BOUND: 114,      // playable half-extent (world is ~240x240)
+  WORLD_BOUND: 204,      // playable half-extent (expanded world is ~432x432)
   PLAYER_SPEED: 11,       // units per second
   INTERACT_RADIUS: 5,     // tap / E discovery radius
   PROMPT_RADIUS: 7,       // "!" prompt appears within this radius

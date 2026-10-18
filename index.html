@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Her Tangled Story — a 3D birthday adventure</title>
-<link rel="stylesheet" href="css/style.css?v=20261011c">
+<link rel="stylesheet" href="css/style.css?v=20261018world">
 <script type="importmap">
 {
   "imports": {
@@ -90,11 +90,13 @@
   <div id="map-overlay" class="modal hidden">
     <div class="panel map-panel">
       <div id="map-head">🗺️ Valley Map</div>
-      <canvas id="map-canvas" width="340" height="340"></canvas>
+      <canvas id="map-canvas" width="440" height="440"></canvas>
+      <p class="map-help">Nine places · Tap a name to walk along the brown paths</p>
+      <div id="map-destinations" aria-label="Places to explore"></div>
       <button id="map-close">Close ✕</button>
     </div>
   </div>
 
-  <script type="module" src="js/main.js?v=20261018nav"></script>
+  <script type="module" src="js/main.js?v=20261018world"></script>
 </body>
 </html>

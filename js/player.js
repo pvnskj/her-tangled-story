@@ -2,8 +2,8 @@
 // collisions (bounds, circle colliders, water unless boating/on dock).
 
 import * as THREE from "three";
-import { CONFIG } from "./config.js";
-import { navigationFor } from "./navigation.js?v=20261018nav";
+import { CONFIG } from "./config.js?v=20261018world";
+import { navigationFor } from "./navigation.js?v=20261018world";
 
 export class Player {
   constructor(scene, world) {
@@ -138,6 +138,9 @@ export class Player {
           }
         }
         if (window.terrainHeight) p.y += (window.terrainHeight(p.x, p.z) - p.y) * Math.min(1, dt * 10);
+        if (this._routeIndex >= this._route.length && this.autoTarget.destinationId) {
+          const target=this.autoTarget;this.autoTarget=null;this.onPlaceArrival?.(target.destinationId);
+        }
         // Keep the target until main.js dispatches the matching clue/NPC interaction.
         return;
       }

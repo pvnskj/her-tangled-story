@@ -1,7 +1,7 @@
 // Plan on the existing dirt paths, with clearance around the unchanged scenery.
 // A weighted grid also connects off-path clues and safe points on the pier/shore.
 export class Navigation {
-  constructor(world, bound = 114) {
+  constructor(world, bound = world.bound || 114) {
     this.world = world; this.bound = bound; this.step = .75;
     this.buckets = new Map();
     for (const c of world.colliders) {
@@ -34,7 +34,12 @@ export class Navigation {
     if (Math.abs(x) > this.bound || Math.abs(z) > this.bound) return false;
     const d = this.world.dockRect;
     const dock = d && x >= d.x0 && x <= d.x1 && z >= d.z0 && z <= d.z1;
-    if (!dock && this.world.waters.some(w => ((x - w.x) / w.rx) ** 2 + ((z - w.z) / w.rz) ** 2 < 1)) return false;
+    const island = (this.world.dryIslands || []).some(i => Math.hypot(x-i.x,z-i.z) <= i.r-.5);
+    const bridge = (this.world.bridges || []).some(([ax,az,bx,bz]) => {
+      const dx=bx-ax,dz=bz-az,t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz)));
+      return Math.hypot(x-ax-t*dx,z-az-t*dz)<2.3;
+    });
+    if (!dock && !island && !bridge && this.world.waters.some(w => ((x - w.x) / w.rx) ** 2 + ((z - w.z) / w.rz) ** 2 < 1)) return false;
     return (this.buckets.get(`${Math.floor(x / 8)},${Math.floor(z / 8)}`) || []).every(c => Math.hypot(x - c.x, z - c.z) >= c.r + clearance);
   }
   segmentClear(a, b, clearance = .55) {
@@ -73,7 +78,40 @@ export class Navigation {
     }
     return result;
   }
+  roadRoute(start, end) {
+    const nodes = new Map(), key = p => `${p.x},${p.z}`;
+    const node = (x,z) => {const k=`${x},${z}`;if(!nodes.has(k))nodes.set(k,{x,z,edges:[]});return nodes.get(k);};
+    for(const [ax,az,bx,bz] of this.world.paths || []) {
+      const a=node(ax,az),b=node(bx,bz);
+      if(!this.segmentClear(a,b,.7))continue;
+      const d=Math.hypot(bx-ax,bz-az);a.edges.push([key(b),d]);b.edges.push([key(a),d]);
+    }
+    const from=key(start),to=key(end);
+    if(!nodes.has(from)||!nodes.has(to))return null;
+    const distance=new Map([[from,0]]),parent=new Map(),open=new Set([from]);
+    while(open.size){let id=null,best=Infinity;for(const candidate of open)if(distance.get(candidate)<best){id=candidate;best=distance.get(candidate);}open.delete(id);
+      if(id===to){const points=[];for(let at=to;at;at=parent.get(at)){const p=nodes.get(at);points.push({x:p.x,z:p.z});}return points.reverse();}
+      for(const [next,length] of nodes.get(id).edges){const d=best+length;if(d<(distance.get(next)??Infinity)){distance.set(next,d);parent.set(next,id);open.add(next);}}
+    }
+    return null;
+  }
   route(start, target) {
+    const places=[...(this.world.zones || []),...(this.world.festival?[this.world.festival]:[])];
+    const destination=places.find(p=>p.id===target.zone);
+    if(!destination)return this.findRoute(start,target);
+    const origin=this.world.zoneAt?.(start.x,start.z) || places.reduce((best,p)=>!best||Math.hypot(start.x-p.entry.x,start.z-p.entry.z)<Math.hypot(start.x-best.entry.x,start.z-best.entry.z)?p:best,null);
+    if(origin?.id===destination.id&&!target.destinationId)return this.findRoute(start,target);
+    if(!origin)return this.findRoute(start,target);
+    const approach=this.findRoute(start,{...origin.entry,radius:1.1});
+    const road=this.roadRoute(origin.entry,destination.entry);
+    const finish=this.findRoute(destination.entry,target);
+    if(!approach||!road||!finish)return null;
+    const last=approach.at(-1)||start;
+    if(!this.segmentClear(last,origin.entry,.7))return null;
+    // Only the approach to a place/clue leaves the visible brown network.
+    return [...approach,...road,...finish];
+  }
+  findRoute(start, target) {
     const n = this.size, count = this.cost.length, radius = Math.max(.5, (target.radius || 1.8) - .35);
     if (Math.hypot(start.x - target.x, start.z - target.z) < radius) return [];
     // Connect the exact player position to a nearby clear grid node, never teleport.
@@ -117,7 +155,7 @@ export class Navigation {
 
 const navigators = new WeakMap();
 const targets = new WeakMap();
-export function navigationFor(world, bound = 114) {
+export function navigationFor(world, bound = world.bound || 114) {
   if (!navigators.has(world)) navigators.set(world, new Navigation(world, bound));
   return navigators.get(world);
 }
@@ -126,7 +164,7 @@ export function navigationFor(world, bound = 114) {
 export function clueTarget(clue, npcs, world) {
   if (clue.kind === 'villager') {
     const npc = npcs.find(n => n.clueId === clue.id);
-    return npc ? {x: npc.group.position.x, z: npc.group.position.z, radius: 3.5} : null;
+    return npc ? {x: npc.group.position.x, z: npc.group.position.z, radius: 3.5, zone: clue.zone} : null;
   }
   const water = world.waters.some(w => ((clue.x - w.x) / w.rx) ** 2 + ((clue.z - w.z) / w.rz) ** 2 < 1);
   if (!targets.has(world)) targets.set(world, new Map());
@@ -141,7 +179,7 @@ export function clueTarget(clue, npcs, world) {
     }
     // Some original markers sit inside solid barrels/buildings. Reach them from
     // their edge, without moving the marker or requiring entry into the scenery.
-    cache.set(clue.id, {x: clue.x, z: clue.z, radius: Math.max(water ? 12 : 2.5, nearest + .5)});
+    cache.set(clue.id, {x: clue.x, z: clue.z, zone: clue.zone, radius: Math.max(water ? 12 : 2.5, nearest + .5)});
   }
   return {...cache.get(clue.id)};
 }

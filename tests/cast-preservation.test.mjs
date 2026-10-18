@@ -11,8 +11,13 @@ const current=p=>fs.readFileSync(new URL('../'+p,import.meta.url));
 const source=p=>original(p).toString();
 const asModule=s=>import('data:text/javascript;base64,'+Buffer.from(s).toString('base64'));
 
-test('Original player artwork, photo UI, styles and configuration remain byte-identical',()=>{
-  for(const file of ['assets/sprite.png','js/ui.js','css/style.css','js/config.js'])assert.ok(original(file).equals(current(file)),file);
+test('Original avatar asset, clue/photo UI, styling and pace remain intact',()=>{
+  assert.ok(original('assets/sprite.png').equals(current('assets/sprite.png')));
+  const oldUI=source('js/ui.js'),nowUI=current('js/ui.js').toString();
+  assert.equal(nowUI.slice(nowUI.indexOf('  // ---------- joystick')),oldUI.slice(oldUI.indexOf('  // ---------- joystick')));
+  const oldCSS=source('css/style.css'),nowCSS=current('css/style.css').toString();
+  assert.equal(nowCSS.split('/* ---------- world map')[0],oldCSS.split('/* ---------- world map')[0]);
+  assert.equal(current('js/config.js').toString().replace('WORLD_BOUND: 204','WORLD_BOUND: 114').replace('expanded world is ~432x432','world is ~240x240'),source('js/config.js'));
 });
 test('Original avatar construction and camera controls remain intact',()=>{
   const old=source('js/player.js'),now=current('js/player.js').toString();
@@ -20,11 +25,17 @@ test('Original avatar construction and camera controls remain intact',()=>{
   assert.equal(section(now,'    const tex =','    this.vel ='),section(old,'    const tex =','    this.vel ='));
   assert.equal(section(now,'  cycleCamMode()','  update(dt)'),section(old,'  cycleCamMode()','  update(dt)'));
   assert.equal(now.slice(now.indexOf('  updateCamera(')),old.slice(old.indexOf('  updateCamera(')));
-  assert.equal(current('index.html').toString().replaceAll('js/main.js?v=20261018nav','js/main.js?v=20261011c'),source('index.html'));
+  assert.equal(current('index.html').toString().replace('css/style.css?v=20261018world','css/style.css?v=20261011c').split('  <!-- world map overlay -->')[0],source('index.html').split('  <!-- world map overlay -->')[0]);
 });
-test('World geometry, forest, lake, boats, paths and scenery are unchanged; only two place labels differ',()=>{
-  const normalized=current('js/world.js').toString().replaceAll('name: "Rapunzel’s Tower"','name: "Tower Hill"').replaceAll('name: "The Kingdom of Corona"','name: "Corona Village"');
-  assert.equal(normalized,source('js/world.js'));
+test('Original lighting, materials, forest generation, tower, village, tavern and festival remain intact',()=>{
+ const before=source('js/world.js'),after=current('js/world.js').toString();
+ const section=(s,a,b)=>s.slice(s.indexOf(a),s.indexOf(b,s.indexOf(a)));
+ for(const [a,b] of [
+  ['  // ---------- dusk sky','  // ---------- terrain'],
+  ['  const mat =','  // ---------- dirt walking paths'],
+  ['  // ---------- Tavern','  // ---------- Lake'],
+  ['  // ---------- boat ----------','  // ---------- fireflies']
+ ])assert.equal(section(after,a,b),section(before,a,b),a);
 });
 test('All 33 clue locations, photo captions, hints, riddles and sequence fields are unchanged',async()=>{
   const old=(await asModule(source('js/clues.js'))).CLUES;
