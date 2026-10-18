@@ -14,7 +14,7 @@ const ORIGINAL_CLUES = [
     riddle: { prompt: "What am I?", options: ["Tiny", "TINY", "TinY"] } },
   { id: 3, zone: "tower", x: 8, z: -84, kind: "villager", photo: P("02-toddler-temple-fixed.jpg"), caption: "Ack! Big stone elephant! You weren't scared though. You never were. That's why I like you. — Pascal",
     npc: "Eugene Fitzherbert (Flynn Rider)", hint: "They say golden sparkles hide behind the tower stairs… keep looking around here." },
-  { id: 4, zone: "tower", x: -7, z: -100, kind: "hidden", photo: P("04-toddler-field.jpg"), caption: "Running full speed, no shoes, no fear. I spent years guarding a kingdom — you were guarding your own joy. — Captain of the Guard" },
+  { id: 4, zone: "tower", x: -7, z: -100, kind: "hidden", photo: P("04-toddler-field.jpg"), caption: "Barefoot and fearless in the open field." },
   { id: 5, zone: "tower", x: 10, z: -95, kind: "animal", photo: P("11-toddler-overalls.jpg"), caption: "Studio portrait, very official. You look like you're about to announce something important. Probably snack time. — Stan", critter: "rabbit" },
 
   // ---- Forest (6-11) ----
@@ -22,16 +22,16 @@ const ORIGINAL_CLUES = [
   { id: 7, zone: "forest", x: 88, z: -48, kind: "animal", photo: P("03-girl-palms.jpg"), caption: "Arms crossed. That look. You were already the kind of kid who knew her own mind. Owl respects that. — Cassandra", critter: "rabbit" },
   { id: 8, zone: "forest", x: 78, z: -22, kind: "hidden", photo: P("09-girl-bushes.jpg"), caption: "Peeking through the roses like a little spy! Were you hiding, or were you hunting for adventure? — Fidella" },
   { id: 9, zone: "forest", x: 95, z: -32, kind: "hidden", photo: P("12-child-pink-traditional.jpg"), caption: "What a serious little face! You look like you're about to deliver very important news. Hook Hand listens. — Hook Hand" },
-  { id: 10, zone: "forest", x: 72, z: -52, kind: "animal", photo: P("13-teen-giraffe.jpg"), caption: "A giraffe! Butterflies! You look so grown up here. The Snuggly Duckling salutes a young dreamer! — Big Nose", critter: "chameleon" },
+  { id: 10, zone: "forest", x: 72, z: -52, kind: "animal", photo: P("13-teen-giraffe.jpg"), caption: "Teen years — giraffes and butterfly dreams.", critter: "chameleon" },
   { id: 11, zone: "forest", x: 85, z: -15, kind: "reflection", photo: P("14-panda-festival.jpg"), caption: "You and the giant panda! Both doing peace signs! This goes in my collection of wonderful things. — Vladimir" },
 
   // ---- Tavern (12-16) ----
-  { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: P("15-barbie-crown.jpg"), caption: "A Barbie crown at McDonald's! Even I say this is the best look I've ever seen. — Attila",
+  { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: P("15-barbie-crown.jpg"), caption: "Barbie crown, McDonald's, pure joy.",
     npc: "Hook Hand", hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
   { id: 13, zone: "tavern", x: 96, z: 52, kind: "hidden", photo: P("16-restaurant-umbrellas.jpg"), caption: "..." },
   { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: P("19-beach-couple.jpg"), caption: "Whoa — a beach kiss under the palm tree! Shorty loves love! Is this the good part? — Shorty",
     npc: "Shorty", hint: "Somethin' shiny under the bench where I nap. Don't tell the others." },
-  { id: 15, zone: "tavern", x: 85, z: 50, kind: "hidden", photo: P("20-lavender-dress.jpg"), caption: "Peace sign among the plants! You look so calm and happy here. — Fang" },
+  { id: 15, zone: "tavern", x: 85, z: 50, kind: "hidden", photo: P("20-lavender-dress.jpg"), caption: "Serene in lavender, surrounded by green." },
   { id: 16, zone: "tavern", x: 93, z: 49.5, kind: "hidden", photo: P("21-desert-sand.jpg"), caption: "Kicking up sand in the desert! Now THAT'S energy! — Greno" },
 
   // ---- Village (17-23) ----
@@ -51,15 +51,15 @@ const ORIGINAL_CLUES = [
   { id: 24, zone: "lake", x: -56, z: 24, kind: "reflection", photo: P("10-greensaree-print.jpg"), caption: "Oh, my dear. This photo is a treasure. This lantern burns brighter just looking at you. — Queen Arianna" },
   { id: 25, zone: "lake", x: -50, z: 16, kind: "villager", photo: P("08-whitesaree.jpg"), caption: "Can a photo capture pure grace? Result: YES. Fourteen thumbs up! — Varian & Ruddiger",
     npc: "Lance Strongbow", hint: "The lake shows memories in its reflection. And the old boat? It remembers too." },
-  { id: 26, zone: "lake", x: -62, z: 20, kind: "boat", photo: P("28-starry-paintings.jpg"), caption: "White saree among yellow flowers — light in the darkness. You bring light wherever you go. — King Edmund" },
+  { id: 26, zone: "lake", x: -62, z: 20, kind: "boat", photo: P("28-starry-paintings.jpg"), caption: "Grace in white, glowing like starlight." },
   { id: 27, zone: "lake", x: -62, z: 36, kind: "reflection", photo: P("29-sunset-arms.jpg"), caption: "Arms open to the whole sky at sunset. I've never seen spirit like yours. — Adira" },
   { id: 28, zone: "lake", x: -66, z: 24, kind: "animal", photo: P("30-water-selfie.jpg"), caption: "Sunglasses by the water, completely unstoppable. Even the enchanted reflection is jealous. — Zhan Tiri", critter: "duck" },
 
   // ---- Festival (29-33) ----
-  { id: 29, zone: "festival", x: -57, z: -53, kind: "hidden", photo: P("05-mountains.jpg"), caption: "Mountains behind you, peace sign up! The Sundrop flower blooms brightest for you! — Kiera" },
+  { id: 29, zone: "festival", x: -57, z: -53, kind: "hidden", photo: P("05-mountains.jpg"), caption: "On top of the world, peace sign high." },
   { id: 30, zone: "festival", x: -40, z: -61, kind: "hidden", photo: P("07-glasses-selfie.jpg"), caption: "That confident smile! This is the best view in the whole kingdom! — Lance" },
   { id: 31, zone: "festival", x: -48, z: -68, kind: "animal", photo: P("31-beach-umbrella.jpg"), caption: "He knows that smile — that's the look of someone in love. Follow him — Flynn is waiting at the pier. — Maximus", critter: "chameleon" },
-  { id: 32, zone: "festival", x: -38, z: -56, kind: "hidden", photo: P("32-collage-finale.jpg"), caption: "I collected every version of you — the toddler, the dreamer, the queen. And I'd choose every single one of them again. Now... how about a boat ride? — Flynn Rider" },
+  { id: 32, zone: "festival", x: -38, z: -56, kind: "hidden", photo: P("32-collage-finale.jpg"), caption: "Every version of you, in one frame." },
   { id: 33, zone: "festival", x: -45, z: -65, kind: "finale", photo: P("06-greensaree.jpg"), caption: "The grand finale." },
 ];
 
