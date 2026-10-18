@@ -314,8 +314,8 @@ function interactWith(target) {
       const hw = npcHeadWorld(n);
       const nextId = CLUES.find((c) => !found.has(c.id))?.id;
       if (clue && !found.has(clue.id) && clue.id === nextId) {
-        // it's their turn in the story — give the hint and the clue
-        UI.dialogue(n.name, n.hint, hw.x, hw.y, hw.z);
+        // it's their turn in the story — tell the story, then give the clue
+        UI.dialogue(n.name, clue.caption, hw.x, hw.y, hw.z);
         if(clue.kind==='villager')setTimeout(() => discover(clue), 1700);
         else walkToClue(clue);
       } else if (clue && !found.has(clue.id)) {

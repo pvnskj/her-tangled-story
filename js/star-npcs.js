@@ -29,7 +29,7 @@ export function buildNPCs(scene,world){
  for(const n of actors.npcs){
   const clue=CLUES.find(c=>c.characters.includes(n.castId));
   if(!clue){delete n.clueId;continue;}
-  n.clueId=clue.id;n.hint=clue.hint;n.kind='named';delete n.patrol;
+  n.clueId=clue.id;n.hint=clue.hint;n.line=clue.caption;n.kind='named';delete n.patrol;
   if(n.castId!=='pascal'){
    const partner=clue.characters.indexOf(n.castId)>0;
    let x=clue.x+(partner?1.8:0),z=clue.z+(partner?1.5:0);
