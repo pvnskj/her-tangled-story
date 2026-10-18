@@ -366,8 +366,8 @@ function interactWith(target) {
       if (clue && !found.has(clue.id) && clue.id === nextId) {
         // it's their turn — run the interaction (riddle/choice/game/dialogue), then discover
         runInteraction(n, clue).then(() => {
-          if(clue.kind==='villager')setTimeout(() => discover(clue), 500);
-          else walkToClue(clue);
+          // Photo always appears after the interaction/game
+          setTimeout(() => discover(clue), 500);
         });
       } else if (clue && !found.has(clue.id)) {
         // not yet — tease the story without spoiling
