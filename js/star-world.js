@@ -88,6 +88,47 @@ export function buildWorld(scene){
   }object.instanceMatrix.needsUpdate=true;
  }
  const updateOriginal=world.update;
+ // ---------- filler grass: cover the vast areas between the nine star points ----------
+ // The relocated grass clusters around destinations; this fills the in-between meadows.
+ {
+   const bg = new THREE.BufferGeometry();
+   bg.setAttribute("position", new THREE.Float32BufferAttribute([
+     -0.16, 0, 0, 0.16, 0, 0, 0.05, 0.72, 0.06,
+   ], 3));
+   bg.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
+   bg.computeVertexNormals();
+   const isLow = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+     (window.innerWidth < 500 && navigator.maxTouchPoints > 0);
+   const n = isLow ? 40000 : 90000;
+   const m = new THREE.InstancedMesh(bg, new THREE.MeshStandardMaterial({
+     roughness: 1, side: THREE.DoubleSide }), n);
+   const d = new THREE.Object3D(), col = new THREE.Color();
+   let seed = 987654321;
+   const rand = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+   let placed = 0, guard = 0;
+   while (placed < n && guard++ < n * 6) {
+     const x = -290 + rand() * 580, z = -290 + rand() * 580;
+     if (Math.hypot(x, z) > 295) continue; // stay in world
+     // keep out of the nine destination clearings
+     let inZone = false;
+     for (const zn of ZONES) {
+       if (Math.hypot(x - zn.x, z - zn.z) < zn.r + 4) { inZone = true; break; }
+     }
+     if (inZone) continue;
+     // keep the brown star roads clear
+     if (PATHS.some(p => segmentDistance(x, z, p) < 2.5)) continue;
+     const s = 0.8 + rand() * 0.7;
+     d.position.set(x, 0, z);
+     d.scale.set(s, s * (0.9 + rand() * 0.5), s);
+     d.rotation.y = rand() * 6;
+     d.updateMatrix(); m.setMatrixAt(placed, d.matrix);
+     m.setColorAt(placed, col.setHSL(0.22 + rand() * 0.08, 0.5, 0.35 + rand() * 0.15));
+     placed++;
+   }
+   m.count = placed;
+   m.name = 'Filler grass';
+   scene.add(m);
+ }
  world.update=(dt,t,px,pz)=>{
   for(const {attribute,shifts} of pointBatches)for(let i=0;i<shifts.length;i++){attribute.array[i*3]-=shifts[i].x;attribute.array[i*3+2]-=shifts[i].z;}
   const place=world.zoneAt(px,pz),d=place?offsetFor(place.id):{x:0,z:0};
