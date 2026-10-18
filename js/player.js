@@ -2,8 +2,8 @@
 // collisions (bounds, circle colliders, water unless boating/on dock).
 
 import * as THREE from "three";
-import { CONFIG } from "./config.js?v=20261018world";
-import { navigationFor } from "./navigation.js?v=20261018world";
+import { CONFIG } from "./config.js?v=20261018story";
+import { navigationFor } from "./navigation.js?v=20261018story";
 
 export class Player {
   constructor(scene, world) {
@@ -112,7 +112,8 @@ export class Player {
             this.autoTarget = null; this.onWalkBlocked?.(); return;
           }
         }
-        let remaining = CONFIG.PLAYER_SPEED * dt, dx = 0, dz = 0;
+        const walkSpeed=Math.min(CONFIG.PLAYER_SPEED,this.autoWalkSpeed||CONFIG.PLAYER_SPEED);
+        let remaining = walkSpeed * dt, dx = 0, dz = 0;
         while (remaining > 0 && this._routeIndex < this._route.length) {
           const q = this._route[this._routeIndex], distance = Math.hypot(q.x - p.x, q.z - p.z);
           if (distance < .001) { this._routeIndex++; continue; }
@@ -124,7 +125,7 @@ export class Player {
           p.x = next.x; p.z = next.z; remaining -= step;
           if (step === distance) this._routeIndex++;
         }
-        this.moving = remaining < CONFIG.PLAYER_SPEED * dt;
+        this.moving = remaining < walkSpeed * dt;
         this.svel.set(0, 0, 0); // no glide past the arrival point or into a photo
         if (this.moving) {
           this.bobT += dt * 8;

@@ -1,7 +1,7 @@
 // UI: HUD, joystick, dialogue bubbles, modals, banners, tiny WebAudio sounds.
 
-import { CONFIG } from "./config.js?v=20261018world";
-import { ZONES } from "./world-layout.js?v=20261018world";
+import { CONFIG } from "./config.js?v=20261018story";
+import { ZONES } from "./world-layout.js?v=20261018story";
 
 function el(id) { return document.getElementById(id); }
 
@@ -83,14 +83,6 @@ export const UI = {
     for(const island of world.dryIslands||[]){g.beginPath();g.arc(mx(island.x),mz(island.z),island.r*R/B,0,7);g.fill();}
     g.strokeStyle="#9a8563";g.lineWidth=2.5;g.lineCap="round";
     for(const [ax,az,bx,bz] of world.paths){g.beginPath();g.moveTo(mx(ax),mz(az));g.lineTo(mx(bx),mz(bz));g.stroke();}
-    // valley — shaded corridor running forest → Snuggly Duckling on the east side
-    g.fillStyle = "rgba(90,140,90,0.28)";
-    const vx1 = mx(58), vx2 = mx(108), vz1 = mz(-45), vz2 = mz(50);
-    g.beginPath();
-    g.moveTo(vx1, vz1); g.lineTo(vx2, vz1); g.lineTo(vx2, vz2); g.lineTo(vx1, vz2);
-    g.closePath(); g.fill();
-    g.fillStyle = "rgba(140,200,140,0.9)"; g.font = "10px Georgia";
-    g.fillText("⛰ Valley", mx(83), mz(-52));
     // zones with per-zone clue progress
     g.textAlign = "center";
     for (const [index, zn] of zones.entries()) {
@@ -102,7 +94,7 @@ export const UI = {
       g.beginPath(); g.arc(zx, zy, done ? 9 : 7, 0, 7); g.fill();
       g.strokeStyle = "#7a5a20"; g.lineWidth = 2; g.stroke();
       g.fillStyle = "#f7ecd4"; g.font = "11px Georgia";
-      g.fillText(["Tower","Corona","Duckling","Castle","Cave Tunnel","Sundrop","Dark Kingdom","Forest","Lake"][index], zx, zy - 14);
+      g.fillText(zn.mapLabel, zx, zy - 14);
       g.fillStyle="#332545";g.font="bold 10px Georgia";g.fillText(String(index+1),zx,zy+3);
       g.fillStyle = done ? "#ffd76a" : "rgba(247,236,212,0.8)"; g.font = "10px Georgia";
       if(total)g.fillText(`${got}/${total}`, zx, zy + 22);

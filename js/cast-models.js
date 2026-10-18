@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getCharacter } from './cast.js?v=20261018cast';
+import { getCharacter } from './cast.js?v=20261018story';
 const material = color => new THREE.MeshStandardMaterial({color,roughness:.9});
 function mesh(parent,geo,color,x=0,y=0,z=0){const m=new THREE.Mesh(geo,material(color));m.position.set(x,y,z);parent.add(m);return m;}
 const box=(g,c,x,y,z,w,h,d)=>mesh(g,new THREE.BoxGeometry(w,h,d),c,x,y,z);
@@ -84,6 +84,12 @@ export function dressCharacter(n,c){
     case 'magic':
       {const orb=ball(prop,0xb08ace,0,.4,0,.2);orb.material.emissive.setHex(0x46285e);orb.material.emissiveIntensity=.3;moving.push(orb);break;}
   }
+  if(c.activity==='paint'){
+    for(const x of [-.45,.45])cylinder(g,0x8c6947,x,.85,1.5,.045,1.7);
+    box(g,0xe9d9b4,0,1.55,1.5,1.2,.9,.08);
+    ball(g,0xe1b84e,.24,1.72,1.44,.16);box(g,0x8baa76,-.18,1.35,1.44,.7,.15,.03);
+  }
+  if(c.activity==='alchemy')for(let i=0;i<3;i++){const bubble=ball(prop,0xa6e6ce,-.12,.6+i*.12,0,.035);bubble.userData.bubble=i;moving.push(bubble);}
   n.castRig={arms,prop,moving,baseY:prop.position.y,activity:c.activity};
 }
 
@@ -99,7 +105,27 @@ export function animateCharacter(n,t){
     if(r.activity==='paint'&&i===1)arm.rotation.x=-1.3+Math.sin(phase)*.3;
     if(r.activity==='sharpen'&&i===1)arm.rotation.z=Math.sin(phase)*.28;
   });
-  for(const object of r.moving){object.rotation.z=Math.sin(phase)*.12;if(r.activity==='magic')object.position.y=.4+Math.sin(phase)*.12;}
+  const wave=Math.sin(phase),reach=(wave+1)/2;
+  switch(r.activity){
+    case 'mirror':r.prop.rotation.y=wave*.25;r.arms[1].rotation.x=-1.4+wave*.15;break;
+    case 'map':case 'scroll':r.arms[1].rotation.x=-1.15+wave*.16;break;
+    case 'design':r.arms[1].rotation.z=wave*.25;break;
+    case 'rope':r.prop.rotation.y=wave*.3;r.arms[0].rotation.x=-1+wave*.3;break;
+    case 'flowers':r.arms[1].rotation.x=-1.1+wave*.35;r.prop.rotation.y=wave*.13;break;
+    case 'unicorn':r.prop.rotation.y=t*.25;r.arms[1].rotation.z=wave*.25;break;
+    case 'bake':r.arms[1].rotation.x=-1.2+wave*.25;r.arms[1].rotation.z=wave*.18;break;
+    case 'bread':case 'mug':r.prop.position.y=r.baseY+reach*.35;r.arms[0].rotation.x=-.9-reach*.65;break;
+    case 'sew':r.arms[1].rotation.x=-1.15+Math.sin(t*6)*.17;break;
+    case 'puppet':r.arms[0].rotation.x=-1+wave*.4;break;
+    case 'barrel':r.prop.position.y=r.baseY+reach*.16;r.prop.rotation.y=wave*.2;break;
+    case 'alchemy':r.arms[0].rotation.x=-1.15+wave*.3;break;
+  }
+  for(const object of r.moving){
+    object.rotation.z=wave*(r.activity==='alchemy'?.3:.12);
+    if(r.activity==='magic'){object.position.y=.4+wave*.12;object.scale.setScalar(1+wave*.12);}
+    if(r.activity==='puppet')object.position.y=Math.abs(wave)*.18;
+    if(object.userData.bubble!==undefined){const cycle=(t*.6+object.userData.bubble/3)%1;object.position.y=.5+cycle*.55;object.scale.setScalar(1-cycle*.8);}
+  }
 }
 
 function horse(color){
@@ -115,7 +141,7 @@ export function installAnimalCast(scene,npcs,chameleon){
   chameleon.name='Pascal';chameleon.castId='pascal';chameleon.description=getCharacter('pascal').description;chameleon.group.name='Pascal';
   const add=(id,group,headY,rig={})=>{const c=getCharacter(id);group.name=c.name;const n={...c,castId:id,group,headY,kind:'wanderer',flavor:c.line,castAnimal:true,animalRig:rig};npcs.push(n);return n;};
   // Reuse the existing village horse and its original grazing/swishing animation.
-  const maximus=scene.children.find(o=>o.isGroup&&o.position.x===-20&&o.position.z===70);
+  const maximus=scene.children.find(o=>o.userData.castHorse||(o.isGroup&&o.position.x===-20&&o.position.z===70));
   if(maximus){maximus.traverse(o=>{if(o.isMesh&&o.material?.color){const hex=o.material.color.getHex();if(hex===0x8a5a30||hex===0x6a4224){o.material=o.material.clone();o.material.color.setHex(hex===0x8a5a30?0xe9e3cc:0xcfbd8e);}}});add('maximus',maximus,4);}
   const fidella=horse(0xa98d79);fidella.group.position.set(-27,0,76);fidella.group.rotation.y=.7;scene.add(fidella.group);add('fidella',fidella.group,3,fidella);
   const raccoon=new THREE.Group();const body=ball(raccoon,0x8a8580,0,.45,0,.36);body.scale.set(1,1,1.4);ball(raccoon,0xb1a99e,0,.8,.27,.25);

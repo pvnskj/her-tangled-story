@@ -3,19 +3,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {scene,world,actors,Player,CLUES,targetFor} from './world-fixture.mjs';
+import {movePoint,ZONES} from '../js/world-layout.js';
 import {clueTarget,Navigation} from '../js/navigation.js';
 const main=fs.readFileSync(new URL('../js/main.js',import.meta.url),'utf8');
 const section=(a,b)=>main.slice(main.indexOf(a),main.indexOf(b,main.indexOf(a)));
 function harness(){
   const player=new Player(scene,world),found=new Set(),pending=[],modals=[],guides=[];
-  const UI={riddleModal:async()=>true,photoModal:c=>modals.push(c.id),finaleModal:()=>modals.push(33),setCounter(){},setGuide:s=>guides.push(s),blip(){},chime(){},fanfare(){},dialogue(){},banner(){}};
-  const context=vm.createContext({player,found,CLUES,npcs:actors.npcs,world,UI,GUIDES:{},CONFIG:{INTERACT_RADIUS:5,FINAL_MESSAGE:''},clueTarget,DEBUG:false,console,setTimeout:fn=>pending.push(fn),refreshMarkers(){}});
+  const UI={riddleModal:async()=>true,photoModal:c=>modals.push(c.id),finaleModal:()=>modals.push(32),setCounter(){},setGuide:s=>guides.push(s),blip(){},chime(){},fanfare(){},dialogue(){},banner(){}};
+  const context=vm.createContext({player,found,CLUES,npcs:actors.npcs,world,UI,GUIDES:{},CONFIG:{INTERACT_RADIUS:5,FINAL_MESSAGE:''},clueTarget,lakeFinale:{locked:false,startBoat(){modals.push(32)},startEscort(){}},DEBUG:false,console,setTimeout:fn=>pending.push(fn),refreshMarkers(){}});
   vm.runInContext('let modalOpen=false;'+section('function updateGuide()', 'UI.onModalClose =')+section('function npcHeadWorld(', '// ---------- boat ride')+section('function walkToClue(', 'UI.onGuideTap(')+section('const BOAT_PARK', 'function updateBoat('),context);
   const arrival=section('  // walk-into detection:', '  // chameleon hot/cold');
   return {player,found,pending,modals,guides,context,async tick(dt){player.update(dt);vm.runInContext(arrival,context);await Promise.resolve();},async close(){while(pending.length){pending.shift()();await Promise.resolve();}vm.runInContext('modalOpen=false',context);}};
 }
 
-for(const fps of [20,30,60]) test(`All 33 clues: actual guide/marker/NPC handlers, ${fps}fps, no water or collider penetration`,async()=>{
+for(const fps of [20,30,60]) test(`All 32 clues: actual guide/marker/NPC handlers, ${fps}fps, no water or collider penetration`,async()=>{
   const h=harness();let walkTime=0;
   for(const clue of CLUES){
     h.context.next=clue;
@@ -32,18 +33,18 @@ for(const fps of [20,30,60]) test(`All 33 clues: actual guide/marker/NPC handler
     assert.ok(h.found.has(clue.id),`clue ${clue.id} did not arrive at ${fps}fps`);
     walkTime+=frame/fps;
   }
-  assert.deepEqual(h.modals,CLUES.map(c=>c.id));assert.ok(walkTime<180);
+  assert.deepEqual(h.modals,CLUES.map(c=>c.id));assert.ok(walkTime<300,`Nine-place journey took ${walkTime.toFixed(1)} seconds`);console.log(`${fps}fps journey: ${walkTime.toFixed(1)}s walking`);
 });
 
 test('Off-path forest starts, dirt-path travel and narrow tree gaps remain navigable',()=>{
   const p=new Player(scene,world),nav=p.navigation;
-  for(const start of [{x:80,z:-40},{x:72,z:-25},{x:90,z:-55},{x:0,z:82},{x:-45,z:-60}]){
+  for(const start of [{x:80,z:-40},{x:72,z:-25},{x:90,z:-55}].map(p=>movePoint('forest',p))){
     if(!nav.canWalk(start.x,start.z))continue;
     p.teleport(start.x,start.z);p.setInput(0,0);p.autoTarget=targetFor(CLUES[5]);
-    let frame=0;for(;frame<3600;frame++){p.update(1/60);assert.ok(nav.canWalk(p.group.position.x,p.group.position.z));if(Math.hypot(p.group.position.x-70,p.group.position.z+30)<p.autoTarget.radius)break;}
+    let frame=0;for(;frame<3600;frame++){p.update(1/60);assert.ok(nav.canWalk(p.group.position.x,p.group.position.z));if(Math.hypot(p.group.position.x-CLUES[5].x,p.group.position.z-CLUES[5].z)<p.autoTarget.radius)break;}
     assert.ok(frame<3600,JSON.stringify(start));p.autoTarget=null;
   }
-  const route=nav.route({x:0,z:82},{x:80,z:45,radius:2.5});
+  const route=nav.route(ZONES.find(z=>z.id==='village').entry,{...ZONES.find(z=>z.id==='tavern').entry,zone:'tavern',radius:1.1});
   let length=0,onRoad=0;
   for(let i=1;i<route.length;i++){const a=route[i-1],b=route[i],d=Math.hypot(b.x-a.x,b.z-a.z);length+=d;if(nav.pathDistance((a.x+b.x)/2,(a.z+b.z)/2)<2)onRoad+=d;}
   assert.ok(onRoad/length>.85,`Dirt path usage ${onRoad/length}`);
@@ -57,9 +58,9 @@ test('Manual takeover cancels immediately; manual motion slides without entering
   for(const direction of [[1,1],[-1,0],[0,-1],[-1,1],[1,0]]){p.setInput(...direction);for(let frame=0;frame<900;frame++){p.update(1/30);assert.ok(p.navigation.canWalk(p.group.position.x,p.group.position.z));}}
 });
 
-test('Boat cannot reveal memory 26 out of order or at a distance',async()=>{
+test('Boat cannot bypass Flynn or reveal the finale out of order',async()=>{
  const h=harness();vm.runInContext('tapBoat()',h.context);assert.equal(h.found.size,0);
- for(let i=1;i<26;i++)h.found.add(i);vm.runInContext('tapBoat()',h.context);assert.equal(h.found.has(26),false);assert.ok(h.player.autoTarget);
+ for(let i=1;i<32;i++)h.found.add(i);vm.runInContext('tapBoat()',h.context);assert.equal(h.found.has(32),false);assert.ok(h.player.autoTarget);
 });
 
 test('Photo/riddle and map overlays pause walking and boat input',()=>{
@@ -67,7 +68,7 @@ test('Photo/riddle and map overlays pause walking and boat input',()=>{
 });
 
 test('Boat exits around the lake land on clear, reachable ground',()=>{
- const h=harness(),w=world.waters[0];for(let i=1;i<=26;i++)h.found.add(i);
+ const h=harness(),w=world.waters[0];for(let i=1;i<=32;i++)h.found.add(i);
  const saved=world.boat.group.position.clone();
  for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
    world.boat.group.position.set(w.x+Math.cos(angle)*w.rx*.95,.35,w.z+Math.sin(angle)*w.rz*.95);

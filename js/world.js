@@ -3,8 +3,8 @@
 
 import * as THREE from "three";
 
-import { ZONES, FESTIVAL, PATHS, LAKE, WORLD_BOUND, BRIDGES, DRY_ISLANDS, segmentDistance, inLake } from './world-layout.js?v=20261018world';
-import { buildExpansion } from './world-expansion.js?v=20261018world';
+import { ZONES, FESTIVAL, PATHS, LAKE, WORLD_BOUND, BRIDGES, DRY_ISLANDS, segmentDistance, inLake } from './landmark-layout.js?v=20261018story';
+import { buildExpansion } from './world-expansion.js?v=20261018story';
 export { ZONES };
 
 // walking-path network: dirt strips connecting the six zones (also grass exclusions)
@@ -48,7 +48,7 @@ export function buildWorld(scene) {
   const rand = lcg(20261026);
   const colliders = [];   // {x,z,r}
   const waters = [];      // {x,z,rx,rz}
-  const addCollider = (x, z, r) => colliders.push({ x, z, r });
+  const addCollider = (x, z, r, region) => colliders.push({ x, z, r, ...(region ? {region} : {}) });
   // registry of animated bits the per-frame update() drives
   const worldAnims = { mist: [], swayCanopy: null, petals: null, streaks: [], flags: [],
                        waterfallTex: null, lanterns: null, lanternGlowPts: null, fireflies: null, fireflyBase: null,

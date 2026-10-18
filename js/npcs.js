@@ -2,8 +2,8 @@
 // and the chameleon companion (hot/cold clue helper).
 
 import * as THREE from "three";
-import { getCharacter, CLUE_CAST, WANDER_CAST, TAVERN_CAST } from "./cast.js?v=20261018cast";
-import { dressCharacter, animateCharacter, installAnimalCast, animateAnimal } from "./cast-models.js?v=20261018cast";
+import { getCharacter, LEGACY_CLUE_CAST as CLUE_CAST, WANDER_CAST, TAVERN_CAST } from "./cast.js?v=20261018story";
+import { dressCharacter, animateCharacter, installAnimalCast, animateAnimal } from "./cast-models.js?v=20261018story";
 
 const FLAVOR = [
   "Lovely evening for lanterns, no?",
@@ -472,5 +472,5 @@ export function buildNPCs(scene) {
     }
   }
 
-  return { npcs, chameleon, update };
+  return { npcs, chameleon, update, rabbits, birds, perched };
 }

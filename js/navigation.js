@@ -26,9 +26,10 @@ export class Navigation {
     for (const [ax, az, bx, bz] of this.world.paths || []) {
       const dx = bx - ax, dz = bz - az;
       const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
-      best = Math.min(best, Math.hypot(x - ax - t * dx, z - az - t * dz));
+      const ex=x-ax-t*dx,ez=z-az-t*dz;
+      best = Math.min(best, ex*ex+ez*ez);
     }
-    return best;
+    return Math.sqrt(best);
   }
   canWalk(x, z, clearance = .55) {
     if (Math.abs(x) > this.bound || Math.abs(z) > this.bound) return false;

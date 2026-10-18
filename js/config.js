@@ -1,6 +1,6 @@
 // Shared tunables for "Her Tangled Story".
 // Jordan: replace FINAL_MESSAGE with your own text before the birthday.
-// It appears with the 33rd (finale) photo.
+// It appears with the 32nd (finale) photo.
 
 export const CONFIG = {
   FINAL_MESSAGE:
@@ -8,13 +8,13 @@ export const CONFIG = {
     "your story — and every piece led me to you. (Jordan: replace this " +
     "text with your own message.)",
 
-  WORLD_BOUND: 204,      // playable half-extent (expanded world is ~432x432)
+  WORLD_BOUND: 300,      // playable half-extent (nine-point world is ~648x648)
   PLAYER_SPEED: 11,       // units per second
   INTERACT_RADIUS: 5,     // tap / E discovery radius
   PROMPT_RADIUS: 7,       // "!" prompt appears within this radius
   CHAMELEON_SENSE: 13,    // chameleon reacts to undiscovered clues this near
   BOAT_RIDE_TIME: 9,      // seconds for the scripted lake crossing
-  SPAWN: { x: 0, z: -58 },// where she starts — her tower, lanterns & sky in frame
+  SPAWN: { x: 0, z: -173 },// where she starts — her tower, lanterns & sky in frame
 };
 
 export const DEBUG = new URLSearchParams(location.search).get("debug") === "1";

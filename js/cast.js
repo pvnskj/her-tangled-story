@@ -1,4 +1,4 @@
-// User-supplied Tangled cast. Presentation only: no clue sequencing or movement rules.
+// User-supplied Tangled cast and the 32 character-led memory encounters.
 const person = (id, name, description, color, hair, activity, detail, line) =>
   ({ id, name, description, color, hair, activity, detail, line });
 export const CAST = [
@@ -38,17 +38,20 @@ export const CAST = [
   person('kiera','Kiera (Angry)','The scrappy, fiercely independent young thief who comes to befriend Rapunzel and Eugene.',0x9b684f,0x402b27,'rope','small','A good knot is useful. So is keeping an eye on your own bag.'),
 ];
 export const getCharacter = id => CAST.find(c => c.id === id);
-export const CLUE_CAST = {3:'eugene',12:'hook',14:'shorty',17:'arianna',19:'attila',21:'braids',23:'frederic',25:'lance'};
+export const LEGACY_CLUE_CAST = {3:'eugene',12:'hook',14:'shorty',17:'arianna',19:'attila',21:'braids',23:'frederic',25:'lance'};
 export const WANDER_CAST = ['rapunzel','gothel','varian','edmund','cassandra','adira','patchy','sideburns','gunther','tor','kiera','zhantiri','captain','stan','pete'];
 export const TAVERN_CAST = ['bignose','killer','vladimir','ulf','fang','greno'];
 
-// Additional locations are lore references, not new routes or moved clue locations.
+// Location descriptions for the nine-place world.
 export const PLACE_LORE = [
   {name:"Rapunzel's Tower",zone:'tower',description:'The hidden, door-less spire in a secluded rock canyon.'},
   {name:'The Kingdom of Corona',zone:'village',description:'The island kingdom known for its sun motifs, streets and maritime life.'},
   {name:'The Snuggly Duckling',zone:'tavern',description:'The deceptively named forest tavern and home of the dreaming ruffians.'},
-  {name:'Corona Castle',zone:null,description:'The royal palace overlooking Corona’s bay.',speaker:'frederic'},
-  {name:'The Secret Cave Tunnel',zone:null,description:'The hidden passage beneath the Snuggly Duckling.',speaker:'greno'},
-  {name:'The Sundrop Enclave',zone:null,description:'The coastal hiding place of the magical golden flower.',speaker:'gothel'},
-  {name:'The Dark Kingdom',zone:null,description:'The distant realm corrupted by the Moonstone.',speaker:'edmund'},
+  {name:'Corona Castle',zone:'castle',description:'The royal palace overlooking Corona’s bay.',speaker:'frederic'},
+  {name:'The Secret Cave Tunnel',zone:'cave',description:'The hidden passage beneath the Snuggly Duckling.',speaker:'greno'},
+  {name:'The Sundrop Enclave',zone:'sundrop',description:'The coastal hiding place of the magical golden flower.',speaker:'gothel'},
+  {name:'The Dark Kingdom',zone:'dark',description:'The distant realm corrupted by the Moonstone.',speaker:'edmund'},
 ];
+
+export const STORY_CAST = [["rapunzel"], ["gothel"], ["pascal"], ["captain"], ["stan"], ["pete"], ["cassandra", "owl"], ["fidella"], ["hook"], ["bignose"], ["vladimir"], ["attila"], ["ulf"], ["shorty"], ["fang"], ["greno"], ["patchy"], ["sideburns"], ["gunther"], ["tor"], ["killer"], ["braids"], ["frederic"], ["arianna"], ["varian", "ruddiger"], ["edmund"], ["adira"], ["zhantiri"], ["kiera"], ["lance"], ["maximus"], ["eugene"]];
+export const CLUE_CAST = Object.fromEntries(STORY_CAST.map((ids,i)=>[i+1,ids[0]]));
