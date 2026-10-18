@@ -210,11 +210,57 @@ function refreshMarkers() {
   }
 }
 
+// NPC gating: only show the character for the current active clue
+// (hides future characters so exploration stays sequential)
+function refreshNPCs() {
+  const nextId = CLUES.find((c) => !found.has(c.id))?.id;
+  for (const n of npcs) {
+    if (!n.group || !n.clueId) continue;
+    // Show if this NPC's clue is the next one, or if already found (so they don't vanish)
+    // Actually: hide future NPCs, show current and past
+    const isFuture = n.clueId > nextId;
+    n.group.visible = !isFuture;
+  }
+}
+
 // guidance: what to show in the guide box for the next undiscovered clue
 function updateGuide() {
   const next = CLUES.find((c) => !found.has(c.id));
   if (!next) { UI.setGuide(null); return; }
   UI.setGuide(next.id===32&&found.has(31)?"🐴 Follow Maximus to Flynn at the lake — tap to walk there.":`✨ Memory ${next.id} of ${CLUES.length} — ${next.discovery?'look for '+next.discovery.label:'find '+next.npc}. Tap to walk there.`);
+}
+
+// Celebration: confetti burst + happy sound when a memory is found
+function celebrateDiscovery() {
+  UI.fanfare();
+  // DOM confetti burst
+  const colors = ['#ffd700','#ff6b6b','#4ecdc4','#a78bfa','#f9a8d4','#fde68a'];
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('div');
+    const size = 6 + Math.random() * 8;
+    p.style.cssText = `position:fixed;left:50%;top:40%;width:${size}px;height:${size}px;background:${colors[i % colors.length]};border-radius:${Math.random() > 0.5 ? '50%' : '2px'};pointer-events:none;z-index:10000;`;
+    document.body.appendChild(p);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 100 + Math.random() * 250;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist + 150;
+    p.animate([
+      { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+      { transform: `translate(${dx}px,${dy}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+    ], { duration: 1200 + Math.random() * 800, easing: 'cubic-bezier(0.2,0.8,0.3,1)' }).onfinish = () => p.remove();
+  }
+  // Screen flash
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;background:radial-gradient(circle,rgba(255,240,180,0.4),transparent 70%);pointer-events:none;z-index:9999;animation:celebrateFlash 0.8s ease-out forwards;';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 900);
+}
+// CSS for flash (injected once)
+if (!document.getElementById('celebrate-style')) {
+  const s = document.createElement('style');
+  s.id = 'celebrate-style';
+  s.textContent = '@keyframes celebrateFlash{from{opacity:1}to{opacity:0}}';
+  document.head.appendChild(s);
 }
 
 async function discover(clue) {
@@ -234,6 +280,8 @@ async function discover(clue) {
   UI.setCounter(found.size);
   updateGuide();
   refreshMarkers(); // reveal the next clue's marker, hide the found one
+  refreshNPCs(); // hide future characters, show only current
+  celebrateDiscovery(); // confetti + fanfare
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
   if (clue.finale) {
     modalOpen=false;lakeFinale.startBoat();
