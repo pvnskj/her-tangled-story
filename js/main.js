@@ -3,6 +3,7 @@ import {createStoryMagic} from './story-magic.js';
 import {createLivingKingdomV3} from './living-kingdom-v3.js';
 import {createCinematicV3} from './cinematic-v3.js';
 import {createSoundscapeV3} from './soundscape-v3.js';
+import {createNatureMotionV3} from './nature-motion-v3.js';
 import {createLakeFinale} from './lake-finale.js?v=20261018story';
 import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
@@ -46,6 +47,7 @@ window.__player = player; // for camera toggle button
 camera.position.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene,world);
 const storyMagic = createStoryMagic(scene);
+const natureMotion=createNatureMotionV3(scene,player);
 const soundscape = createSoundscapeV3(UI);
 
 // soft diorama shadows: solid meshes cast, transparent ones don't
@@ -237,7 +239,9 @@ function refreshNPCs() {
 function updateGuide() {
   const next = CLUES.find((c) => !found.has(c.id));
   if (!next) { UI.setGuide(null); return; }
-  UI.setGuide(next.id===32&&found.has(31)?"🐴 Follow Maximus to Flynn at the lake — tap to walk there.":`✨ Memory ${next.id} of ${CLUES.length} — ${next.discovery?'look for '+next.discovery.label:'find '+next.npc}. Tap to walk there.`);
+  UI.setGuide(next.id===32&&found.has(31)?
+    'Follow Maximus to Flynn at the lake · Tap to walk':
+    `✦ ${next.id}/32 · ${next.discovery?next.discovery.label:next.npc}. Tap to walk.`);
 }
 
 // Celebration: confetti burst + happy sound when a memory is found
@@ -690,7 +694,8 @@ function animate() {
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
   updateDiscoveries(t);
-  storyMagic.update(dt, t, player.group.position);
+  storyMagic.update(dt, t, player.group.position, player.moving);
+  natureMotion.update(dt,t);
   kingdomV3.update(dt,t,player.group.position,CLUES.find(clue=>!found.has(clue.id))?.id);
   soundscape.update(t);
   player.heroine?.update(dt,t);
