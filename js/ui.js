@@ -24,11 +24,10 @@ export const UI = {
     el("begin-btn").addEventListener("click", () => {
       this._ensureAudio();
       el("start-overlay").classList.add("hidden");
-      el("hud").classList.remove("hidden");
-      document.getElementById("joystick").classList.add("started");
-      const hint = el("hint-tap");
-      setTimeout(() => (hint.style.opacity = "0"), 9000);
+      // V3: wait until the camera finishes flying into the kingdom before
+      // revealing gameplay HUD or controls. No movement during the prologue.
       if (this.onBegin) this.onBegin();
+      else this.enterPlay();
     });
     el("photo-close").addEventListener("click", () => {
       el("photo-modal").classList.add("hidden");
@@ -50,6 +49,13 @@ export const UI = {
       const labels = { first: "👁️", top: "🦅" };
       el("cam-toggle").textContent = labels[mode] || "🦅";
     });
+  },
+
+  enterPlay(){
+    el("hud").classList.remove("hidden");
+    document.getElementById("joystick").classList.add("started");
+    const hint=el("hint-tap");hint.style.opacity="1";
+    setTimeout(()=>hint.style.opacity="0",9000);
   },
 
   // ---------- world map ----------
