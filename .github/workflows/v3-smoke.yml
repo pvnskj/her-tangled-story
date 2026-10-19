@@ -1,0 +1,35 @@
+name: V3 draft browser smoke test
+on:
+  push:
+    branches:
+      - draft/cinematic-birthday-v2
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Launch draft and test
+        run: |
+          python3 -m http.server 8765 >/tmp/v3-http.log 2>&1 &
+          sleep 2
+          node tests/v3-smoke.mjs
+      - name: Upload preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-mobile-screenshots
+          path: |
+            v3-mobile-preview.png
+            v3-mobile-preview-failure.png
+          if-no-files-found: ignore
