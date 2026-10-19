@@ -23,3 +23,20 @@
 @media(prefers-reduced-motion:reduce){.v3-cloud-bank,.v3-cloud-title,#hud.v3-ui-arrive,#guide-box.v3-ui-arrive{transition:none;animation:none}}
 
 @keyframes v3Guide{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* Sundrop flower blooms in the final second of the 3D descent, at the tower. */
+.v3-landing-flower{position:absolute;z-index:2;left:50%;top:53%;width:150px;height:150px;pointer-events:none;
+ transform:translate(-50%,-50%) scale(.3);opacity:0;transition:transform .9s cubic-bezier(.1,.6,.2,1),opacity .6s;
+ filter:drop-shadow(0 0 22px #ffda72)}
+.v3-bloom-land .v3-landing-flower{transform:translate(-50%,-50%) scale(1);opacity:.92}
+.v3-landing-flower i{position:absolute;left:60px;top:22px;width:30px;height:75px;border-radius:80% 80% 45% 45%;
+ background:linear-gradient(#fffbd6,#ffcf62 65%,#df9b3c);transform-origin:50% 88%;box-shadow:0 0 18px #ffe7a3}
+.v3-landing-flower i:nth-child(1){transform:rotate(0deg)}
+.v3-landing-flower i:nth-child(2){transform:rotate(60deg)}
+.v3-landing-flower i:nth-child(3){transform:rotate(120deg)}
+.v3-landing-flower i:nth-child(4){transform:rotate(180deg)}
+.v3-landing-flower i:nth-child(5){transform:rotate(240deg)}
+.v3-landing-flower i:nth-child(6){transform:rotate(300deg)}
+.v3-landing-flower b{position:absolute;left:62px;top:62px;width:26px;height:26px;border-radius:50%;
+ background:#fff8c8;box-shadow:0 0 30px 12px #ffdf7e8c}
+@media(prefers-reduced-motion:reduce){.v3-landing-flower{transition:none}}
