@@ -1655,36 +1655,7 @@ export function buildWorld(scene) {
     return best;
   }
 
-  // ---------- V3: Corona sun emblems & festive bunting ----------
-  // Golden sun decal texture (canvas-drawn)
-  function sunTexture() {
-    const c = document.createElement("canvas"); c.width = c.height = 256;
-    const g = c.getContext("2d");
-    g.translate(128, 128);
-    // Sun rays
-    g.fillStyle = "#FFD700";
-    for (let i = 0; i < 12; i++) {
-      g.rotate(Math.PI / 6);
-      g.beginPath();
-      g.moveTo(0, -70); g.lineTo(12, -50); g.lineTo(-12, -50); g.closePath(); g.fill();
-    }
-    // Sun center
-    g.beginPath(); g.arc(0, 0, 45, 0, Math.PI * 2); g.fill();
-    g.fillStyle = "#FF8C00";
-    g.beginPath(); g.arc(0, 0, 30, 0, Math.PI * 2); g.fill();
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  }
-  const sunTex = sunTexture();
-  // Sun emblems on village ground (source coords: village at 0,90)
-  for (const [sx, sz, s] of [[0, 90, 8], [15, 85, 5], [-15, 95, 5]]) {
-    const sun = new THREE.Mesh(
-      new THREE.CircleGeometry(s, 24),
-      new THREE.MeshBasicMaterial({ map: sunTex, transparent: true, opacity: 0.85 })
-    );
-    sun.rotation.x = -Math.PI / 2;
-    sun.position.set(sx, 0.05, sz);
-    scene.add(sun);
-  }
+  // ---------- V3: Festive bunting (sun decals removed - looked cheap) ----------
   // Bunting: string of triangular flags between two points
   function addBunting(x1, y1, z1, x2, y2, z2, colors) {
     const flags = 12;
