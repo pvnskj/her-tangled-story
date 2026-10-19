@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { getCharacter } from './cast.js?v=20261018story';
 const material = color => new THREE.MeshStandardMaterial({color,roughness:.9});
+const facialWhite=new THREE.MeshBasicMaterial({color:0xfff8ed});
+const facialDark=new THREE.MeshBasicMaterial({color:0x392b32});
+const eyeGeometry=new THREE.SphereGeometry(.056,8,6);
+const pupilGeometry=new THREE.SphereGeometry(.027,8,6);
+const smileGeometry=new THREE.TorusGeometry(.075,.012,4,12,Math.PI);
+
 function mesh(parent,geo,color,x=0,y=0,z=0){const m=new THREE.Mesh(geo,material(color));m.position.set(x,y,z);parent.add(m);return m;}
 const box=(g,c,x,y,z,w,h,d)=>mesh(g,new THREE.BoxGeometry(w,h,d),c,x,y,z);
 const ball=(g,c,x,y,z,r)=>mesh(g,new THREE.SphereGeometry(r,10,8),c,x,y,z);
@@ -12,6 +18,17 @@ export function dressCharacter(n,c){
   n.castId=c.id;n.name=c.name;n.description=c.description;n.flavor=c.line;g.name=c.name;
   body.material=material(c.color);hair.material=material(c.hair);
   const seated=body.position.y<.7,shoulder=seated?.95:1.5,headY=head.position.y;
+  // Expressive storybook faces: visible eyes, gentle smile, and real blink animation.
+  // Keep all facial pieces parented to the original head; no replacement model.
+  const faceEyes=[-.125,.125].map(x=>{
+    const eye=new THREE.Group();eye.position.set(x,.06,.295);head.add(eye);
+    const white=new THREE.Mesh(eyeGeometry,facialWhite);eye.add(white);
+    const pupil=new THREE.Mesh(pupilGeometry,facialDark);pupil.position.z=.05;eye.add(pupil);
+    return eye;
+  });
+  const smile=new THREE.Mesh(smileGeometry,facialDark);
+  smile.position.set(0,-.115,.324);smile.rotation.z=Math.PI;head.add(smile);
+
   const arms=[-1,1].map(side=>{const a=new THREE.Group();a.position.set(side*.43,shoulder,0);g.add(a);cylinder(a,c.color,0,-.25,0,.12,.48);ball(a,0xe8b88a,0,-.54,0,.13);return a;});
   if(c.detail==='small'||c.detail==='pigtails'){const f=c.id==='braids'?1:.8;g.scale.multiplyScalar(f);n.headY*=f;}
   if(['ruffian','hook','patch','sideburns'].includes(c.detail))g.scale.x*=1.14;
@@ -90,12 +107,17 @@ export function dressCharacter(n,c){
     ball(g,0xe1b84e,.24,1.72,1.44,.16);box(g,0x8baa76,-.18,1.35,1.44,.7,.15,.03);
   }
   if(c.activity==='alchemy')for(let i=0;i<3;i++){const bubble=ball(prop,0xa6e6ce,-.12,.6+i*.12,0,.035);bubble.userData.bubble=i;moving.push(bubble);}
-  n.castRig={arms,prop,moving,baseY:prop.position.y,activity:c.activity,head,headBaseY:head.position.y,hello:0};
+  n.castRig={arms,prop,moving,baseY:prop.position.y,activity:c.activity,head,headBaseY:head.position.y,hello:0,faceEyes};
 }
 
 export function animateCharacter(n,t,playerPos){
   const r=n.castRig;if(!r)return;
   const phase=t*(r.activity==='piano'?5:2)+(n.phase||0);
+  // Short blinks approximately every four seconds, slightly offset per character.
+  const blinkPhase=(t+(n.phase||0)*1.7)%4.35;
+  const blink=Math.max(0,1-Math.abs(blinkPhase-2.25)*12);
+  r.faceEyes?.forEach(eye=>{eye.scale.y=Math.max(.08,1-blink*.92);});
+
   r.prop.position.y=r.baseY+Math.sin(phase)*.025;
   r.arms.forEach((arm,i)=>{
     arm.rotation.x=-.85+Math.sin(phase+i*1.5)*(r.activity==='piano'?.22:.12);
