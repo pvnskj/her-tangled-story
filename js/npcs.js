@@ -479,9 +479,12 @@ export function buildNPCs(scene) {
         c.children[1].rotation.y = Math.sin(t * 1.1) * .18;
         if (c.children[2]) c.children[2].rotation.z = Math.sin(t * (exc ? 5 : 2)) * .24;
       }
-      c.position.y = Math.abs(Math.sin(chameleon.hop)) * (exc ? 0.25 : 0.12);
-      const pulse = exc ? 1 + Math.sin(t * 4) * 0.06 : 1;
-      c.scale.setScalar(pulse);
+      const shoulder=!exc && Math.hypot(playerPos.x-c.position.x,playerPos.z-c.position.z)<3.2;
+      // Pascal curls up on her shoulder while calm, and jumps to the path to lead to clues.
+      c.position.y = shoulder ? playerPos.y+2.18+Math.sin(t*2.5)*.035
+        : Math.abs(Math.sin(chameleon.hop)) * (exc ? .25 : .12);
+      const pulse = exc ? 1 + Math.sin(t * 4) * .06 : 1;
+      c.scale.setScalar((shoulder?.52:1)*pulse);
       chameleon.exclaim.visible = exc;
       chameleon.spark.visible = exc;
       if (exc) {
