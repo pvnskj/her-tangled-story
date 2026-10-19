@@ -1,9 +1,10 @@
 // V3 four-second real Three.js camera flight across the unmodified nine-pointed kingdom.
 import * as THREE from 'three';
 export function createCinematicV3({camera,player,onComplete,playMusic}){
- let active=false,seconds=0,startedAt=0,finished=false,overlay=null;
+ let active=false,seconds=0,startedAt=0,finished=false,overlay=null,finishTimer=null;
  const finish=()=>{
    if(finished)return;finished=true;active=false;
+   if(finishTimer!==null){clearTimeout(finishTimer);finishTimer=null;}
    document.body.classList.remove('v3-cinematic');
    if(overlay){overlay.classList.add('v3-clouds-done');setTimeout(()=>overlay?.remove(),550);}
    player.camMode='third';
@@ -15,6 +16,8 @@ export function createCinematicV3({camera,player,onComplete,playMusic}){
    if(active||finished)return;
    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){finish();return;}
    active=true;seconds=0;startedAt=performance.now();player.camMode='third';
+   // Guarantee the controls appear on time even when a WebGL frame takes seconds.
+   finishTimer=setTimeout(finish,4400);
    document.body.classList.add('v3-cinematic');
    overlay=document.createElement('div');
    overlay.id='v3-cloud-opening';
