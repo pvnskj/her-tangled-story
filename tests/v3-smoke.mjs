@@ -35,7 +35,7 @@ try{
  await page.evaluate(()=>window.__player.group.parent.traverse(o=>{if(o.userData.debugId)o.visible=false;}));
  await page.screenshot({path:'v3-mobile-preview.png'});
  // Swing the follow camera around the heroine to inspect the face and outfit.
- await page.evaluate(()=>{window.__player.orbit.yaw=Math.PI;window.__player.orbit.pitch=0;});
+ await page.evaluate(()=>{window.__player.orbit.yaw=Math.PI;window.__player.orbit.pitch=0;window.__player.updateCamera(window.__game.camera,1);});
  await page.waitForTimeout(700);
  await page.screenshot({path:'v3-character-front.png'});
  if(errors.length||failed.length)throw Error('Browser errors: '+JSON.stringify({errors,failed}));
