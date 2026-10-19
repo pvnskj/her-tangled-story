@@ -1,0 +1,26 @@
+/* V3 readability and cinematic mobile framing, with original controls intact. */
+:root{--gold:#f6d7a2;--panel:rgba(30,18,50,.85)}
+#start-overlay{background:radial-gradient(ellipse at 50% 38%,rgba(68,43,100,.42),rgba(13,7,29,.83)),linear-gradient(175deg,#925c9c66,#e9a46a30)}
+#start-overlay .panel{background:linear-gradient(165deg,rgba(48,30,74,.95),rgba(23,15,45,.93));border:1px solid #f9d5a4;border-radius:24px;
+ box-shadow:0 20px 90px #13091eaf,0 0 70px #f6c4772f}
+#start-overlay h1{font-size:clamp(32px,8vw,46px);letter-spacing:.025em;font-weight:normal}
+#start-overlay .sub{color:#f8dcae}
+#guide-box{top:calc(65px + env(safe-area-inset-top));width:min(76vw,340px);max-width:340px;padding:9px 14px;
+ font-family:Georgia,serif;font-size:13px;line-height:1.3;
+ background:linear-gradient(115deg,rgba(42,23,67,.78),rgba(32,21,50,.72));box-shadow:0 7px 20px #21142d55;
+ border:1px solid #f7d5a975;backdrop-filter:blur(9px)}
+#zone-banner{top:calc(112px + env(safe-area-inset-top));font-size:20px}
+#clue-counter{background:rgba(35,20,53,.82);border-color:#e7c28c99;font-size:13px}
+#map-toggle,#cam-toggle,#sound-toggle{width:39px;height:39px;box-shadow:0 4px 12px #26122a70}
+#hud{gap:7px;top:calc(9px + env(safe-area-inset-top));}
+#interact-prompt{background:linear-gradient(130deg,#4b2c69e8,#37234de8);border:1px solid #e8c38b;font-size:13px;
+ max-width:80vw;text-overflow:ellipsis;overflow:hidden}
+#joystick{width:108px;height:108px;bottom:calc(32px + env(safe-area-inset-bottom));left:19px;
+ border:1.5px solid #f3d8a37d;box-shadow:inset 0 0 26px #e6b86b22}
+#stick{width:48px;height:48px;background:radial-gradient(circle at 35% 25%,#fff2c0,#dda756)}
+#hint-tap{font-size:12px;opacity:.8}
+.panel.memory{background:linear-gradient(150deg,#35224fe8,#1c1537f5);border-radius:22px}
+#photo-caption{font-size:16px;line-height:1.55}
+#finale-modal .panel{box-shadow:0 0 90px #edb97375,0 20px 70px #11061fc9}
+@media(max-width:390px){#hud{gap:5px}#clue-counter{padding:5px 9px}#guide-box{width:min(79vw,305px);font-size:12px}}
+@media(prefers-reduced-motion:reduce){#interact-prompt{animation:none}}
