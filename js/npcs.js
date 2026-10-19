@@ -329,6 +329,16 @@ export function buildNPCs(scene) {
   function update(dt, t, playerPos) {
     // named: gentle sway, or patrol if they have a route (Maro walks!)
     for (const n of npcs) {
+      // Decor-only social dancing: non-clue villagers and pub patrons whirl
+      // around their original spot; required clue characters never move.
+      if (n.danceAnchor && !n.clueId) {
+        const a=t*(n.danceStyle==='tavern'?1.1:.77)+n.danceAnchor.phase;
+        n.group.position.x=n.danceAnchor.x+Math.cos(a)*.78;
+        n.group.position.z=n.danceAnchor.z+Math.sin(a)*.78;
+        n.group.position.y=.08+Math.abs(Math.sin(t*7+n.danceAnchor.phase))*.21;
+        n.group.rotation.y=a+Math.PI/2;
+        continue;
+      }
       if (n.castAnimal) { animateAnimal(n, t, playerPos); continue; }
       if (n.kind === "named" && n.patrol) {
         n.patrolI = n.patrolI || 0;
