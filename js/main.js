@@ -4,6 +4,9 @@ import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
 
 import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { CONFIG, DEBUG } from "./config.js?v=20261018story";
 import { CLUES, INTERACTIONS } from "./clues.js?v=20261018story";
 import { buildWorld, ZONES } from "./star-world.js?v=20261018story";
@@ -17,10 +20,27 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
+
+// Cinematic post-processing: bloom for lanterns/magic
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.55,  // strength - subtle glow
+  0.6,   // radius
+  0.85   // threshold - only brightest objects bloom
+);
+composer.addPass(bloomPass);
+// Resize handler for composer
+window.addEventListener("resize", () => {
+  composer.setSize(window.innerWidth, window.innerHeight);
+});
 const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 700);
 
 // widen the lens on narrow portrait phones so tall landmarks (her tower)
@@ -769,6 +789,6 @@ function animate() {
 
   UI.updateDialogue(dt, project);
   if (UI.isMapOpen()) UI.drawMap(ZONES, CLUES, found, p.x, p.z, world);
-  renderer.render(scene, camera);
+  composer.render();
 }
 animate();
