@@ -306,7 +306,7 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
   ,0,.15,0);plane.rotation.x=-Math.PI/2;
   for(let i=0;i<9;i++){
    const a=(i-4)*.33;
-   const l=lantern(g,16+Math.sin(a)*8,2,(-16+Math.cos(a)*5),false);
+   const l=lantern(g,16+Math.sin(a)*8,2,(17+Math.cos(a)*5),false);
    l.visible=false;lanternGroup.push({object:l,startX:l.position.x,startZ:l.position.z,phase:i*.4});
   }
   lantern(g,-10,2,13,true);
@@ -399,11 +399,11 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
    if(finaleActive){
     finaleTime+=dt;
     for(const l of lanternGroup){
-     l.object.position.y=2+Math.min(18,finaleTime*1.2)+Math.sin(t+l.phase)*.4;
+     l.object.position.y=2+Math.min(35,finaleTime*1.05)+Math.sin(t+l.phase)*.4;
      l.object.position.x=l.startX+Math.sin(t*.35+l.phase)*1.5;
-     if(finaleTime>30)l.object.visible=false;
+     if(finaleTime>57)l.object.visible=false;
     }
-    if(finaleTime>30)finaleActive=false;
+    if(finaleTime>57)finaleActive=false;
    }
   }
  };
