@@ -4,6 +4,7 @@ export function createCinematicV3({camera,player,onComplete,playMusic}){
  let active=false,seconds=0,startedAt=0,finished=false,overlay=null;
  const finish=()=>{
    if(finished)return;finished=true;active=false;
+   document.body.classList.remove('v3-cinematic');
    if(overlay){overlay.classList.add('v3-clouds-done');setTimeout(()=>overlay?.remove(),550);}
    player.camMode='third';
    player.lookSm=null;
@@ -14,6 +15,7 @@ export function createCinematicV3({camera,player,onComplete,playMusic}){
    if(active||finished)return;
    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){finish();return;}
    active=true;seconds=0;startedAt=performance.now();player.camMode='third';
+   document.body.classList.add('v3-cinematic');
    overlay=document.createElement('div');
    overlay.id='v3-cloud-opening';
    overlay.innerHTML='<div class="v3-cloud-bank left"></div><div class="v3-cloud-bank right"></div><div class="v3-cloud-glimmer"></div><div class="v3-landing-flower" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></div><p class="v3-cloud-title">Every fairytale begins with a little light…</p><button type="button" class="v3-cloud-skip">Skip intro</button>';
