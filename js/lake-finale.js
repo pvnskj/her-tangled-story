@@ -60,17 +60,17 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{},o
      seatPassengers(t);
     }
    }else if(phase==='sailing'){
-    elapsed=Math.min(24,elapsed+dt);const u=elapsed/24,a=Math.PI*u,b=world.boat.group,start=world.boatPark;
+    elapsed=Math.min(56,elapsed+dt);const u=elapsed/56,a=Math.PI*u,b=world.boat.group,start=world.boatPark;
     // A gentle loop inside the enlarged lake, returning to the same pier.
     b.position.set(start.x-38*Math.sin(a),.35+Math.sin(t*2.2)*.07,start.z+12*Math.sin(2*a));
     const dx=-38*Math.cos(a),dz=24*Math.cos(2*a);
     b.rotation.y=Math.atan2(-dz,dx);b.rotation.z=Math.sin(t*1.6)*.025;
     seatPassengers(t);
     // Cinematic story beats on the original boat trajectory.
-    if(lastCue===0&&elapsed>5){onBanner('One small lantern for every beautiful memory…');lastCue=1;}
-    if(lastCue===1&&elapsed>12){onBanner('From your very first days to this moment.');lastCue=2;}
-    if(lastCue===2&&elapsed>19){onBanner('And the next chapter is ours to write.');lastCue=3;}
-    if(elapsed>=24){phase='complete';onComplete();}
+    if(lastCue===0&&elapsed>11){onBanner('One small lantern for every beautiful memory…');lastCue=1;}
+    if(lastCue===1&&elapsed>28){onBanner('From your very first days to this moment.');lastCue=2;}
+    if(lastCue===2&&elapsed>44){onBanner('And the next chapter is ours to write.');lastCue=3;}
+    if(elapsed>=56){phase='complete';onComplete();}
    }else if(phase==='complete')seatPassengers(t);
   }
  };
