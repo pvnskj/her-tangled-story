@@ -2,7 +2,7 @@
 // cave crystals, village festivity, royal strings and dark cello tones.
 // No external audio assets, copyrighted recordings or network dependency.
 export function createSoundscapeV3(UI){
- let started=false,lastStep=-1,current='tower',lastChange=-20;
+ let started=false,lastStep=-1,current='tower',lastChange=-20,hum=null;
  const palettes={
    tower:[293.66,369.99,440,587.33,440,369.99],
    forest:[329.63,392,493.88,587.33,493.88,392],
@@ -15,6 +15,20 @@ export function createSoundscapeV3(UI){
    lake:[293.66,440,587.33,739.99,587.33,440]
  };
  function context(){return UI._audio && !UI._muted ? UI._audio : null;}
+ function stopHum(){
+   if(!hum)return;
+   const ctx=UI._audio;
+   if(ctx){const at=ctx.currentTime;hum.gain.gain.setTargetAtTime(.0001,at,.25);}
+   try{hum.osc.stop((ctx?.currentTime||0)+1);}catch{}
+   hum=null;
+ }
+ function startHum(){
+   const ctx=context();if(!ctx||hum)return;
+   const osc=ctx.createOscillator(),gain=ctx.createGain();
+   osc.type='sine';osc.frequency.value=220;
+   gain.gain.value=.0001;gain.gain.setTargetAtTime(.015,ctx.currentTime,.5);
+   osc.connect(gain).connect(ctx.destination);osc.start();hum={osc,gain};
+ }
  function pluck(freq,when=0,vol=.055){
   const ctx=context();if(!ctx)return;
   const start=ctx.currentTime+when;
@@ -65,8 +79,11 @@ export function createSoundscapeV3(UI){
   start(){started=true;UI._ensureAudio();pluck(293.66,0,.08);pluck(440,.25,.06);pluck(587.33,.5,.06);},
   zone(id){
    if(!palettes[id]||id===current)return;
+   const previous=current;
    current=id;
+   if(previous==='sundrop')stopHum();
    if(!started)return;
+   if(id==='sundrop')startHum();
    if(id==='castle')string(349.23,1.7,.044);
    if(id==='dark')string(146.83,2.5,.038);
    if(id==='sundrop')chime(1174.66);
@@ -74,10 +91,11 @@ export function createSoundscapeV3(UI){
   discover(clue){
    if(!started)return;
    if(clue.zone==='tavern'){cheer();pluck(523.25,.25,.07);return;}
+   if(clue.zone==='village'){cheer();pluck(659.26,.2,.065);return;}
    if(clue.zone==='cave'){chime(1174.66);setTimeout(()=>chime(1567.98),190);return;}
    if(clue.zone==='dark'){string(146.83,2.2,.065);return;}
    if(clue.zone==='castle'){string(523.25,1.4,.05);return;}
-   if(clue.zone==='sundrop'){chime(1318.51);return;}
+   if(clue.zone==='sundrop'){startHum();chime(1318.51);return;}
    if(clue.zone==='lake'){pluck(440,.05,.065);chime(880);return;}
    pluck(palettes[clue.zone]?.[3]||587.33,0,.075);
   },
