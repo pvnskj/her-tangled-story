@@ -1,4 +1,5 @@
 /* V3 painted cloud curtains above the 3D camera's descending world view */
+body.v3-cinematic #hint-tap,body.v3-cinematic #interact-prompt,body.v3-cinematic #zone-banner{display:none !important}
 #v3-cloud-opening{position:fixed;inset:0;z-index:58;overflow:hidden;pointer-events:none;isolation:isolate;background:rgba(35,25,67,.13);transition:opacity .5s;font-family:Georgia,serif}
 .v3-cloud-bank{position:absolute;top:-10%;bottom:-10%;width:73%;filter:blur(8px);opacity:.97;
  background:
