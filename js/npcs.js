@@ -329,7 +329,7 @@ export function buildNPCs(scene) {
   function update(dt, t, playerPos) {
     // named: gentle sway, or patrol if they have a route (Maro walks!)
     for (const n of npcs) {
-      if (n.castAnimal) { animateAnimal(n, t); continue; }
+      if (n.castAnimal) { animateAnimal(n, t, playerPos); continue; }
       if (n.kind === "named" && n.patrol) {
         n.patrolI = n.patrolI || 0;
         const [px, pz] = n.patrol[n.patrolI];
@@ -394,7 +394,7 @@ export function buildNPCs(scene) {
         facePlayer(n, dt, playerPos, 6);
       }
     }
-    for (const n of npcs) animateCharacter(n, t);
+    for (const n of npcs) animateCharacter(n, t, playerPos);
     // rabbits hop (with ear twitches and happy binkies!)
     for (const r of rabbits) {
       const dx = r.tx - r.group.position.x, dz = r.tz - r.group.position.z;
@@ -459,6 +459,16 @@ export function buildNPCs(scene) {
       }
       chameleon.hop += dt * (chameleon.excited ? 8 : 6);
       const exc = chameleon.excited;
+      // Pascal becomes warm-gold near a clue, tilts his head and curls his tail.
+      // This changes only his expression, not his position or companion behavior.
+      if (c.children[0]?.material?.color && c.children[1]?.material?.color) {
+        const hue = exc ? .19 + Math.sin(t * 3) * .035 : .32;
+        c.children[0].material.color.setHSL(hue, .48, .52);
+        c.children[1].material.color.setHSL(hue, .48, .52);
+        c.children[1].rotation.z = Math.sin(t * (exc ? 4.5 : 1.2)) * (exc ? .22 : .07);
+        c.children[1].rotation.y = Math.sin(t * 1.1) * .18;
+        if (c.children[2]) c.children[2].rotation.z = Math.sin(t * (exc ? 5 : 2)) * .24;
+      }
       c.position.y = Math.abs(Math.sin(chameleon.hop)) * (exc ? 0.25 : 0.12);
       const pulse = exc ? 1 + Math.sin(t * 4) * 0.06 : 1;
       c.scale.setScalar(pulse);
