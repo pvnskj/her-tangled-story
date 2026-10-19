@@ -1655,7 +1655,100 @@ export function buildWorld(scene) {
     return best;
   }
 
-  // ---------- V3: Festive bunting (sun decals removed - looked cheap) ----------
+  // ---------- V3: Corona sun - elegant gold inlay, blended with theme ----------
+  // The Corona sun as it should look: refined, golden, part of the world
+  function coronaSunTexture() {
+    const c = document.createElement("canvas"); c.width = c.height = 512;
+    const g = c.getContext("2d");
+    g.translate(256, 256);
+    
+    // Soft radial glow behind (very subtle)
+    const glow = g.createRadialGradient(0, 0, 50, 0, 0, 240);
+    glow.addColorStop(0, "rgba(255, 200, 100, 0.15)");
+    glow.addColorStop(1, "rgba(255, 200, 100, 0)");
+    g.fillStyle = glow;
+    g.fillRect(-256, -256, 512, 512);
+    
+    // Elegant flowing rays (like the movie - curved, not triangular)
+    g.strokeStyle = "#C9A227";  // Antique gold, not bright yellow
+    g.lineWidth = 6;
+    g.lineCap = "round";
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      // Each ray is a graceful curve
+      g.beginPath();
+      const r1 = 75, r2 = 140;
+      const x1 = Math.cos(angle) * r1, y1 = Math.sin(angle) * r1;
+      const x2 = Math.cos(angle + 0.08) * ((r1 + r2) / 2), y2 = Math.sin(angle + 0.08) * ((r1 + r2) / 2);
+      const x3 = Math.cos(angle) * r2, y3 = Math.sin(angle) * r2;
+      g.moveTo(x1, y1);
+      g.quadraticCurveTo(x2, y2, x3, y3);
+      g.stroke();
+      // Small dot at ray tip
+      g.fillStyle = "#C9A227";
+      g.beginPath(); g.arc(x3, y3, 4, 0, Math.PI * 2); g.fill();
+    }
+    
+    // Inner ring (delicate)
+    g.strokeStyle = "#B8941F";
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(0, 0, 68, 0, Math.PI * 2); g.stroke();
+    
+    // Center: layered gold disc with depth
+    const centerGrad = g.createRadialGradient(0, 0, 5, 0, 0, 60);
+    centerGrad.addColorStop(0, "#F4D03F");  // Bright center
+    centerGrad.addColorStop(0.7, "#C9A227"); // Antique gold
+    centerGrad.addColorStop(1, "#8B6914");   // Dark edge
+    g.fillStyle = centerGrad;
+    g.beginPath(); g.arc(0, 0, 58, 0, Math.PI * 2); g.fill();
+    
+    // Inner detail: small swirl
+    g.strokeStyle = "#8B6914";
+    g.lineWidth = 2;
+    g.beginPath(); g.arc(0, 0, 30, 0, Math.PI * 1.5); g.stroke();
+    g.beginPath(); g.arc(0, 0, 18, Math.PI * 0.5, Math.PI * 2); g.stroke();
+    
+    const t = new THREE.CanvasTexture(c); 
+    t.colorSpace = THREE.SRGBColorSpace; 
+    return t;
+  }
+  
+  // Place as stone inlay in village square - subtle, part of the cobblestone
+  const coronaTex = coronaSunTexture();
+  const sunInlay = new THREE.Mesh(
+    new THREE.CircleGeometry(10, 48),
+    new THREE.MeshStandardMaterial({ 
+      map: coronaTex, 
+      transparent: true, 
+      opacity: 0.9,
+      roughness: 0.8,  // Stone-like, not glossy
+      metalness: 0.3,  // Slight metallic sheen for gold
+      polygonOffset: true,
+      polygonOffsetFactor: -1  // Avoid z-fighting
+    })
+  );
+  sunInlay.rotation.x = -Math.PI / 2;
+  sunInlay.position.set(0, 0.08, 90);  // Village center, slightly above ground
+  scene.add(sunInlay);
+  
+  // Smaller accent suns on the well
+  for (const [ox, oz] of [[3, 2], [-3, -2]]) {
+    const accent = new THREE.Mesh(
+      new THREE.CircleGeometry(2.5, 32),
+      new THREE.MeshStandardMaterial({
+        map: coronaTex,
+        transparent: true,
+        opacity: 0.7,
+        roughness: 0.8,
+        metalness: 0.3,
+        polygonOffset: true,
+        polygonOffsetFactor: -1
+      })
+    );
+    accent.rotation.x = -Math.PI / 2;
+    accent.position.set(ox, 0.08, 90 + oz);
+    scene.add(accent);
+  }
   // Bunting: string of triangular flags between two points
   function addBunting(x1, y1, z1, x2, y2, z2, colors) {
     const flags = 12;
