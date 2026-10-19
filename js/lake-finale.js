@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import {CLUES} from './clues.js?v=20261018story';
 import {clueTarget} from './navigation.js?v=20261018story';
 import {movePoint} from './world-layout.js?v=20261018story';
