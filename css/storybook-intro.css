@@ -1,0 +1,18 @@
+/* Isolated draft opening: does not alter gameplay or production styles. */
+#storybook-intro{position:fixed;inset:0;z-index:90;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 85%,#e5a76e 0%,#76568c 45%,#15132d 100%);color:#fff4d8;font-family:Georgia,serif;text-align:center;transition:opacity 1s}
+#storybook-intro[hidden]{display:none}
+#storybook-intro.fade-out{opacity:0;pointer-events:none}
+.story-cloud{position:absolute;width:90vw;height:24vw;min-height:100px;border-radius:50%;background:radial-gradient(ellipse,#fff5e9 5%,#efd9e8 55%,transparent 72%);filter:blur(17px);opacity:.48;animation:story-drift 13s ease-in-out infinite alternate;pointer-events:none}
+.story-cloud.one{top:10%;left:-30%}.story-cloud.two{top:53%;right:-34%;animation-delay:-6s}
+@keyframes story-drift{to{transform:translateX(30vw)}}
+.story-stage{position:relative;z-index:1;width:min(90vw,620px);padding:24px;display:grid;justify-items:center;gap:20px}
+.story-flower{position:relative;width:120px;height:150px;filter:drop-shadow(0 0 22px #ffdc7b);animation:story-bloom 3s ease-in-out infinite alternate}
+.story-flower .petal{position:absolute;left:47px;top:33px;width:28px;height:65px;border-radius:80% 80% 45% 45%;background:linear-gradient(#fff9bb,#ffc342);transform-origin:50% 95%;transform:rotate(var(--r))}
+.story-flower .stem{position:absolute;left:59px;top:92px;width:5px;height:56px;background:#74a763;border-radius:5px}
+@keyframes story-bloom{to{filter:drop-shadow(0 0 35px #fff0a1);transform:scale(1.07)}}
+.story-kicker{letter-spacing:.3em;text-transform:uppercase;font:12px system-ui,sans-serif;color:#ffe9b2}
+.story-title{font-size:clamp(32px,7vw,62px);line-height:1.1;text-shadow:0 3px 25px #38234e}
+.story-copy{font-size:clamp(16px,3vw,21px);line-height:1.6;max-width:460px;min-height:70px}
+.story-action{font:600 16px system-ui,sans-serif;background:linear-gradient(#ffefad,#e4ae55);border:0;border-radius:30px;padding:15px 30px;color:#3b2340;cursor:pointer}
+.story-skip{font:13px system-ui,sans-serif;background:none;border:0;color:#fff1d7;text-decoration:underline;cursor:pointer}
+@media(prefers-reduced-motion:reduce){.story-cloud,.story-flower{animation:none}#storybook-intro{transition:none}}
