@@ -641,7 +641,7 @@ player.onWalkBlocked = () => { updateGuide(); UI.banner("Try moving into the cle
 
 if (DEBUG) {
   window.__game = {
-    player, found, discover, CLUES,
+    player, camera, found, discover, CLUES,
     teleport: (x, z) => player.teleport(x, z),
     rideBoat: () => tapBoat(),
     chameleonExcited: () => chameleon.excited,
