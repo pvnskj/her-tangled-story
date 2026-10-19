@@ -72,13 +72,14 @@ export function createStoryMagic(scene) {
       lastGreeting = time;
       burstAt(npc.group.position.x, npc.group.position.z, 10, 2.2);
     },
-    update(dt, time, playerPos) {
+    update(dt, time, playerPos, isMoving=false) {
       for (let i = 0; i < total; i++) {
         const q = i * 3, phase = phases[i], dist = Math.hypot(origins[q] - playerPos.x, origins[q + 2] - playerPos.z);
         // Keep particles close to explored scenery, not blanketing distant zones.
-        positions[q] = origins[q] + Math.sin(time * .48 + phase) * .75;
+        const approach=!isMoving&&dist<9 ? (1-dist/9)*.46 : 0;
+        positions[q] = origins[q] + Math.sin(time * .48 + phase) * .75 + (playerPos.x-origins[q])*approach;
         positions[q + 1] = dist < 55 ? origins[q + 1] + Math.sin(time * 1.2 + phase) * .35 : -10000;
-        positions[q + 2] = origins[q + 2] + Math.cos(time * .44 + phase) * .7;
+        positions[q + 2] = origins[q + 2] + Math.cos(time * .44 + phase) * .7 + (playerPos.z-origins[q+2])*approach;
       }
       ambientGeo.attributes.position.needsUpdate = true;
       for (let i = 0; i < capacity; i++) {
