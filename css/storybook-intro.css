@@ -16,3 +16,19 @@
 .story-action{font:600 16px system-ui,sans-serif;background:linear-gradient(#ffefad,#e4ae55);border:0;border-radius:30px;padding:15px 30px;color:#3b2340;cursor:pointer}
 .story-skip{font:13px system-ui,sans-serif;background:none;border:0;color:#fff1d7;text-decoration:underline;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.story-cloud,.story-flower{animation:none}#storybook-intro{transition:none}}
+
+/* Cloud -> Sundrop -> Corona tower: a non-destructive cinematic overlay. */
+.story-sunbeam{position:absolute;inset:-25% 0 0;pointer-events:none;opacity:.65;background:conic-gradient(from 165deg at 50% -10%,transparent 0deg,#fff4bc60 13deg,transparent 28deg 360deg);mix-blend-mode:screen;transition:transform 1.4s ease,opacity 1.4s}
+.story-tower{position:absolute;bottom:7%;right:13%;width:62px;height:200px;opacity:0;transform:translateY(80px) scale(.65);transition:transform 1.8s cubic-bezier(.2,.65,.2,1),opacity 1.8s;filter:drop-shadow(0 0 25px #ffe4a1)}
+.story-tower::before{content:"";position:absolute;bottom:0;left:20px;width:24px;height:170px;background:linear-gradient(90deg,#54416d,#a8828e,#5e486c);border:2px solid #d5a47d;border-radius:8px 8px 0 0}
+.story-tower::after{content:"";position:absolute;top:9px;left:-22px;width:108px;height:34px;background:linear-gradient(#7f536e,#382a59);clip-path:polygon(50% 0%,100% 100%,0% 100%);filter:drop-shadow(0 3px 4px #281c35)}
+.story-tower i{position:absolute;z-index:2;left:28px;top:48px;width:10px;height:24px;background:#ffe6a8;border-radius:10px 10px 0 0;box-shadow:0 0 18px #ffe2a7}
+.story-tower b{position:absolute;bottom:0;left:-15px;width:90px;height:14px;background:#413451;border-radius:50%}
+#storybook-intro[data-scene="cloud"] .story-flower{opacity:0;transform:translateY(65px) scale(.5)}
+#storybook-intro[data-scene="flower"] .story-flower{opacity:1;transform:scale(1);transition:opacity 1.3s,transform 1.3s}
+#storybook-intro[data-scene="kingdom"] .story-flower,#storybook-intro[data-scene="tower"] .story-flower{opacity:.4;transform:translateY(-20px) scale(.6);transition:opacity 1.2s,transform 1.2s}
+#storybook-intro[data-scene="kingdom"] .story-tower,#storybook-intro[data-scene="tower"] .story-tower{opacity:.85;transform:translateY(0) scale(1)}
+#storybook-intro[data-scene="tower"] .story-tower{transform:translateY(8px) scale(1.25)}
+#storybook-intro[data-scene="kingdom"] .story-sunbeam,#storybook-intro[data-scene="tower"] .story-sunbeam{opacity:.95;transform:scale(1.2)}
+@media(max-width:500px){.story-tower{right:5%;bottom:5%;transform-origin:bottom right}.story-stage{padding-bottom:90px}}
+@media(prefers-reduced-motion:reduce){.story-tower,.story-sunbeam,#storybook-intro[data-scene] .story-flower{transition:none}}
