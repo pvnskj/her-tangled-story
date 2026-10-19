@@ -1,0 +1,29 @@
+/* Draft only: distinct chapter reveals without cropping or replacing personal photos. */
+#photo-frame { isolation:isolate; perspective:900px; background:#1a0f2e; }
+#photo-frame::before { content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0; }
+#photo-frame[data-chapter="beginnings"] {box-shadow:inset 0 0 42px #f6cb8b,0 0 26px #f4d6a75c;}
+#photo-frame[data-chapter="forest"] {box-shadow:0 0 25px #94cda266;}
+#photo-frame[data-chapter="tavern"] {box-shadow:0 0 25px #edb56b77;}
+#photo-frame[data-chapter="kingdom"] {box-shadow:0 0 30px #d7a9ef66;}
+#photo-frame[data-chapter="lake"] {box-shadow:0 0 30px #90cbe866;}
+#photo-frame[data-chapter="lanterns"] {box-shadow:0 0 38px #ffe39e99;}
+#photo-frame.reveal[data-chapter="beginnings"] img {animation:memoryCradle 1.45s ease-out both;}
+#photo-frame.reveal[data-chapter="forest"] img {animation:memoryLeaves 1.4s cubic-bezier(.15,.7,.2,1) both;}
+#photo-frame.reveal[data-chapter="tavern"] img {animation:memoryTavern 1.2s ease-out both;}
+#photo-frame.reveal[data-chapter="kingdom"] img {animation:memoryRoyal 1.55s cubic-bezier(.2,.7,.2,1) both;}
+#photo-frame.reveal[data-chapter="lake"] img {animation:memoryLake 1.55s ease-out both;}
+#photo-frame.reveal[data-chapter="lanterns"] img {animation:memoryLantern 1.8s ease-out both;}
+#photo-frame.reveal::before{opacity:.6;animation:memoryAura 1.6s ease-out both;}
+#photo-frame[data-chapter="forest"]::before{background:radial-gradient(ellipse at 14% 20%,#bde2ad80,transparent 48%),radial-gradient(ellipse at 86% 80%,#a4d7b980,transparent 44%);}
+#photo-frame[data-chapter="tavern"]::before{background:radial-gradient(circle at 50% 10%,#ffca6e80,transparent 60%);}
+#photo-frame[data-chapter="kingdom"]::before{background:linear-gradient(120deg,#e8b6ff55,transparent 40%,#fff3bb55);}
+#photo-frame[data-chapter="lake"]::before{background:linear-gradient(0deg,#89daeb88,transparent 40%);}
+#photo-frame[data-chapter="lanterns"]::before{background:radial-gradient(circle at 25% 20%,#fff5b888,transparent 12%),radial-gradient(circle at 80% 35%,#fff5b888,transparent 15%),radial-gradient(circle at 44% 80%,#fff5b888,transparent 15%);}
+@keyframes memoryCradle{from{opacity:0;filter:sepia(.55) blur(8px);transform:scale(.91)}to{opacity:1;filter:none;transform:scale(1)}}
+@keyframes memoryLeaves{from{opacity:0;filter:blur(7px);transform:rotate(-2deg) scale(.94)}to{opacity:1;filter:none;transform:none}}
+@keyframes memoryTavern{from{opacity:0;filter:sepia(.6) blur(5px);transform:translateY(15px)}to{opacity:1;filter:none;transform:none}}
+@keyframes memoryRoyal{from{opacity:0;filter:blur(5px);transform:rotateY(-18deg) scale(.95)}to{opacity:1;filter:none;transform:none}}
+@keyframes memoryLake{from{opacity:0;filter:blur(7px);transform:translateY(20px) scale(.96)}to{opacity:1;filter:none;transform:none}}
+@keyframes memoryLantern{from{opacity:0;filter:blur(12px) brightness(1.6);transform:scale(.92)}to{opacity:1;filter:none;transform:none}}
+@keyframes memoryAura{0%{opacity:0;transform:scale(1.2)}30%{opacity:.65}100%{opacity:0;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){#photo-frame.reveal[data-chapter] img,#photo-frame.reveal::before{animation:none;opacity:1;filter:none;transform:none}}
