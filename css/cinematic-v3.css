@@ -1,0 +1,23 @@
+/* V3 painted cloud curtains above the 3D camera's descending world view */
+#v3-cloud-opening{position:fixed;inset:0;z-index:58;overflow:hidden;pointer-events:none;isolation:isolate;background:rgba(35,25,67,.13);transition:opacity .5s;font-family:Georgia,serif}
+.v3-cloud-bank{position:absolute;top:-10%;bottom:-10%;width:73%;filter:blur(8px);opacity:.97;
+ background:
+ radial-gradient(ellipse 33% 11% at 25% 13%,#fff8e6 45%,transparent 94%),
+ radial-gradient(ellipse 46% 20% at 65% 26%,#faf1eb 30%,transparent 80%),
+ radial-gradient(ellipse 56% 24% at 29% 45%,#eee0ee 35%,transparent 87%),
+ radial-gradient(ellipse 49% 22% at 68% 68%,#f9e4df 32%,transparent 86%),
+ radial-gradient(ellipse 68% 26% at 31% 89%,#e7cee5 32%,transparent 86%),linear-gradient(145deg,#fff7e7,#bca9d6);}
+.v3-cloud-bank.left{left:-9%;transform:translateX(0);transition:transform 3.1s cubic-bezier(.25,.15,.45,1)}
+.v3-cloud-bank.right{right:-9%;transform:translateX(0) scaleX(-1);transition:transform 3.1s cubic-bezier(.25,.15,.45,1)}
+.v3-cloud-parting .v3-cloud-bank.left{transform:translateX(-125%)}
+.v3-cloud-parting .v3-cloud-bank.right{transform:translateX(125%) scaleX(-1)}
+.v3-cloud-glimmer{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#fff6d988,transparent 60%);opacity:.9;animation:v3glow 3s ease-in-out forwards}
+@keyframes v3glow{to{opacity:0}}
+.v3-cloud-title{position:absolute;left:10%;right:10%;top:40%;text-align:center;font-size:clamp(22px,4vw,42px);color:#fff6d9;text-shadow:0 3px 16px #35213b;animation:v3Title 3.1s both}
+@keyframes v3Title{0%{opacity:0;transform:translateY(14px)}24%{opacity:1;transform:none}80%{opacity:.9}100%{opacity:0}}
+.v3-cloud-skip{pointer-events:auto;position:absolute;bottom:calc(26px + env(safe-area-inset-bottom));right:24px;padding:11px 18px;border:1px solid #ffe1a9;border-radius:30px;background:#302345aa;color:#fff7df;font:14px Georgia,serif}
+#v3-cloud-opening.v3-clouds-done{opacity:0;pointer-events:none}
+#hud.v3-ui-arrive{animation:v3Hud .9s ease-out both}
+#guide-box.v3-ui-arrive{animation:v3Hud .9s ease-out .2s both}
+@keyframes v3Hud{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.v3-cloud-bank,.v3-cloud-title,#hud.v3-ui-arrive,#guide-box.v3-ui-arrive{transition:none;animation:none}}
