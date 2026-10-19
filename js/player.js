@@ -243,9 +243,9 @@ export class Player {
       return;
     }
     // Cinematic follow camera: behind the heroine, elevated enough to avoid her dress or grass.
-    const yaw = this.group.rotation.y;
+    const yaw = this.group.rotation.y + this.orbit.yaw;
     const forwardX=Math.sin(yaw),forwardZ=Math.cos(yaw);
-    const wanted=new THREE.Vector3(p.x-forwardX*11,p.y+7.4,p.z-forwardZ*11);
+    const wanted=new THREE.Vector3(p.x-forwardX*12,p.y+7.4+this.orbit.pitch*7,p.z-forwardZ*12);
     const focus=new THREE.Vector3(p.x+forwardX*5,p.y+2.1,p.z+forwardZ*5);
     camera.position.lerp(wanted,1-Math.pow(.001,dt));
     if(!this.lookSm)this.lookSm=focus.clone();
