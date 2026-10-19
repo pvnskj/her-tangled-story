@@ -4,9 +4,13 @@
 
 export const CONFIG = {
   FINAL_MESSAGE:
-    "Happy birthday, my love. Every step of this valley holds a piece of " +
-    "your story — and every piece led me to you. (Jordan: replace this " +
-    "text with your own message.)",
+    "Happy birthday, my love. ✨\n\n" +
+    "Long before our paths crossed, the world was already a brighter place because you were in it. " +
+    "Every little adventure, every brave step, every smile and every dream made you the person I love today.\n\n" +
+    "If I could collect a thousand memories, my favorite would still be the next one we make together. " +
+    "Here's to all the lanterns still waiting to rise, all the places we'll explore, and all the ordinary days " +
+    "that feel like magic because I share them with you.\n\n" +
+    "I love you. Happy birthday, my beautiful girl.",
 
   WORLD_BOUND: 300,      // playable half-extent (nine-point world is ~648x648)
   PLAYER_SPEED: 11,       // units per second
