@@ -209,6 +209,10 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
   const table=box(g,3,.20,2,wood,12,.9,-10);
   pole(g,1,11,-10);pole(g,1,13,-10);
   const mug=put(g,new THREE.CylinderGeometry(.3,.24,.6,9),material(0xbb8a53),12,1.35,-10);
+  const spilled=put(g,new THREE.CylinderGeometry(.32,.26,.58,9),material(0xab7848),10.4,1.23,-9.7);
+  spilled.rotation.z=Math.PI/2.9;
+  const spill=put(g,new THREE.CircleGeometry(.58,14),material(0xb88f49),10.7,1.015,-9.55);
+  spill.rotation.x=-Math.PI/2;
   placeInteractive(g,'tavern',12,-10,mug,hitMeshes);
  }
  // CAVE: enclosed feeling, crystalline blue-purple sparkle and pickaxe lanterns.
@@ -219,7 +223,11 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
     crystal(g,x,.85,z,i%2?0x8f78dc:0x6eb5e5,.5+(i%5)*.21);
   }
   for(let i=0;i<5;i++){
-   const x=-12+i*6;pole(g,4.8,x,-13);lantern(g,x,4.8,-13,i===2);
+   const x=-12+i*6;pole(g,4.8,x,-13);
+   const pick=box(g,1.2,.12,.14,material(0x8f94ae),x+.48,4.87,-13);
+   pick.rotation.z=-.13;
+   const cord=put(g,new THREE.CylinderGeometry(.018,.018,.53,5),wood,x+1.0,4.44,-13);
+   lantern(g,x+1.0,4.08,-13,i===2);
   }
   const ore=crystal(g,10,1.3,6,0x9bc6fd,1.5);placeInteractive(g,'cave',10,6,ore,hitMeshes);
  }
@@ -302,7 +310,7 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
     transparent:true,depthWrite:false,side:THREE.DoubleSide,
     uniforms:{uTime:{value:0}},
     vertexShader:'uniform float uTime;varying vec2 vv;void main(){vv=uv;vec3 p=position;p.z+=sin(p.x*.6+uTime*1.2)*.06;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}',
-    fragmentShader:'uniform float uTime;varying vec2 vv;void main(){float ripple=.55+.12*sin(vv.x*40.+uTime*3.);gl_FragColor=vec4(.64,.43,.78,ripple*.18);}'})
+    fragmentShader:'uniform float uTime;varying vec2 vv;void main(){float wave=.5+.5*sin(vv.x*40.+uTime*2.5+sin(vv.y*20.));float star=pow(max(0.,sin(vv.x*171.)*sin(vv.y*237.)),22.);vec3 dusk=mix(vec3(.25,.16,.49),vec3(.90,.48,.60),vv.y);gl_FragColor=vec4(dusk+vec3(star*.4+wave*.07),.14+wave*.11);}'})
   ,0,.15,0);plane.rotation.x=-Math.PI/2;
   for(let i=0;i<9;i++){
    const a=(i-4)*.33;
