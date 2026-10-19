@@ -14,7 +14,8 @@ try{
  await page.waitForFunction(()=>window.__game && window.__player,{timeout:90000});
  if(await page.locator('#begin-btn').count()!==1)throw Error('Start button missing');
  await page.locator('#begin-btn').click();
- await page.waitForTimeout(6800);
+ await page.waitForFunction(()=>!document.getElementById('hud').classList.contains('hidden'),null,{timeout:30000});
+ await page.waitForTimeout(500);
  const details=await page.evaluate(()=>({
    camMode:window.__player.camMode,
    canvas:document.getElementById('game')?.width,
@@ -30,6 +31,8 @@ try{
  if(!await page.locator('#map-overlay').isVisible())throw Error('Map did not open');
  if(await page.locator('#map-destinations button').count()!==9)throw Error('Nine location buttons missing');
  await page.locator('#map-close').click();
+ // Hide debug-only red clue probes in the visual screenshot.
+ await page.evaluate(()=>window.__player.group.parent.traverse(o=>{if(o.userData.debugId)o.visible=false;}));
  await page.screenshot({path:'v3-mobile-preview.png'});
  if(errors.length||failed.length)throw Error('Browser errors: '+JSON.stringify({errors,failed}));
  console.log('V3 smoke PASS');
