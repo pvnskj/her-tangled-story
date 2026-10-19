@@ -3,7 +3,7 @@ import {clueTarget} from './navigation.js?v=20261018story';
 import {movePoint} from './world-layout.js?v=20261018story';
 
 // Keep the finale in the same scene, with the original avatar and boat.
-export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}}){
+export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{},onSail=()=>{}}){
  const maximus=npcs.find(n=>n.castId==='maximus'),flynn=npcs.find(n=>n.castId==='eugene');
  const dock=movePoint('lake',{x:-48,z:20}),nav=player.navigation;
  let phase='idle',horseRoute=[],flynnRoute=[],elapsed=0,lastCue=0;
@@ -55,7 +55,7 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     advance(flynn,flynnRoute,4,dt);
     const p=player.group.position,f=flynn.group.position;
     if(Math.hypot(p.x-dock.x,p.z-dock.z)<1.1&&Math.hypot(f.x-dock.x,f.z-dock.z)<1.2){
-     phase='sailing';elapsed=0;lastCue=0;player.autoTarget=null;player.riding=true;world.boat.riding=true;
+     phase='sailing';elapsed=0;lastCue=0;onSail();player.autoTarget=null;player.riding=true;world.boat.riding=true;
      player.sprite.position.y=1;world.releaseLanterns();world.setLanternBoost(true);
      seatPassengers(t);
     }
