@@ -573,23 +573,27 @@ function startCameraSwoop() {
   camera.position.copy(swoopFrom);
 }
 
-// Quick test: ?test=finale jumps straight to lake finale
-if (typeof window !== 'undefined' && window.location.search.includes('test=finale')) {
-  setTimeout(() => {
-    console.log("TEST MODE: Jumping to finale");
-    // Simulate all clues found
-    for (let i = 1; i <= 32; i++) found.add(i);
-    refreshNPCs();
-    // Teleport to lake
-    const lakePos = { x: -35, z: -190 };
-    player.group.position.set(lakePos.x, 0, lakePos.z);
-    // Start boat finale directly
-    setTimeout(() => lakeFinale.startBoat(), 1000);
-  }, 2000);
-}
-
 UI.onBegin = () => {
   startCameraSwoop();
+  // Quick test: ?test=finale jumps straight to lake finale
+  if (typeof window !== 'undefined' && window.location.search.includes('test=finale')) {
+    console.log("TEST MODE: Jumping to finale");
+    setTimeout(() => {
+      // Simulate all clues found
+      for (let i = 1; i <= 32; i++) found.add(i);
+      refreshNPCs();
+      updateGuide();
+      // Teleport to lake dock
+      const lakePos = { x: -35, z: -185 };
+      player.group.position.set(lakePos.x, 0, lakePos.z);
+      // Start boat finale directly
+      setTimeout(() => {
+        console.log("Starting boat...");
+        lakeFinale.startBoat();
+      }, 1500);
+    }, 4500);  // After camera swoop (4s)
+    return;
+  }
   updateGuide(); // show the first hint: follow the chameleon!
 };
 // tap the guide text → she walks there automatically (walkthrough mode!)
