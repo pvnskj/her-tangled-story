@@ -191,6 +191,11 @@ export const UI = {
     frame.innerHTML = clue.photo
       ? `<img src="${clue.photo}" alt="memory ${clue.id}">`
       : `<div class="placeholder-card">✨ A new memory is on its way… ✨</div>`;
+    // Each location gets its own cinematic reveal, but the real photo stays full-frame.
+    const chapters = {tower:'beginnings',forest:'forest',tavern:'tavern',
+      cave:'tavern',village:'kingdom',castle:'kingdom',dark:'kingdom',
+      sundrop:'lanterns',lake:'lake'};
+    frame.dataset.chapter = clue.id >= 29 ? 'lanterns' : (chapters[clue.zone] || 'beginnings');
     el("photo-caption").textContent = clue.caption;
     el("photo-modal").classList.remove("hidden");
     // retrigger the dreamy reveal animation each time
