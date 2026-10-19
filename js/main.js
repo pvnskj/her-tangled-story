@@ -1,4 +1,5 @@
 import {buildDiscoveries} from './story-discoveries.js?v=20261018story';
+import {createStoryMagic} from './story-magic.js';
 import {createLakeFinale} from './lake-finale.js?v=20261018story';
 import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
@@ -41,6 +42,7 @@ const player = new Player(scene, world);
 window.__player = player; // for camera toggle button
 camera.position.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene,world);
+const storyMagic = createStoryMagic(scene);
 
 // soft diorama shadows: solid meshes cast, transparent ones don't
 scene.traverse((o) => {
@@ -231,11 +233,13 @@ function updateGuide() {
 }
 
 // Celebration: confetti burst + happy sound when a memory is found
-function celebrateDiscovery() {
-  UI.fanfare();
+function celebrateDiscovery(clue) {
+  // A gentle sparkle for tender memories; bigger confetti on chapter milestones.
+  const milestone = [5, 11, 16, 23, 28, 31].includes(clue.id);
+  if (milestone) UI.fanfare(); else UI.chime();
   // DOM confetti burst
   const colors = ['#ffd700','#ff6b6b','#4ecdc4','#a78bfa','#f9a8d4','#fde68a'];
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < (milestone ? 55 : 12); i++) {
     const p = document.createElement('div');
     const size = 6 + Math.random() * 8;
     p.style.cssText = `position:fixed;left:50%;top:40%;width:${size}px;height:${size}px;background:${colors[i % colors.length]};border-radius:${Math.random() > 0.5 ? '50%' : '2px'};pointer-events:none;z-index:10000;`;
@@ -281,7 +285,8 @@ async function discover(clue) {
   updateGuide();
   refreshMarkers(); // reveal the next clue's marker, hide the found one
   refreshNPCs(); // hide future characters, show only current
-  celebrateDiscovery(); // confetti + fanfare
+  storyMagic.discover(clue);
+  celebrateDiscovery(clue); // vary celebrations based on story milestones
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
   if (clue.finale) {
     modalOpen=false;lakeFinale.startBoat();
@@ -359,6 +364,7 @@ function interactWith(target) {
       return;
     }
     UI.blip();
+    storyMagic.greet(n, clock.elapsedTime);
     if (n.kind === "named") {
       const clue = CLUES.find((c) => c.id === n.clueId);
       const hw = npcHeadWorld(n);
@@ -661,6 +667,7 @@ function animate() {
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
   updateDiscoveries(t);
+  storyMagic.update(dt, t, player.group.position);
   lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
   player.updateCamera(camera, dt);
 
