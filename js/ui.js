@@ -46,7 +46,7 @@ export const UI = {
     }
     el("cam-toggle").addEventListener("click", () => {
       const mode = window.__player?.cycleCamMode();
-      const labels = { first: "👁️", top: "🦅" };
+      const labels = { third: "🎥", first: "👁️", top: "🦅" };
       el("cam-toggle").textContent = labels[mode] || "🦅";
     });
   },
