@@ -223,8 +223,8 @@ export function createHeroineV3(player){
    const blink=(t%4.3);
    const b=Math.max(0,1-Math.abs(blink-2.2)*14);
    // Eyes blink softly by narrowing only the sclera, keeping face readable.
-   let eyes=face.children.filter(o=>o.isMesh&&o.material===colors.eyes);
-   eyes.forEach((eye,i)=>{if(i<2)eye.scale.y=i===0?.097*(1-b*.8):eye.scale.y;});
+   const eyes=face.children.filter(o=>o.isMesh&&o.material===colors.eyes);
+   eyes.forEach(eye=>{eye.scale.y=.097*(1-b*.84);});
    pulse=Math.max(0,pulse-dt);
    const glow=pulse>0?Math.sin((2.25-pulse)*9)**2:0;
    for(const m of flowerMats)m.emissiveIntensity=.18+glow*1.35;
