@@ -4,7 +4,7 @@ import {movePoint} from './world-layout.js?v=20261018story';
 
 // Keep the finale in the same scene, with the original avatar and boat.
 export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}}){
- const maximus=npcs.find(n=>n.castId==='maximus'),flynn=npcs.find(n=>n.castId==='eugene');
+ const maximus=npcs.find(n=>n.castId==='maximus'),flynn=npcs.find(n=>n.castId==='eugene'),rapunzel=npcs.find(n=>n.castId==='rapunzel');
  const dock=movePoint('lake',{x:-48,z:20}),nav=player.navigation;
  let phase='idle',horseRoute=[],flynnRoute=[],elapsed=0;
  function advance(n,route,speed,dt){
@@ -101,6 +101,15 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
       world.scene.add(glowPts);
     }
     this.heartLanterns = true;
+    // 33rd moment: Rapunzel joins Flynn on the shore to send lanterns together
+    if (rapunzel) {
+      const boat = world.boat.group;
+      // Place Rapunzel on the shore near the boat, facing the sky
+      rapunzel.group.position.set(boat.position.x + 3, 0, boat.position.z + 2);
+      rapunzel.group.rotation.y = Math.PI;  // Face the heart
+      // Make her visible (in case she was gated)
+      rapunzel.group.visible = true;
+    }
   },
   updateHeartFinale(dt, t) {
     if (!this.heartData) return;
@@ -138,8 +147,9 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     this.heartInst.instanceMatrix.needsUpdate = true;
     pos.needsUpdate = true;
     
-    // Camera: slowly tilt up to sky view during heart formation
-    // (Camera control handled in main.js via event)
+    // Camera: signal main.js to tilt up to sky view
+    window.__heartFinaleActive = true;
+    window.__heartProgress = progress;
     if (progress >= 1 && !this.heartComplete) {
       this.heartComplete = true;
       console.log("Heart complete! Magical AF ✨");

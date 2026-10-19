@@ -573,6 +573,21 @@ function startCameraSwoop() {
   camera.position.copy(swoopFrom);
 }
 
+// Quick test: ?test=finale jumps straight to lake finale
+if (typeof window !== 'undefined' && window.location.search.includes('test=finale')) {
+  setTimeout(() => {
+    console.log("TEST MODE: Jumping to finale");
+    // Simulate all clues found
+    for (let i = 1; i <= 32; i++) found.add(i);
+    refreshNPCs();
+    // Teleport to lake
+    const lakePos = { x: -35, z: -190 };
+    player.group.position.set(lakePos.x, 0, lakePos.z);
+    // Start boat finale directly
+    setTimeout(() => lakeFinale.startBoat(), 1000);
+  }, 2000);
+}
+
 UI.onBegin = () => {
   startCameraSwoop();
   updateGuide(); // show the first hint: follow the chameleon!
@@ -699,6 +714,16 @@ function animate() {
     camera.position.lerpVectors(swoopFrom, swoopTo, e);
     // Look at player during swoop
     camera.lookAt(player.group.position.x, 2, player.group.position.z);
+  } else if (window.__heartFinaleActive) {
+    // V3: Heart finale sky view - camera tilts up to watch the heart form
+    const progress = window.__heartProgress || 0;
+    const px = player.group.position.x;
+    const pz = player.group.position.z;
+    // Camera stays near boat but tilts up
+    camera.position.set(px, 3, pz + 8);
+    // Look at heart in sky (lerp from horizon to heart)
+    const heartY = 20 + progress * 60;  // Rise to heart height
+    camera.lookAt(-35, heartY, -201);  // Heart position above lake
   } else {
     player.updateCamera(camera, dt);
   }
