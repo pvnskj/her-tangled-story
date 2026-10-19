@@ -157,6 +157,9 @@ function addRays(g,x,z,color=0xffe2a3){
  }
 }
 function placeInteractive(g,id,x,z,mesh,hitMeshes,extras={}){
+ mesh.userData.activityId=id;
+ mesh.userData.effectPulse=0;
+ mesh.userData.restScale=mesh.scale.clone();
  mesh.userData.interact={kind:'ambient',activity:id,x:g.position.x+x,z:g.position.z+z,...extras};
  // Parent the decorative group: raycast will find this tagged ancestor.
  hitMeshes.push(mesh);
@@ -381,9 +384,12 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
  const interact=(target,ui)=>{
   if(activityCooldown>0)return;
   activityCooldown=1.8;
+  const prop=hitMeshes.find(h=>h.userData?.activityId===target.activity);
+  if(prop)prop.userData.effectPulse=1.8;
+  if(['village','tavern'].includes(target.activity))for(const n of npcs)if(n.danceAnchor)n.danceBoost=2;
   ui.banner(texts[target.activity]||'A little magic awaits.');
   ui.chime();
-  if(target.activity==='lake')startFinaleLanterns();
+  // The nine lanterns are reserved for the true boat finale, never a side activity.
   if(target.activity==='sundrop'){const m=groups.get('sundrop');m.scale.y=1.02;}
  };
  function startFinaleLanterns(){finaleActive=true;finaleTime=0;lanternGroup.forEach(l=>{l.object.visible=true;l.object.position.set(l.startX,2,l.startZ);});}
@@ -392,6 +398,17 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
   clueProps,
   update(dt,t,player,activeClue){
    activityCooldown=Math.max(0,activityCooldown-dt);
+   const sundrop=groups.get('sundrop');
+   if(sundrop.scale.y>1)sundrop.scale.y+=(1-sundrop.scale.y)*Math.min(1,dt*2.5);
+   for(const h of hitMeshes){
+    if(!h.userData?.restScale)continue;
+    const k=h.userData.effectPulse||0;
+    if(k>0){
+     h.userData.effectPulse=Math.max(0,k-dt);
+     const s=1+Math.sin((1.8-k)*12)*.13*Math.min(1,k);
+     h.scale.copy(h.userData.restScale).multiplyScalar(s);
+    }else h.scale.copy(h.userData.restScale);
+   }
    for(const m of waveMats)m.uniforms.uTime.value=t;
    for(const a of animated){
     if(a.mesh.material.uniforms?.uTime)a.mesh.material.uniforms.uTime.value=t;

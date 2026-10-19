@@ -163,6 +163,12 @@ export function animateCharacter(n,t,playerPos){
       r.arms[0].rotation.z+=r.hello*.35;
     }
   }
+  // NPCs who just handed over a memory briefly raise both arms in celebration.
+  if((r.celebrateUntil||0)>t){
+    r.arms[0].rotation.x=-2.05;r.arms[1].rotation.x=-2.05;
+    r.arms[0].rotation.z=.24;r.arms[1].rotation.z=-.24;
+    r.head.rotation.z=Math.sin(t*7)*.11;
+  }
   for(const object of r.moving){
     object.rotation.z=wave*(r.activity==='alchemy'?.3:.12);
     if(r.activity==='magic'){object.position.y=.4+wave*.12;object.scale.setScalar(1+wave*.12);}

@@ -335,7 +335,8 @@ export function buildNPCs(scene) {
         const a=t*(n.danceStyle==='tavern'?1.1:.77)+n.danceAnchor.phase;
         n.group.position.x=n.danceAnchor.x+Math.cos(a)*.78;
         n.group.position.z=n.danceAnchor.z+Math.sin(a)*.78;
-        n.group.position.y=.08+Math.abs(Math.sin(t*7+n.danceAnchor.phase))*.21;
+        n.group.position.y=.08+Math.abs(Math.sin(t*7+n.danceAnchor.phase))*(n.danceBoost>0?.39:.21);
+        n.danceBoost=Math.max(0,(n.danceBoost||0)-dt);
         n.group.rotation.y=a+Math.PI/2;
         continue;
       }

@@ -5,6 +5,7 @@ import {createCinematicV3} from './cinematic-v3.js';
 import {createSoundscapeV3} from './soundscape-v3.js';
 import {createNatureMotionV3} from './nature-motion-v3.js';
 import {createTowerArtV3} from './tower-art-v3.js';
+import {createFestivalAtmosphereV3} from './kingdom-atmosphere-v3.js';
 import {createLakeFinale} from './lake-finale.js?v=20261018story';
 import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
@@ -208,6 +209,7 @@ for (const n of npcs) {
 // Decorative V3 props are placed after the original world, navigation and clue markers.
 const kingdomV3=createLivingKingdomV3(scene,CLUES,npcs,hitMeshes);
 const towerArtV3=createTowerArtV3(scene);
+const festivalV3=createFestivalAtmosphereV3(scene);
 const found = new Set();
 const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),
  onSail:()=>{kingdomV3.startFinaleLanterns();soundscape.finale();},
@@ -319,6 +321,8 @@ async function discover(clue) {
   refreshMarkers(); // reveal the next clue's marker, hide the found one
   refreshNPCs(); // hide future characters, show only current
   storyMagic.discover(clue);
+  festivalV3.celebrate(clue.zone);
+  for(const n of npcs)if(n.clueId===clue.id&&n.castRig)n.castRig.celebrateUntil=clock.elapsedTime+2;
   player.heroine?.discover();
   soundscape.discover(clue);
   celebrateDiscovery(clue); // vary celebrations based on story milestones
@@ -392,7 +396,7 @@ function interactWith(target) {
   if (target.kind === "boat") { tapBoat(); return; }
   if (target.kind === "ambient") {
     const d=Math.hypot(p.x-target.x,p.z-target.z);
-    if(d<12)kingdomV3.interact(target,UI);
+    if(d<12){kingdomV3.interact(target,UI);festivalV3.celebrate(target.activity);}
     else UI.banner('Walk a little closer to explore this magical place.');
     return;
   }
@@ -719,6 +723,7 @@ function animate() {
   natureMotion.update(dt,t);
   kingdomV3.update(dt,t,player.group.position,CLUES.find(clue=>!found.has(clue.id))?.id);
   towerArtV3.update(t);
+  festivalV3.update(dt,t,player.group.position);
   soundscape.update(t);
   player.heroine?.update(dt,t);
   lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
