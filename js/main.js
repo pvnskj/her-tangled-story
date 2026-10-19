@@ -4,6 +4,7 @@ import {createLivingKingdomV3} from './living-kingdom-v3.js';
 import {createCinematicV3} from './cinematic-v3.js';
 import {createSoundscapeV3} from './soundscape-v3.js';
 import {createNatureMotionV3} from './nature-motion-v3.js';
+import {createTowerArtV3} from './tower-art-v3.js';
 import {createLakeFinale} from './lake-finale.js?v=20261018story';
 import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
@@ -206,6 +207,7 @@ for (const n of npcs) {
 }
 // Decorative V3 props are placed after the original world, navigation and clue markers.
 const kingdomV3=createLivingKingdomV3(scene,CLUES,npcs,hitMeshes);
+const towerArtV3=createTowerArtV3(scene);
 const found = new Set();
 const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),
  onSail:()=>{kingdomV3.startFinaleLanterns();soundscape.finale();},
@@ -385,7 +387,7 @@ async function runInteraction(npc, clue) {
 }
 
 function interactWith(target) {
-  if(lakeFinale.locked)return;
+  if(cinematic.active||lakeFinale.locked)return;
   const p = player.group.position;
   if (target.kind === "boat") { tapBoat(); return; }
   if (target.kind === "ambient") {
@@ -716,6 +718,7 @@ function animate() {
   storyMagic.update(dt, t, player.group.position, player.moving);
   natureMotion.update(dt,t);
   kingdomV3.update(dt,t,player.group.position,CLUES.find(clue=>!found.has(clue.id))?.id);
+  towerArtV3.update(t);
   soundscape.update(t);
   player.heroine?.update(dt,t);
   lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
@@ -797,7 +800,7 @@ function animate() {
         target = { kind: "npc", npc: bn };
       }
     }
-    if (text && !modalOpen && !UI.isMapOpen() && !lakeFinale.locked) {
+    if (text && !cinematic.active && !modalOpen && !UI.isMapOpen() && !lakeFinale.locked) {
       const s = project(wx, wy, wz);
       // keep the pill on-screen even when its target is at the frame edge
       const cx = Math.max(70, Math.min(window.innerWidth - 70, s.x));
