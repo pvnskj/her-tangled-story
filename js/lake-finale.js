@@ -6,7 +6,7 @@ import {movePoint} from './world-layout.js?v=20261018story';
 export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}}){
  const maximus=npcs.find(n=>n.castId==='maximus'),flynn=npcs.find(n=>n.castId==='eugene');
  const dock=movePoint('lake',{x:-48,z:20}),nav=player.navigation;
- let phase='idle',horseRoute=[],flynnRoute=[],elapsed=0;
+ let phase='idle',horseRoute=[],flynnRoute=[],elapsed=0,lastCue=0;
  function advance(n,route,speed,dt){
   let remaining=speed*dt;
   while(route.length&&remaining>0){const p=n.group.position,q=route[0],dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);
@@ -55,7 +55,7 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     advance(flynn,flynnRoute,4,dt);
     const p=player.group.position,f=flynn.group.position;
     if(Math.hypot(p.x-dock.x,p.z-dock.z)<1.1&&Math.hypot(f.x-dock.x,f.z-dock.z)<1.2){
-     phase='sailing';elapsed=0;player.autoTarget=null;player.riding=true;world.boat.riding=true;
+     phase='sailing';elapsed=0;lastCue=0;player.autoTarget=null;player.riding=true;world.boat.riding=true;
      player.sprite.position.y=1;world.releaseLanterns();world.setLanternBoost(true);
      seatPassengers(t);
     }
@@ -66,6 +66,10 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     const dx=-38*Math.cos(a),dz=24*Math.cos(2*a);
     b.rotation.y=Math.atan2(-dz,dx);b.rotation.z=Math.sin(t*1.6)*.025;
     seatPassengers(t);
+    // Cinematic story beats on the original boat trajectory.
+    if(lastCue===0&&elapsed>5){onBanner('One small lantern for every beautiful memory…');lastCue=1;}
+    if(lastCue===1&&elapsed>12){onBanner('From your very first days to this moment.');lastCue=2;}
+    if(lastCue===2&&elapsed>19){onBanner('And the next chapter is ours to write.');lastCue=3;}
     if(elapsed>=24){phase='complete';onComplete();}
    }else if(phase==='complete')seatPassengers(t);
   }
