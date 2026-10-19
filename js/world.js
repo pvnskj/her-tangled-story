@@ -1655,6 +1655,71 @@ export function buildWorld(scene) {
     return best;
   }
 
+  // ---------- V3: Corona sun emblems & festive bunting ----------
+  // Golden sun decal texture (canvas-drawn)
+  function sunTexture() {
+    const c = document.createElement("canvas"); c.width = c.height = 256;
+    const g = c.getContext("2d");
+    g.translate(128, 128);
+    // Sun rays
+    g.fillStyle = "#FFD700";
+    for (let i = 0; i < 12; i++) {
+      g.rotate(Math.PI / 6);
+      g.beginPath();
+      g.moveTo(0, -70); g.lineTo(12, -50); g.lineTo(-12, -50); g.closePath(); g.fill();
+    }
+    // Sun center
+    g.beginPath(); g.arc(0, 0, 45, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#FF8C00";
+    g.beginPath(); g.arc(0, 0, 30, 0, Math.PI * 2); g.fill();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  const sunTex = sunTexture();
+  // Sun emblems on village ground (source coords: village at 0,90)
+  for (const [sx, sz, s] of [[0, 90, 8], [15, 85, 5], [-15, 95, 5]]) {
+    const sun = new THREE.Mesh(
+      new THREE.CircleGeometry(s, 24),
+      new THREE.MeshBasicMaterial({ map: sunTex, transparent: true, opacity: 0.85 })
+    );
+    sun.rotation.x = -Math.PI / 2;
+    sun.position.set(sx, 0.05, sz);
+    scene.add(sun);
+  }
+  // Bunting: string of triangular flags between two points
+  function addBunting(x1, y1, z1, x2, y2, z2, colors) {
+    const flags = 12;
+    const group = new THREE.Group();
+    // String
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(x1, y1, z1), new THREE.Vector3(x2, y2, z2)
+    ]);
+    group.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x8B4513 })));
+    // Flags
+    for (let i = 1; i < flags; i++) {
+      const t = i / flags;
+      const fx = x1 + (x2 - x1) * t;
+      const fy = y1 + (y2 - y1) * t - Math.sin(t * Math.PI) * 1.5; // Sag
+      const fz = z1 + (z2 - z1) * t;
+      const flagGeo = new THREE.BufferGeometry();
+      const verts = new Float32Array([0,0,0, 1.2,0,0, 0.6,-1.5,0]);
+      flagGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      flagGeo.computeVertexNormals();
+      const flag = new THREE.Mesh(flagGeo, new THREE.MeshBasicMaterial({
+        color: colors[i % colors.length], side: THREE.DoubleSide
+      }));
+      flag.position.set(fx, fy, fz);
+      // Wave animation
+      worldAnims.flags.push({ m: flag, ph: i * 0.5 });
+      group.add(flag);
+    }
+    scene.add(group);
+  }
+  // Bunting in village (source coords) and tavern area
+  const buntingColors = [0xFFD700, 0xFF6B6B, 0x4ECDC4, 0xFFE66D, 0xA8E6CF];
+  addBunting(-20, 12, 80, 20, 12, 80, buntingColors);   // Village street
+  addBunting(-20, 12, 100, 20, 12, 100, buntingColors); // Village square
+  addBunting(60, 10, 40, 90, 10, 40, buntingColors);    // Tavern approach
+
   return { colliders, waters, dockRect, boat, zoneAt, update, sun, paths: PATHS, bound: WORLD_BOUND, zones: ZONES, festival: FESTIVAL, bridges: BRIDGES, dryIslands: DRY_ISLANDS, landmarks: expansion.landmarks,
            setLanternBoost: (b) => { worldAnims.lanternBoost = b; },
            // Finale: release the sky lanterns — the magical Tangled moment, only after clue 33

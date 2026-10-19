@@ -23,12 +23,30 @@ export const UI = {
     });
     el("begin-btn").addEventListener("click", () => {
       this._ensureAudio();
-      el("start-overlay").classList.add("hidden");
-      el("hud").classList.remove("hidden");
-      document.getElementById("joystick").classList.add("started");
-      const hint = el("hint-tap");
-      setTimeout(() => (hint.style.opacity = "0"), 9000);
-      if (this.onBegin) this.onBegin();
+      // Cloud prologue: part clouds, then swoop camera
+      const clouds = document.getElementById("cloud-prologue");
+      if (clouds) {
+        clouds.classList.add("parting");
+        // After clouds part (4s), hide start overlay and begin camera swoop
+        setTimeout(() => {
+          clouds.style.display = "none";
+          el("start-overlay").classList.add("hidden");
+          if (this.onBegin) this.onBegin();
+          // UI fades in after camera swoop (4s)
+          setTimeout(() => {
+            el("hud").classList.remove("hidden");
+            document.getElementById("joystick").classList.add("started");
+            const hint = el("hint-tap");
+            setTimeout(() => (hint.style.opacity = "0"), 9000);
+          }, 4000);
+        }, 1000);
+      } else {
+        // Fallback if no clouds
+        el("start-overlay").classList.add("hidden");
+        el("hud").classList.remove("hidden");
+        document.getElementById("joystick").classList.add("started");
+        if (this.onBegin) this.onBegin();
+      }
     });
     el("photo-close").addEventListener("click", () => {
       el("photo-modal").classList.add("hidden");
@@ -315,6 +333,29 @@ export const UI = {
   blip() { this._tone(660, 0, 0.09, "triangle"); },
   chime() { this._tone(880, 0, 0.25); this._tone(1318, 0.12, 0.35); },
   fanfare() { [523, 659, 784, 1046, 1318].forEach((f, i) => this._tone(f, i * 0.14, 0.4)); },
+  // V3: Per-zone discovery sounds
+  tavernCheer() { 
+    // Boisterous drunken cheer - multiple voices
+    [392, 494, 587, 784].forEach((f, i) => {
+      this._tone(f, i * 0.08, 0.3, "sawtooth");
+      this._tone(f * 1.5, i * 0.08 + 0.05, 0.25, "triangle");
+    });
+  },
+  crystalChime() {
+    // Sharp glassy chime for cave crystals
+    [2093, 2637, 3136].forEach((f, i) => this._tone(f, i * 0.1, 0.5, "sine"));
+  },
+  darkCello() {
+    // Deep resonant cello for dark kingdom
+    [130, 196, 262].forEach((f, i) => this._tone(f, i * 0.2, 0.8, "sawtooth"));
+  },
+  // Play zone-specific discovery sound
+  zoneChime(zoneId) {
+    if (zoneId === 'tavern') this.tavernCheer();
+    else if (zoneId === 'cave') this.crystalChime();
+    else if (zoneId === 'dark') this.darkCello();
+    else this.chime();
+  },
 
   // ===== MINI-GAMES =====
 

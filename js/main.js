@@ -288,7 +288,8 @@ async function discover(clue) {
   if (clue.finale) {
     modalOpen=false;lakeFinale.startBoat();
   } else {
-    UI.chime();
+    // V3: Zone-specific discovery sound
+    UI.zoneChime(clue.zone);
     setTimeout(() => UI.photoModal(clue), 350);
   }
 }
@@ -556,7 +557,24 @@ function keyVector() {
 
 // ---------- UI ----------
 UI.init();
+// Cinematic camera swoop: from high sky down to behind player (4 seconds)
+let swoopActive = false;
+let swoopT = 0;
+const swoopFrom = new THREE.Vector3();
+const swoopTo = new THREE.Vector3();
+function startCameraSwoop() {
+  // Start high above, end behind player
+  const px = player.group.position.x;
+  const pz = player.group.position.z;
+  swoopFrom.set(px, 120, pz + 80);  // High in sky
+  swoopTo.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);  // Normal behind view
+  swoopT = 0;
+  swoopActive = true;
+  camera.position.copy(swoopFrom);
+}
+
 UI.onBegin = () => {
+  startCameraSwoop();
   updateGuide(); // show the first hint: follow the chameleon!
 };
 // tap the guide text → she walks there automatically (walkthrough mode!)
@@ -657,6 +675,11 @@ function animate() {
 
   if (!modalOpen && !UI.isMapOpen()) {
     player.update(dt);
+    // V3: Sundrop aura animation
+    if (player.updateAura) {
+      const isMoving = Math.hypot(player.moveVec.x, player.moveVec.z) > 0.1;
+      player.updateAura(t, isMoving);
+    }
     updateBoat(dt, t);
   } else player.svel.set(0, 0, 0);
   world.update(dt, t, player.group.position.x, player.group.position.z);
@@ -664,7 +687,21 @@ function animate() {
   updateNPCs(dt, t, player.group.position);
   updateDiscoveries(t);
   lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
-  player.updateCamera(camera, dt);
+  // Cinematic swoop overrides normal camera during intro
+  if (swoopActive) {
+    swoopT += dt / 4.0;  // 4 second swoop
+    if (swoopT >= 1) {
+      swoopT = 1;
+      swoopActive = false;
+    }
+    // Ease in-out cubic
+    const e = swoopT < 0.5 ? 4*swoopT*swoopT*swoopT : 1-Math.pow(-2*swoopT+2,3)/2;
+    camera.position.lerpVectors(swoopFrom, swoopTo, e);
+    // Look at player during swoop
+    camera.lookAt(player.group.position.x, 2, player.group.position.z);
+  } else {
+    player.updateCamera(camera, dt);
+  }
 
   // clue marker idle animation
   for (const { group } of clueMarkers.values()) {

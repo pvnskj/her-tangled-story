@@ -16,6 +16,24 @@ export class Player {
     this.group = new THREE.Group();
     this.group.add(this.sprite);
     this.sprite.position.y = 1.8;
+    // V3: Sundrop aura - glowing flower particles
+    this.auraGroup = new THREE.Group();
+    this.auraFlowers = [];
+    const flowerGeo = new THREE.SphereGeometry(0.08, 6, 6);
+    const flowerMat = new THREE.MeshBasicMaterial({ 
+      color: 0xFFD700, 
+      transparent: true, 
+      opacity: 0.8 
+    });
+    for (let i = 0; i < 8; i++) {
+      const flower = new THREE.Mesh(flowerGeo, flowerMat.clone());
+      const angle = (i / 8) * Math.PI * 2;
+      flower.position.set(Math.cos(angle) * 1.2, 1.5 + Math.random() * 1.5, Math.sin(angle) * 1.2);
+      flower.userData = { angle, radius: 1.2, speed: 0.5 + Math.random() * 0.5, yBase: flower.position.y };
+      this.auraGroup.add(flower);
+      this.auraFlowers.push(flower);
+    }
+    this.group.add(this.auraGroup);
     // blob shadow
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.85, 16),
       new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false }));
@@ -82,6 +100,26 @@ export class Player {
   }
 
   setInput(x, z) { this.moveVec.x = x; this.moveVec.z = z; }
+  
+  // V3: Animate Sundrop aura flowers
+  updateAura(t, isMoving) {
+    if (!this.auraFlowers) return;
+    for (const f of this.auraFlowers) {
+      const u = f.userData;
+      // Orbit around her
+      u.angle += 0.02 * u.speed * (isMoving ? 2 : 1);
+      f.position.x = Math.cos(u.angle) * u.radius;
+      f.position.z = Math.sin(u.angle) * u.radius;
+      // Bob up and down
+      f.position.y = u.yBase + Math.sin(t * 2 + u.angle) * 0.3;
+      // Pulse when idle (Sundrop energy!)
+      const pulse = isMoving ? 0.6 : 0.8 + Math.sin(t * 3 + u.angle) * 0.2;
+      f.material.opacity = pulse;
+      // Scale pulse
+      const s = 1 + Math.sin(t * 3 + u.angle) * 0.2;
+      f.scale.set(s, s, s);
+    }
+  }
 
   inWater(x, z) {
     return this.world.waters.some((w) => ((x - w.x) / w.rx) ** 2 + ((z - w.z) / w.rz) ** 2 < 1);

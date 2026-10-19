@@ -223,3 +223,68 @@ body.touch #joystick.started { display: block; }
 #choice-options button { padding: 12px; font-size: 16px; border-radius: 12px; border: 2px solid var(--gold); background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
 #choice-options button:hover { background: rgba(255,215,0,0.2); }
 #choice-response { font-style: italic; color: #fde68a; margin: 12px 0; }
+
+/* Cloud prologue */
+#cloud-prologue {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a1a4a 0%, #4a2a6a 30%, #7a4a8a 60%, #c97a5a 100%);
+  transition: opacity 1s ease;
+}
+#cloud-prologue.parting {
+  opacity: 0;
+  pointer-events: none;
+}
+.cloud-layer {
+  position: absolute;
+  inset: -20%;
+  background-repeat: repeat;
+  transition: transform 4s ease-in-out;
+}
+.cloud-back {
+  background-image: radial-gradient(ellipse 120px 60px at 20% 30%, rgba(255,255,255,0.3) 0%, transparent 70%),
+                    radial-gradient(ellipse 150px 70px at 70% 20%, rgba(255,255,255,0.25) 0%, transparent 70%),
+                    radial-gradient(ellipse 100px 50px at 50% 60%, rgba(255,255,255,0.2) 0%, transparent 70%);
+  animation: drift 30s linear infinite;
+}
+.cloud-mid {
+  background-image: radial-gradient(ellipse 180px 90px at 30% 40%, rgba(255,240,250,0.4) 0%, transparent 70%),
+                    radial-gradient(ellipse 200px 100px at 80% 50%, rgba(255,240,250,0.35) 0%, transparent 70%);
+  animation: drift 20s linear infinite reverse;
+}
+.cloud-front {
+  background-image: radial-gradient(ellipse 220px 110px at 40% 30%, rgba(255,255,255,0.5) 0%, transparent 70%),
+                    radial-gradient(ellipse 160px 80px at 60% 70%, rgba(255,255,255,0.45) 0%, transparent 70%);
+  animation: drift 15s linear infinite;
+}
+#cloud-prologue.parting .cloud-back { transform: translateX(-100%); }
+#cloud-prologue.parting .cloud-mid { transform: translateX(100%); }
+#cloud-prologue.parting .cloud-front { transform: translateX(-100%); }
+@keyframes drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 200px 0; }
+}
+.cloud-title {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  z-index: 201;
+  transition: opacity 1s ease;
+}
+#cloud-prologue.parting .cloud-title { opacity: 0; }
+.cloud-title h1 {
+  font-size: 2.5em;
+  margin: 0 0 0.2em 0;
+  font-family: Georgia, serif;
+}
+.cloud-title p {
+  font-size: 1.2em;
+  opacity: 0.9;
+  margin: 0;
+}

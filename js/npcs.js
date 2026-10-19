@@ -346,10 +346,24 @@ export function buildNPCs(scene) {
         facePlayer(n, dt, playerPos, 9);
       } else if (n.kind === "named" || n.kind === "thug") {
         if (n.kind === "thug") {
-          // mid-song: hearty rocking side to side (on terrain!)
+          // V3: Lively rustic jig - spin in pairs + bounce!
+          n.danceSpin = true;  // All thugs spin-dance
           const by = n.baseY || 0;
-          n.group.position.y = by + Math.abs(Math.sin(t * 2.6 + n.phase)) * 0.22;
-          n.group.rotation.z = Math.sin(t * 2.6 + n.phase) * 0.1;
+          // Fast shallow bounce
+          n.group.position.y = by + Math.abs(Math.sin(t * 5.2 + n.phase)) * 0.25;
+          // Spin (paired dancers rotate together)
+          if (n.danceSpin) {
+            n.group.rotation.y += dt * 1.5;  // Continuous spin
+          } else {
+            n.group.rotation.z = Math.sin(t * 2.6 + n.phase) * 0.15;
+          }
+          // Arm wave (if they have arms)
+          n.group.rotation.x = Math.sin(t * 5.2 + n.phase) * 0.05;
+        } else if (n.dance) {
+          // V3: Village square dancing - paired spin + jig
+          const by = n.baseY || 0;
+          n.group.position.y = by + Math.abs(Math.sin(t * 4.5 + n.phase)) * 0.2;
+          n.group.rotation.y += dt * 1.2;  // Spin with partner
         } else {
           n.group.position.y = Math.abs(Math.sin(t * 2.2 + n.phase)) * 0.06;
           n.group.rotation.y += Math.sin(t * 0.6 + n.phase) * 0.002;
