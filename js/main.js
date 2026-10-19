@@ -164,6 +164,25 @@ for (const clue of CLUES) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTexBig, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     s.scale.setScalar(3.2); s.position.y = 2; g.add(s); g.userData.spark = s;
   }
+  // The collectible still lives at the exact original coordinate,
+  // but its magical light now expresses that chapter's story.
+  if (clue.zone==='tower'){
+    if(g.userData.ring)g.userData.ring.visible=false;
+    if(g.userData.spark)g.userData.spark.position.y=2.1;
+    if(g.userData.beam)g.userData.beam.material.opacity=.14;
+  }else if(clue.zone==='forest'){
+    if(g.userData.spark)g.userData.spark.position.y=1.7;
+  }else if(clue.zone==='cave'){
+    if(g.userData.beam)g.userData.beam.material.color.setHex(0xa896ef);
+    if(g.userData.spark)g.userData.spark.material.color.setHex(0xa89aff);
+  }else if(clue.zone==='dark'){
+    if(g.userData.beam)g.userData.beam.material.color.setHex(0xf4f7ff);
+    if(g.userData.spark)g.userData.spark.material.color.setHex(0xf9f9ff);
+  }else if(clue.zone==='sundrop'){
+    if(g.userData.spark)g.userData.spark.position.y=2.3;
+  }else if(clue.zone==='lake'){
+    if(g.userData.spark)g.userData.spark.scale.setScalar(2.2);
+  }
   if (clue.kind !== "villager") {
     g.userData.interact = { kind: "clue", clue };
     scene.add(g); hitMeshes.push(g);
