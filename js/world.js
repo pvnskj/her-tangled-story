@@ -1784,7 +1784,7 @@ export function buildWorld(scene) {
   addBunting(-20, 12, 100, 20, 12, 100, buntingColors); // Village square
   addBunting(60, 10, 40, 90, 10, 40, buntingColors);    // Tavern approach
 
-  return { colliders, waters, dockRect, boat, zoneAt, update, sun, paths: PATHS, bound: WORLD_BOUND, zones: ZONES, festival: FESTIVAL, bridges: BRIDGES, dryIslands: DRY_ISLANDS, landmarks: expansion.landmarks,
+  return { scene, colliders, waters, dockRect, boat, zoneAt, update, sun, paths: PATHS, bound: WORLD_BOUND, zones: ZONES, festival: FESTIVAL, bridges: BRIDGES, dryIslands: DRY_ISLANDS, landmarks: expansion.landmarks,
            setLanternBoost: (b) => { worldAnims.lanternBoost = b; },
            // Finale: release the sky lanterns — the magical Tangled moment, only after clue 33
            releaseLanterns: () => {
