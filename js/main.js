@@ -1,5 +1,8 @@
 import {buildDiscoveries} from './story-discoveries.js?v=20261018story';
 import {createStoryMagic} from './story-magic.js';
+import {createLivingKingdomV3} from './living-kingdom-v3.js';
+import {createCinematicV3} from './cinematic-v3.js';
+import {createSoundscapeV3} from './soundscape-v3.js';
 import {createLakeFinale} from './lake-finale.js?v=20261018story';
 import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
@@ -43,6 +46,7 @@ window.__player = player; // for camera toggle button
 camera.position.set(CONFIG.SPAWN.x, 15.5, CONFIG.SPAWN.z + 14.5);
 const { npcs, chameleon, update: updateNPCs } = buildNPCs(scene,world);
 const storyMagic = createStoryMagic(scene);
+const soundscape = createSoundscapeV3(UI);
 
 // soft diorama shadows: solid meshes cast, transparent ones don't
 scene.traverse((o) => {
@@ -179,8 +183,12 @@ for (const n of npcs) {
     hitMeshes.push(n.group);
   }
 }
+// Decorative V3 props are placed after the original world, navigation and clue markers.
+const kingdomV3=createLivingKingdomV3(scene,CLUES,npcs,hitMeshes);
 const found = new Set();
-const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),onComplete:()=>{
+const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),
+ onSail:()=>{kingdomV3.startFinaleLanterns();soundscape.finale();},
+ onComplete:()=>{
  modalOpen=true;UI.fanfare();const last=CLUES.at(-1);UI.finaleModal(last.photo,CONFIG.FINAL_MESSAGE);
 }});
 refreshMarkers(); // show only clue 1 at the start (found is defined above)
@@ -286,6 +294,8 @@ async function discover(clue) {
   refreshMarkers(); // reveal the next clue's marker, hide the found one
   refreshNPCs(); // hide future characters, show only current
   storyMagic.discover(clue);
+  player.heroine?.discover();
+  soundscape.discover(clue);
   celebrateDiscovery(clue); // vary celebrations based on story milestones
   if (DEBUG) console.log(`found clue ${clue.id} (${clue.kind})`);
   if (clue.finale) {
@@ -355,6 +365,12 @@ function interactWith(target) {
   if(lakeFinale.locked)return;
   const p = player.group.position;
   if (target.kind === "boat") { tapBoat(); return; }
+  if (target.kind === "ambient") {
+    const d=Math.hypot(p.x-target.x,p.z-target.z);
+    if(d<12)kingdomV3.interact(target,UI);
+    else UI.banner('Walk a little closer to explore this magical place.');
+    return;
+  }
   if (target.kind === "npc") {
     const n = target.npc;
     const d = Math.hypot(p.x - n.group.position.x, p.z - n.group.position.z);
@@ -560,9 +576,16 @@ function keyVector() {
 
 // ---------- UI ----------
 UI.init();
-UI.onBegin = () => {
-  updateGuide(); // show the first hint: follow the chameleon!
-};
+const cinematic=createCinematicV3({
+ camera,player,playMusic:()=>soundscape.start(),
+ onComplete:()=>{
+   UI.enterPlay();
+   updateGuide();
+   document.getElementById('hud')?.classList.add('v3-ui-arrive');
+   document.getElementById('guide-box')?.classList.add('v3-ui-arrive');
+ }
+});
+UI.onBegin=()=>cinematic.begin();
 // tap the guide text → she walks there automatically (walkthrough mode!)
 function walkToClue(next) {
   if (!next || modalOpen || lakeFinale.locked) return;
@@ -656,10 +679,10 @@ function animate() {
   // input
   const kv = keyVector();
   const jx = UI.joystick.x + kv.x, jz = UI.joystick.y + kv.z;
-  player.setInput(lakeFinale.locked?0:jx, lakeFinale.locked?0:jz);
+  player.setInput((lakeFinale.locked||cinematic.active)?0:jx,(lakeFinale.locked||cinematic.active)?0:jz);
   player.keyLook(dt, keys);
 
-  if (!modalOpen && !UI.isMapOpen()) {
+  if (!cinematic.active && !modalOpen && !UI.isMapOpen()) {
     player.update(dt);
     updateBoat(dt, t);
   } else player.svel.set(0, 0, 0);
@@ -668,8 +691,12 @@ function animate() {
   updateNPCs(dt, t, player.group.position);
   updateDiscoveries(t);
   storyMagic.update(dt, t, player.group.position);
+  kingdomV3.update(dt,t,player.group.position,CLUES.find(clue=>!found.has(clue.id))?.id);
+  soundscape.update(t);
+  player.heroine?.update(dt,t);
   lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
-  player.updateCamera(camera, dt);
+  if(cinematic.active)cinematic.update(dt);
+  else player.updateCamera(camera, dt);
 
   // clue marker idle animation
   for (const { group } of clueMarkers.values()) {
@@ -771,6 +798,7 @@ function animate() {
     if (zid !== currentZoneId) {
       currentZoneId = zid;
       UI.banner(zn ? zn.name : "The Valley");
+      soundscape.zone(zid);
     }
   }
 
