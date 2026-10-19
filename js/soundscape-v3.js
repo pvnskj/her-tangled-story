@@ -105,7 +105,9 @@ export function createSoundscapeV3(UI){
     string(293.66,3,.042);
   },
   update(time){
+   if(UI._muted){stopHum();return;}
    if(!started||!context())return;
+   if(current==='sundrop'&&!hum)startHum();
    const step=Math.floor(time*1.28);
    if(step===lastStep)return;
    lastStep=step;
