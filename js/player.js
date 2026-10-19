@@ -2,6 +2,7 @@
 // collisions (bounds, circle colliders, water unless boating/on dock).
 
 import * as THREE from "three";
+import {createHeroineV3} from "./avatar-v3.js";
 import { CONFIG } from "./config.js?v=20261018story";
 import { navigationFor } from "./navigation.js?v=20261018story";
 
@@ -22,7 +23,10 @@ export class Player {
     sh.rotation.x = -Math.PI / 2; sh.position.y = 0.03;
     this.group.add(sh);
     this.group.position.set(CONFIG.SPAWN.x, 0, CONFIG.SPAWN.z);
+    this.group.rotation.y = Math.PI; // Look toward the tower on arrival.
     scene.add(this.group);
+    this.heroine = createHeroineV3(this);
+    this.sprite.visible = false; // Keep original sprite for compatibility, render the V3 3D heroine.
 
     this.vel = new THREE.Vector3();
     this.riding = false;
@@ -35,16 +39,17 @@ export class Player {
     // drag-to-look offsets (radians): yaw/pitch added around the follow target
     this.orbit = { yaw: 0, pitch: 0, lastDrag: -100 };
     // camera modes: 'third' (diorama), 'first' (her POV), 'top' (royalty view)
-    this.camMode = 'top'; // default: bird's-eye — clearest for navigation
+    this.camMode = 'third'; // V3: see her and the world; bird's-eye and POV remain available
     this.fpYaw = 0; // first-person look direction (radians)
     this.fpPitch = 0;
   }
 
   cycleCamMode() {
-    // only two views: bird's-eye (top-down) ↔ first-person
-    this.camMode = this.camMode === 'top' ? 'first' : 'top';
+    // Third-person, bird's-eye and first-person without changing any navigation.
+    this.camMode = this.camMode === 'third' ? 'top' : this.camMode === 'top' ? 'first' : 'third';
     // hide her sprite in first-person so you don't see the back of her head
-    if (this.sprite) this.sprite.visible = this.camMode !== 'first';
+    if (this.sprite) this.sprite.visible = false;
+    if (this.heroine?.root) this.heroine.root.visible = this.camMode !== 'first';
     // when entering first-person, face her current movement direction
     if (this.camMode === 'first') {
       const ml = Math.hypot(this.moveVec.x, this.moveVec.z);
@@ -197,6 +202,14 @@ export class Player {
         if (this.navigation.canWalk(p.x, p.z + dz)) p.z += dz;
       }
     }
+    // Keep the heroine facing her travel direction, including manual joystick movement.
+    if (this.moving && Math.hypot(this.svel.x,this.svel.z)>.45){
+      const facing=Math.atan2(this.svel.x,this.svel.z);
+      let diff=facing-this.group.rotation.y;
+      while(diff>Math.PI)diff-=2*Math.PI;
+      while(diff<-Math.PI)diff+=2*Math.PI;
+      this.group.rotation.y+=diff*Math.min(1,dt*7);
+    }
     // follow the terrain — feel the slopes!
     if (window.terrainHeight) {
       const targetY = window.terrainHeight(p.x, p.z);
@@ -229,7 +242,14 @@ export class Player {
       camera.lookAt(this.lookSm);
       return;
     }
-    // (third-person removed — only first-person and top-down remain)
+    // Cinematic follow camera: behind the heroine, elevated enough to avoid her dress or grass.
+    const yaw = this.group.rotation.y;
+    const forwardX=Math.sin(yaw),forwardZ=Math.cos(yaw);
+    const wanted=new THREE.Vector3(p.x-forwardX*11,p.y+7.4,p.z-forwardZ*11);
+    const focus=new THREE.Vector3(p.x+forwardX*5,p.y+2.1,p.z+forwardZ*5);
+    camera.position.lerp(wanted,1-Math.pow(.001,dt));
+    if(!this.lookSm)this.lookSm=focus.clone();
+    this.lookSm.lerp(focus,1-Math.pow(.001,dt));
     camera.lookAt(this.lookSm);
   }
 
