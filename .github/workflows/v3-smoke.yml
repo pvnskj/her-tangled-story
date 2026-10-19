@@ -31,5 +31,6 @@ jobs:
           name: v3-mobile-screenshots
           path: |
             v3-mobile-preview.png
+            v3-character-front.png
             v3-mobile-preview-failure.png
           if-no-files-found: ignore
