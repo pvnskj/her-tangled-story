@@ -51,9 +51,7 @@ export function createHeroineV3(player){
 
  // Draped bell skirt: rounded overlapping panels, not a blunt straight cylinder.
  const dressBody=new THREE.Group();root.add(dressBody);
- const radii=[
-   [.27,.22],[.35,.42],[.54,.76],[.78,1.1],[.91,1.4]
- ];
+ // A sculpted, continuously curved skirt silhouette replaces the old toy-like blobs.
  const lathePts=[
   new THREE.Vector2(0,.10),
   new THREE.Vector2(.69,.10),
@@ -69,12 +67,40 @@ export function createHeroineV3(player){
  skirt.material=new THREE.MeshStandardMaterial({
    color:0x8e4bb7,roughness:.78,side:THREE.DoubleSide
  });
- const drapeColors=[colors.dress,colors.lavender,colors.dress,colors.lavender];
- for(let i=0;i<8;i++){
-  const a=i*Math.PI/4,shade=drapeColors[i%4];
-  const panel=ball(dressBody,shade,Math.sin(a)*.45,.65,Math.cos(a)*.45,.27,.72,.24);
-  panel.rotation.y=a;panel.rotation.z=Math.sin(a)*.08;
-  panel.material=shade;
+ // Continuous fabric folds with radial displacement; no attached spherical panels.
+ // The folds are integrated into the surface, so the dress reads as sewn cloth.
+ const skirtPosition=skirt.geometry.attributes.position;
+ const skirtOriginal=new Float32Array(skirtPosition.array);
+ const skirtNormals=()=>{skirt.geometry.computeVertexNormals();skirt.geometry.attributes.normal.needsUpdate=true;};
+ for(let i=0;i<skirtPosition.count;i++){
+   const x=skirtOriginal[i*3],y=skirtOriginal[i*3+1],z=skirtOriginal[i*3+2];
+   const angle=Math.atan2(z,x);
+   const r=Math.hypot(x,z);
+   const fold=Math.sin(angle*10+Math.sin(y*2)*.18)*(.015+.028*(1-Math.min(1,y/1.5)));
+   skirtPosition.setXYZ(i,x*(1+fold),y,z*(1+fold));
+ }
+ skirtPosition.needsUpdate=true;skirtNormals();
+ // Fine gold seams flow down the dress instead of disconnected purple patches.
+ const skirtOverlay=new THREE.MeshStandardMaterial({
+   color:0xb17bd1,roughness:.88,transparent:true,opacity:.72,side:THREE.DoubleSide,
+   depthWrite:false
+ });
+ for(let i=0;i<6;i++){
+   const a=(i+.35)*Math.PI/3,vertices=[],indices=[];
+   for(let j=0;j<=12;j++){
+     const y=.18+j*.104;
+     const r=.845-(y-.18)*.42;
+     for(const da of [-.115,.115]){
+       const theta=a+da*(1-(y/1.6)*.55);
+       vertices.push(Math.sin(theta)*(r+.012),y,Math.cos(theta)*(r+.012));
+     }
+     if(j<12){const k=j*2;indices.push(k,k+1,k+2,k+1,k+3,k+2);}
+   }
+   const geo=new THREE.BufferGeometry();
+   geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+   geo.setIndex(indices);geo.computeVertexNormals();
+   const fold=new THREE.Mesh(geo,skirtOverlay);
+   fold.castShadow=false;dressBody.add(fold);
  }
  // Fine vertical stitch ribbons with gold embroidery, and a scalloped hem.
  for(let i=0;i<12;i++){
@@ -84,14 +110,17 @@ export function createHeroineV3(player){
    pts.push([Math.sin(a)*r,y+.018,Math.cos(a)*r]);
   }
   curve(root,pts,.011,i%3===0?colors.gold:colors.lavender);
-  if(i%2===0){const jewel=ball(root,colors.gold,Math.sin(a)*.79,.25,Math.cos(a)*.79,.045,.055,.045);}
+  if(i%3===0)ball(root,colors.gold,Math.sin(a)*.79,.25,Math.cos(a)*.79,.022,.03,.022);
  }
  const hem=put(root,new THREE.TorusGeometry(.82,.035,8,36),colors.lace,0,.165,0);
  hem.rotation.x=Math.PI/2;
  // Sweetheart fitted corset over the gown.
  cone(root,.23,.35,.64,colors.lavender,0,1.77,0,20);
- ball(root,colors.dressDark,0,1.80,.27,.27,.37,.12);
- ball(root,colors.dress,0,1.94,.29,.24,.25,.09);
+ // Shaped bodice, small collar and laced panel rather than protruding torso balls.
+ const frontPanel=put(root,new THREE.PlaneGeometry(.42,.53),colors.dressDark,0,1.79,.315);
+ frontPanel.rotation.x=-.04;
+ const collar=put(root,new THREE.TorusGeometry(.245,.025,6,22,Math.PI),colors.lace,0,2.105,.145);
+ collar.rotation.z=Math.PI;
  for(const x of [-.21,.21]){
   curve(root,[[x,2.1,.35],[x*.7,1.78,.37],[x*.55,1.48,.28]],.02,colors.gold);
  }
@@ -103,11 +132,11 @@ export function createHeroineV3(player){
  }
  // Rapunzel-style puff sleeves, hanging forearms, detailed cuffs.
  for(const side of [-1,1]){
-  const sleeve=ball(root,colors.dress,side*.45,2.07,0,.27,.24,.28);
-  ball(root,colors.lavender,side*.45,2.16,.11,.22,.12,.22);
+  const sleeve=ball(root,colors.dress,side*.405,2.045,0,.195,.175,.20);
+  ball(root,colors.lavender,side*.405,2.115,.075,.16,.085,.15);
   const arm=new THREE.Group();arm.position.set(side*.49,1.98,.01);root.add(arm);
-  ball(arm,colors.skin,0,-.30,0,.12,.33,.12);
-  ball(arm,colors.skin,0,-.64,.035,.10,.15,.12);
+  ball(arm,colors.skin,0,-.29,0,.088,.29,.095);
+  ball(arm,colors.skin,0,-.59,.035,.083,.13,.095);
   cone(arm,.135,.14,.13,colors.lace,0,-.48,0,12);
   limbs.push(arm);
   const foot=ball(root,colors.boot,side*.29,.16,.18,.18,.14,.29);
@@ -118,36 +147,38 @@ export function createHeroineV3(player){
  // Disney-inspired expressive face with large eyes and softened cheeks.
  const face=new THREE.Group();face.position.set(0,2.61,0);
  root.add(face);
- const head=ball(face,colors.skin,0,0,0,.385,.47,.34);
+ const head=ball(face,colors.skin,0,0,0,.355,.435,.315);
+ // A continuous jaw and cheeks produce a softer heart-shaped face.
+ ball(face,colors.skin,0,-.22,.065,.275,.205,.265);
  const cheeks=[];
  for(const side of [-1,1]){
-  cheeks.push(ball(face,colors.blush,side*.233,-.135,.268,.100,.068,.022));
+  cheeks.push(ball(face,colors.blush,side*.205,-.155,.258,.078,.043,.009));
   // Strong upper eyelid, big almond sclera, dark warm iris.
-  ball(face,colors.eyes,side*.158,.035,.286,.114,.097,.069);
-  ball(face,colors.iris,side*.155,.017,.343,.069,.075,.029);
-  ball(face,colors.pupil,side*.151,.011,.365,.036,.056,.016);
-  ball(face,colors.eyes,side*.141,.052,.382,.021,.023,.012);
-  const eyelid=ball(face,colors.hairSide,side*.16,.115,.33,.115,.025,.017);
+  ball(face,colors.eyes,side*.139,.015,.275,.082,.064,.043);
+  ball(face,colors.iris,side*.138,.009,.310,.047,.052,.021);
+  ball(face,colors.pupil,side*.137,.008,.326,.025,.038,.011);
+  ball(face,colors.eyes,side*.129,.039,.339,.012,.014,.008);
+  const eyelid=ball(face,colors.hairSide,side*.139,.075,.308,.087,.014,.011);
   eyelid.rotation.z=-side*.09;
   // Tiny lashes give her personality, unlike the previous featureless doll.
   for(let j=0;j<2;j++){
    const lash=put(face,new THREE.CapsuleGeometry(.011,.073,4,6),colors.hair,
-     side*(.235+j*.03),.123-j*.013,.338);
+     side*(.199+j*.02),.082-j*.01,.31);
    lash.rotation.z=side*(.5+j*.18);
   }
-  const brow=ball(face,colors.brow,side*.165,.207,.312,.125,.018,.024);
+  const brow=ball(face,colors.brow,side*.139,.165,.298,.09,.012,.012);
   brow.rotation.z=-side*.14;
  }
- ball(face,colors.nose,0,-.10,.352,.061,.068,.074);
- const smile=put(face,new THREE.TorusGeometry(.102,.015,6,22,Math.PI),colors.shadow,0,-.236,.31);
+ ball(face,colors.nose,0,-.095,.308,.036,.042,.035);
+ const smile=put(face,new THREE.TorusGeometry(.082,.008,6,22,Math.PI),colors.shadow,0,-.232,.307);
  smile.rotation.z=Math.PI;
- ball(face,colors.pink,0,-.249,.307,.108,.023,.025);
+ ball(face,colors.pink,0,-.252,.302,.077,.012,.012);
  // Soft side part and face-framing locks.
- ball(face,colors.hair,0,.278,-.035,.37,.25,.34);
+ ball(face,colors.hair,0,.273,-.038,.35,.235,.314);
  for(const side of [-1,1]){
-  const bangs=ball(face,colors.hairSide,side*.195,.245,.20,.19,.10,.14);
+  const bangs=ball(face,colors.hairSide,side*.172,.247,.176,.168,.08,.119);
   bangs.rotation.z=side*.32;
-  const curl=ball(face,colors.hair,side*.315,-.12,-.005,.125,.34,.13);
+  const curl=ball(face,colors.hair,side*.296,-.14,-.038,.080,.295,.10);
   curl.rotation.z=side*.10;
  }
 
@@ -231,7 +262,7 @@ export function createHeroineV3(player){
    const b=Math.max(0,1-Math.abs(blink-2.2)*14);
    // Eyes blink softly by narrowing only the sclera, keeping face readable.
    const eyes=face.children.filter(o=>o.isMesh&&o.material===colors.eyes);
-   eyes.forEach(eye=>{eye.scale.y=.097*(1-b*.84);});
+   eyes.forEach(eye=>{eye.scale.y=.064*(1-b*.88);});
    pulse=Math.max(0,pulse-dt);
    const glow=pulse>0?Math.sin((2.25-pulse)*9)**2:0;
    for(const m of flowerMats)m.emissiveIntensity=.18+glow*1.35;
