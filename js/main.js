@@ -6,6 +6,7 @@ import {createSoundscapeV3} from './soundscape-v3.js';
 import {createNatureMotionV3} from './nature-motion-v3.js';
 import {createTowerArtV3} from './tower-art-v3.js';
 import {createFestivalAtmosphereV3} from './kingdom-atmosphere-v3.js';
+import {createSunlitCoronaV3} from './sunlit-corona-v3.js';
 import {createLakeFinale} from './lake-finale.js?v=20261018story';
 import { clueTarget } from "./navigation.js?v=20261018story";
 // main.js — boot, game loop, clue discovery, interaction, boat ride, debug.
@@ -210,6 +211,7 @@ for (const n of npcs) {
 const kingdomV3=createLivingKingdomV3(scene,CLUES,npcs,hitMeshes);
 const towerArtV3=createTowerArtV3(scene);
 const festivalV3=createFestivalAtmosphereV3(scene);
+const sunlitCorona=createSunlitCoronaV3(scene,renderer,world);
 const found = new Set();
 const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),
  onSail:()=>{kingdomV3.startFinaleLanterns();soundscape.finale();},
@@ -716,6 +718,7 @@ function animate() {
     updateBoat(dt, t);
   } else player.svel.set(0, 0, 0);
   world.update(dt, t, player.group.position.x, player.group.position.z);
+  sunlitCorona.update(t,player.group.position,world.zoneAt(player.group.position.x,player.group.position.z)?.id);
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
   updateDiscoveries(t);
