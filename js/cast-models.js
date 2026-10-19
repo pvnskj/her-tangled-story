@@ -90,10 +90,10 @@ export function dressCharacter(n,c){
     ball(g,0xe1b84e,.24,1.72,1.44,.16);box(g,0x8baa76,-.18,1.35,1.44,.7,.15,.03);
   }
   if(c.activity==='alchemy')for(let i=0;i<3;i++){const bubble=ball(prop,0xa6e6ce,-.12,.6+i*.12,0,.035);bubble.userData.bubble=i;moving.push(bubble);}
-  n.castRig={arms,prop,moving,baseY:prop.position.y,activity:c.activity};
+  n.castRig={arms,prop,moving,baseY:prop.position.y,activity:c.activity,head,headBaseY:head.position.y,hello:0};
 }
 
-export function animateCharacter(n,t){
+export function animateCharacter(n,t,playerPos){
   const r=n.castRig;if(!r)return;
   const phase=t*(r.activity==='piano'?5:2)+(n.phase||0);
   r.prop.position.y=r.baseY+Math.sin(phase)*.025;
@@ -119,6 +119,27 @@ export function animateCharacter(n,t){
     case 'puppet':r.arms[0].rotation.x=-1+wave*.4;break;
     case 'barrel':r.prop.position.y=r.baseY+reach*.16;r.prop.rotation.y=wave*.2;break;
     case 'alchemy':r.arms[0].rotation.x=-1.15+wave*.3;break;
+  }
+  // A little eye contact, head tilt, and an occasional friendly wave when she approaches.
+  // Additive gestures preserve each character's existing named activity and prop.
+  if(playerPos&&n.group.visible){
+    const dx=playerPos.x-n.group.position.x,dz=playerPos.z-n.group.position.z;
+    const near=Math.hypot(dx,dz)<8;
+    const greeting=near&&Math.sin(t*.85+(n.phase||0))>.1;
+    r.hello+=(Number(greeting)-r.hello)*.09;
+    r.head.rotation.z=Math.sin(t*1.2+(n.phase||0))*.035+r.hello*.12;
+    r.head.rotation.y=near?Math.sin(t*.65+(n.phase||0))*.12:Math.sin(t*.35+(n.phase||0))*.045;
+    r.head.position.y=r.headBaseY+Math.sin(t*2+(n.phase||0))*.015;
+    // Wave with one hand only; characters keep holding their task props.
+    if(!['piano','guard','sharpen','paint','mime'].includes(r.activity)){
+      r.arms[0].rotation.x-=r.hello*.7;
+      r.arms[0].rotation.z+=r.hello*(.25+Math.sin(t*7)*.12);
+    }
+    // Ulf's mime performance becomes a short playful silent bow.
+    if(r.activity==='mime'){
+      r.head.rotation.z=Math.sin(t*1.5)*(.08+r.hello*.16);
+      r.arms[0].rotation.z+=r.hello*.35;
+    }
   }
   for(const object of r.moving){
     object.rotation.z=wave*(r.activity==='alchemy'?.3:.12);
@@ -152,7 +173,7 @@ export function installAnimalCast(scene,npcs,chameleon){
   const paws=[-.19,.19].map(x=>ball(raccoon,0x645e59,x,.45,.4,.09));const flask=ball(raccoon,0x83bcbd,0,.48,.56,.12);raccoon.position.set(16,0,-67);scene.add(raccoon);add('ruddiger',raccoon,1.2,{paws,flask});
   const owl=new THREE.Group();cylinder(owl,0x74563c,0,.7,0,.08,1.4);const bird=new THREE.Group();bird.position.y=1.5;owl.add(bird);const belly=ball(bird,0x8b7562,0,.3,0,.3);belly.scale.y=1.3;const head=ball(bird,0xb3a08a,0,.65,0,.25);const wings=[-.24,.24].map(x=>{const wing=ball(bird,0x6a584b,x,.3,0,.17);wing.scale.set(.45,1.5,1);return wing;});owl.position.set(22,0,89);scene.add(owl);add('owl',owl,2.6,{head,wings});
 }
-export function animateAnimal(n,t){
+export function animateAnimal(n,t,playerPos){
   const r=n.animalRig;if(!r)return;
   if(r.neck){r.neck.rotation.x=.15+Math.sin(t*.65)*.2;r.tail.rotation.z=Math.sin(t*1.5)*.25;}
   if(r.paws){r.paws.forEach((p,i)=>p.position.y=.45+Math.sin(t*3+i)*.04);r.flask.rotation.z=Math.sin(t*2)*.15;}
