@@ -6,7 +6,7 @@ import * as THREE from 'three';
 function mat(hex,rough=.75,metal=0){return new THREE.MeshStandardMaterial({color:hex,roughness:rough,metalness:metal,side:THREE.DoubleSide});}
 const colors={
   skin:mat(0xefb994,.84),nose:mat(0xeaa780),shadow:mat(0xc77a73),
-  hair:mat(0x322330,.82),hairSide:mat(0x433042,.79),
+  hair:mat(0x352934,.79),hairSide:mat(0x59404e,.76),
   dress:mat(0x985dc4,.74),dressDark:mat(0x70388f,.78),
   lavender:mat(0xc39ad8,.76),lace:mat(0xffecce,.57),
   gold:mat(0xe6bb6c,.45,.28),boot:mat(0x59365f,.82),
@@ -160,32 +160,39 @@ export function createHeroineV3(player){
   const seg=new THREE.Group();
   if(i===0)braidBase.add(seg);
   else{seg.position.set(Math.sin(i*.53)*.033,-.285,-.015);braid[i-1].add(seg);}
-  const r=.17-i*.009;
-  // Four overlapping woven elliptical bundles form a plait instead of beads.
+  const r=.156-i*.006;
+  // Closely overlapping tapered locks form a smoother woven braid.
   for(const side of [-1,1]){
    const x=side*(.095-i*.004);
-   const lock=ball(seg,(i+side)%2?colors.hair:colors.hairSide,x,-.145,0,r*.85,.22,.14);
+   const lock=ball(seg,(i+side)%2?colors.hair:colors.hairSide,x*.70,-.145,0,r*.73,.21,.13);
    lock.rotation.z=side*.52;
   }
-  ball(seg,colors.hair,0,-.18,-.035,r*.95,.18,.145);
+  ball(seg,colors.hair,0,-.175,-.035,r*.86,.215,.14);
   const band=put(seg,new THREE.TorusGeometry(r*.8,.013,6,14),colors.gold,0,-.288,0);
   band.rotation.x=Math.PI/2;
   if(i%2===0 || i===7){
    const petal=petalMaterial(i%3===0?0xffffff:0xffe5a4);
    const fx=i%2===0?-.135:.135;
-   flower(seg,fx,-.13,.17,i<6?.17:.13,petal,flowerMats);
+   flower(seg,fx,-.13,-.23,i<6?.20:.16,petal,flowerMats);
   }
   braid.push(seg);
  }
- const end=ball(braid[8],colors.hair,0,-.41,0,.065,.20,.065);
+ const end=ball(braid[8],colors.hair,0,-.38,0,.065,.18,.065);
+ // Light woven ribbon and flowers that actually face the player's camera.
+ curve(braidBase,[[0,-.06,-.15],[-.10,-.55,-.18],[.08,-1.12,-.18],[-.09,-1.7,-.18],[.05,-2.25,-.18]],.019,colors.gold);
+ for(let i=0;i<3;i++){
+  const material=petalMaterial(i===1?0xffd4a5:0xffffff);
+  flower(braidBase,-.18+i*.18,-.08,-.31,.18,material,flowerMats);
+ }
  // Hair curls along the dress hem, creating the recognizable trailing silhouette.
  const trailPts=[
    [0,.44,-.3],[.0,.24,-.43],[.10,.15,-.65],[.25,.125,-.91],
-   [.6,.12,-1.15],[1.05,.12,-1.30],[1.45,.12,-1.22]
+   [.4,.12,-.97],[.75,.12,-1.17],[.98,.12,-1.12]
  ];
- const trail=curve(root,trailPts,.095,colors.hairSide);
+ const trail=curve(root,trailPts,.061,colors.hairSide);
+ curve(root,trailPts.map(([x,y,z])=>[x+.045,y+.045,z]),.014,colors.gold);
  const trailFlowers=[];
- for(const [i,x,z] of [[0,.6,-1.15],[1,1.25,-1.25]]){
+ for(const [i,x,z] of [[0,.53,-1.02],[1,.89,-1.14]]){
   const petals=petalMaterial(i?0xffffff:0xffdba5);
   const f=flower(root,x,.25,z,.16,petals,flowerMats);
   f.rotation.x=-Math.PI/2;trailFlowers.push(f);
