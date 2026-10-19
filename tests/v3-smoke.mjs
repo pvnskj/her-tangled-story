@@ -38,6 +38,14 @@ try{
  await page.evaluate(()=>{window.__player.orbit.yaw=Math.PI;window.__player.orbit.pitch=0;window.__player.updateCamera(window.__game.camera,1);});
  await page.waitForTimeout(700);
  await page.screenshot({path:'v3-character-front.png'});
+ // Portrait inspection: evaluate facial expression and fabric silhouette up close.
+ await page.evaluate(()=>{
+   const p=window.__player.group.position,cam=window.__game.camera;
+   cam.position.set(p.x,p.y+3.25,p.z-5.5);
+   cam.lookAt(p.x,p.y+1.65,p.z);
+   cam.updateProjectionMatrix();
+ });
+ await page.screenshot({path:'v3-character-portrait.png'});
  if(errors.length||failed.length)throw Error('Browser errors: '+JSON.stringify({errors,failed}));
  console.log('V3 smoke PASS');
 }catch(e){
