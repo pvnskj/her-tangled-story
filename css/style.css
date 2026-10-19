@@ -288,3 +288,23 @@ body.touch #joystick.started { display: block; }
   opacity: 0.9;
   margin: 0;
 }
+
+#cloud-begin-btn {
+  margin-top: 1.5em;
+  padding: 0.8em 2.5em;
+  font-size: 1.2em;
+  background: linear-gradient(135deg, #FFD700, #FF8C00);
+  border: none;
+  border-radius: 30px;
+  color: #4a2a00;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+  transition: transform 0.2s ease;
+}
+#cloud-begin-btn:hover {
+  transform: scale(1.05);
+}
+#cloud-begin-btn:active {
+  transform: scale(0.95);
+}

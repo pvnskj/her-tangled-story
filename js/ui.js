@@ -21,6 +21,36 @@ export const UI = {
       this._muted = !this._muted;
       el("sound-toggle").textContent = this._muted ? "🔇" : "🔊";
     });
+    // Cloud prologue Begin button (same as main Begin)
+    const cloudBegin = el("cloud-begin-btn");
+    const beginHandler = () => {
+      this._ensureAudio();
+      // Cloud prologue: part clouds, then swoop camera
+      const clouds = document.getElementById("cloud-prologue");
+      if (clouds) {
+        clouds.classList.add("parting");
+        // After clouds part (4s), hide start overlay and begin camera swoop
+        setTimeout(() => {
+          clouds.style.display = "none";
+          el("start-overlay").classList.add("hidden");
+          if (this.onBegin) this.onBegin();
+          // UI fades in after camera swoop (4s)
+          setTimeout(() => {
+            el("hud").classList.remove("hidden");
+            document.getElementById("joystick").classList.add("started");
+            const hint = el("hint-tap");
+            setTimeout(() => (hint.style.opacity = "0"), 9000);
+          }, 4000);
+        }, 1000);
+      } else {
+        // Fallback if no clouds
+        el("start-overlay").classList.add("hidden");
+        el("hud").classList.remove("hidden");
+        document.getElementById("joystick").classList.add("started");
+        if (this.onBegin) this.onBegin();
+      }
+    };
+    if (cloudBegin) cloudBegin.addEventListener("click", beginHandler);
     el("begin-btn").addEventListener("click", () => {
       this._ensureAudio();
       // Cloud prologue: part clouds, then swoop camera
