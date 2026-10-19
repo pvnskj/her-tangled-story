@@ -714,6 +714,13 @@ function animate() {
     camera.position.lerpVectors(swoopFrom, swoopTo, e);
     // Look at player during swoop
     camera.lookAt(player.group.position.x, 2, player.group.position.z);
+  } else if (window.__twoLanternsActive) {
+    // V3: Close-up on their 2 lanterns rising
+    const px = player.group.position.x;
+    const pz = player.group.position.z;
+    // Camera close to boat, looking up at the 2 lanterns
+    camera.position.set(px + 3, 2.5, pz + 5);
+    camera.lookAt(px, 8, pz);  // Look up at lanterns
   } else if (window.__heartFinaleActive) {
     // V3: Heart finale sky view - camera tilts up to watch the heart form
     const progress = window.__heartProgress || 0;

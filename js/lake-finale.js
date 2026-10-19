@@ -20,9 +20,16 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
  }
  function seatPassengers(t){
   const boat=world.boat.group,c=Math.cos(boat.rotation.y),s=Math.sin(boat.rotation.y);
+  // Player (her) + Flynn + Rapunzel all on boat
   player.group.position.set(boat.position.x+c*.85,.9,boat.position.z-s*.85);
   flynn.group.position.set(boat.position.x-c*.8,.65,boat.position.z+s*.8);
   flynn.group.rotation.set(0,boat.rotation.y-Math.PI/2,0);
+  // Rapunzel boards too - sits opposite Flynn
+  if(rapunzel){
+    rapunzel.group.position.set(boat.position.x+c*.2,.65,boat.position.z-s*.2);
+    rapunzel.group.rotation.set(0,boat.rotation.y+Math.PI/2,0);
+    rapunzel.group.visible=true;
+  }
   if(flynn.castRig){flynn.castRig.prop.visible=false;flynn.castRig.arms.forEach((arm,i)=>{arm.rotation.x=-.9+Math.sin(t*2.4+i*.3)*.4;arm.rotation.z=(i?-.2:.2);});}
   const oar=boat.children.find(o=>o.geometry?.type==='CylinderGeometry'&&o.geometry.parameters.height===3);
   if(oar)oar.rotation.x=Math.sin(t*2.4)*.35;
@@ -47,6 +54,33 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
   get locked(){return phase==='boarding'||phase==='sailing';},
   heartLanterns: null,
   heartT: 0,
+  // Their 2 lanterns - camera close-up
+  startTwoLanterns() {
+    const boat = world.boat.group;
+    this.twoLanterns = [];
+    for (let i = 0; i < 2; i++) {
+      const geo = new THREE.CylinderGeometry(0.5, 0.6, 1.0, 8);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffd700, fog: false });
+      const lantern = new THREE.Mesh(geo, mat);
+      // Start in their hands (above boat)
+      lantern.position.set(
+        boat.position.x + (i === 0 ? -0.5 : 0.5),
+        2.5,
+        boat.position.z
+      );
+      if (world.scene) world.scene.add(lantern);
+      this.twoLanterns.push({ mesh: lantern, y: 2.5, speed: 3 + i * 0.5 });
+    }
+  },
+  updateTwoLanterns(dt, t, elapsed) {
+    if (!this.twoLanterns) return;
+    for (const L of this.twoLanterns) {
+      L.y += L.speed * dt;
+      L.mesh.position.y = L.y + Math.sin(t * 3) * 0.2;
+      // Gentle sway
+      L.mesh.position.x += Math.sin(t * 2) * dt * 0.5;
+    }
+  },
   startHeartFinale() {
     console.log("Starting 1000-lantern heart finale!");
     const n = 1000;
@@ -164,10 +198,16 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
    onBanner('Maximus knows the way — follow him to Flynn at the lake ✨');
   },
   startBoat(){
-   if(['boarding','sailing','complete'].includes(phase))return;
+   if(['boarding','sailing','lanterns','heart','complete'].includes(phase))return;
    horseRoute=[];player.autoWalkSpeed=null;
    player.autoTarget={...dock,radius:.9,zone:'lake'};
    flynnRoute=nav.findRoute(flynn.group.position,{...dock,radius:1})||[];
+   // Rapunzel also comes to the dock
+   if(rapunzel){
+     rapunzel.group.visible=true;
+     // Teleport her near dock (she was gated)
+     rapunzel.group.position.set(dock.x+2,0,dock.z+2);
+   }
    phase='boarding';onBanner('One last adventure, together ⛵');
   },
   update(dt,t,paused=false){
@@ -186,18 +226,49 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
      seatPassengers(t);
     }
    }else if(phase==='sailing'){
-    elapsed=Math.min(24,elapsed+dt);const u=elapsed/24,a=Math.PI*u,b=world.boat.group,start=world.boatPark;
-    // A gentle loop inside the enlarged lake, returning to the same pier.
-    b.position.set(start.x-38*Math.sin(a),.35+Math.sin(t*2.2)*.07,start.z+12*Math.sin(2*a));
-    const dx=-38*Math.cos(a),dz=24*Math.cos(2*a);
-    b.rotation.y=Math.atan2(-dz,dx);b.rotation.z=Math.sin(t*1.6)*.025;
+    elapsed=Math.min(12,elapsed+dt);const u=elapsed/12,a=Math.PI*u,b=world.boat.group,start=world.boatPark;
+    // Ride to the MIDDLE of the lake (not a loop)
+    const midX = -35, midZ = -201;  // Lake center
+    b.position.set(
+      start.x + (midX - start.x) * u,
+      .35+Math.sin(t*2.2)*.07,
+      start.z + (midZ - start.z) * u
+    );
+    b.rotation.y=Math.atan2(midX-start.x,midZ-start.z);
+    b.rotation.z=Math.sin(t*1.6)*.025;
     seatPassengers(t);
-    if(elapsed>=24){phase='complete';onComplete();}
+    if(elapsed>=12){
+      phase='lanterns'; elapsed=0;
+      // They light their two lanterns!
+      this.startTwoLanterns();
+      onBanner('Rapunzel and Flynn light their lanterns 🏮');
+    }
+   }else if(phase==='lanterns'){
+    // Camera close-up on just their 2 lanterns rising
+    elapsed+=dt;
+    seatPassengers(t);
+    this.updateTwoLanterns(dt, t, elapsed);
+    window.__twoLanternsActive = true;
+    if(elapsed>=6){
+      // After 6s, transition to 1000-lantern heart
+      phase='heart'; elapsed=0;
+      window.__twoLanternsActive = false;
+      this.startHeartFinale();
+      onBanner('1000 lanterns rise to form a heart 💛');
+    }
+   }else if(phase==='heart'){
+    seatPassengers(t);
+    elapsed+=dt;
+    this.updateHeartFinale(dt, t);
+    window.__heartFinaleActive = true;
+    // Heart holds for 7 seconds after forming (15s form + 7s hold = 22s total)
+    if(this.heartComplete && elapsed >= 22){
+      phase='complete';
+      window.__heartFinaleActive = false;
+      onComplete();
+    }
    }else if(phase==='complete'){
     seatPassengers(t);
-    // V3: 1000-lantern heart in the sky - the ultimate magical moment!
-    if(!this.heartLanterns) this.startHeartFinale();
-    if(this.heartLanterns) this.updateHeartFinale(dt, t);
    }
   }
  };
