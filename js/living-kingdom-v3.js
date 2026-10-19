@@ -197,6 +197,10 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
  {
   const g=at('tavern');
   bunting(g,[-15,7,-14],[15,7,13]);bunting(g,[-17,6,10],[15,6,-15]);
+  // Animated cloth canopy and sun banners over the existing tavern stalls.
+  const awning=new THREE.Mesh(new THREE.PlaneGeometry(9,4,12,6),clothMaterial(0x925d87));
+  awning.position.set(16,5,-12);awning.rotation.x=-.22;g.add(awning);
+  sunBanner(g,16,6,12,-.2,2.2,3.0,0x6c427f);
   for(let i=0;i<5;i++){const a=i*1.4;const x=Math.cos(a)*8,z=Math.sin(a)*8;
    const barrel=put(g,new THREE.CylinderGeometry(.68,.68,1.1,10),wood,x,.56,z);
    const band=put(g,new THREE.TorusGeometry(.69,.05,5,10),gold,x,1.07,z);band.rotation.x=Math.PI/2;
@@ -225,6 +229,12 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
   for(const [x,z,s] of [[-8,2,9],[10,-7,6],[8,12,5]])sunDecal(g,x,z,s);
   bunting(g,[-21,9,-5],[21,9,-5]);bunting(g,[-19,8,11],[19,8,11]);
   bunting(g,[-7,8,-20],[12,8,19]);
+  // Existing market stalls keep their original meshes. These additional
+  // rippling awnings sit high above the walking paths.
+  for(const x of [-17,17]){
+    const canopy=new THREE.Mesh(new THREE.PlaneGeometry(9,4,10,5),clothMaterial(x<0?0xb46a86:0x9473c6));
+    canopy.position.set(x,5.8,8);canopy.rotation.x=-.17;g.add(canopy);
+  }
   sunBanner(g,-16,6,-14,.2,2.5,3,0xa06fbe);
   floralPatch(g,5,-16,22);floralPatch(g,-11,12,20);
   const stage=put(g,new THREE.CylinderGeometry(2.8,2.8,.24,16),wood,16,.12,12);
@@ -252,7 +262,20 @@ export function createLivingKingdomV3(scene,clues,npcs,hitMeshes){
  // SUNDROP: 5000 flowers on desktop, reduced count on phones; no collision.
  {
   const g=at('sundrop'),n=mobile?1700:5000;
-  const geometry=new THREE.ConeGeometry(.19,.72,5),mat=material(0xf5cb66,0xcfa04c,.6);
+  // Five broad Sundrop petals per instanced flower, rather than spiky cones.
+  // One draw call for the whole 5,000-flower carpet.
+  const petalVertices=[];
+  for(let p=0;p<5;p++){
+    const a=p*Math.PI*2/5,s=Math.sin(a),co=Math.cos(a),
+      sx=Math.sin(a-.35),sz=Math.cos(a-.35),ex=Math.sin(a+.35),ez=Math.cos(a+.35);
+    // Two triangles per wide glowing petal, opening from the flower's heart.
+    petalVertices.push(0,.35,0,sx*.40,.25,sz*.40,s*.62,.34,co*.62);
+    petalVertices.push(0,.35,0,s*.62,.34,co*.62,ex*.40,.25,ez*.40);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(petalVertices,3));
+  geometry.computeVertexNormals();
+  const mat=material(0xf5cb66,0xcfa04c,.6);
   const field=new THREE.InstancedMesh(geometry,mat,n);
   const d=new THREE.Object3D();let seed=12477;const rnd=()=>((seed=(1664525*seed+1013904223)>>>0)/4294967296);
   const colors=[0xf7d98d,0xeebb64,0xffe7ae,0xeec37b,0xf9d36d];
