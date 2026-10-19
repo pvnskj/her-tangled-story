@@ -4,12 +4,12 @@
 import * as THREE from 'three';
 
 const palette={
-  top:new THREE.Color(0x8dcff5),
-  mid:new THREE.Color(0xc1e2fb),
-  horizon:new THREE.Color(0xffdcb6),
+  top:new THREE.Color(0x7ebdf0),
+  mid:new THREE.Color(0xadd8f7),
+  horizon:new THREE.Color(0xffd7a6),
   below:new THREE.Color(0xf9bb9d),
   forest:new THREE.Color(0x9ccd79),
-  mist:new THREE.Color(0xe2e5ca),
+  mist:new THREE.Color(0xd9e4d7),
   darkMist:new THREE.Color(0xbcbdd9)
 };
 function fixSky(scene){
@@ -100,21 +100,21 @@ export function createSunlitCoronaV3(scene,renderer,world){
     if(o.isHemisphereLight){
       o.color.setHex(0xfff0d7);
       o.groundColor.setHex(0x87b66a);
-      o.intensity=2.6;
+      o.intensity=2.08;
     }
     if(o.isDirectionalLight){
       o.color.setHex(0xffedc7);
-      o.intensity=2.1;
+      o.intensity=1.82;
       o.shadow.radius=4;
       o.shadow.normalBias=.08;
     }
   });
   // Broad soft daylight: characters and woodland creatures stay colorful in shade.
-  const fill=new THREE.DirectionalLight(0xf2f7ff,1.05);
+  const fill=new THREE.DirectionalLight(0xf2f7ff,.70);
   fill.position.set(55,82,-45);
   fill.castShadow=false;
   scene.add(fill);
-  const bounce=new THREE.AmbientLight(0xfff8e9,.58);
+  const bounce=new THREE.AmbientLight(0xfff8e9,.35);
   scene.add(bounce);
   const originalFog=scene.fog;
   if(originalFog){
