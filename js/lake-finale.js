@@ -83,112 +83,90 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     }
   },
   startHeartFinale() {
-    console.log("Starting 1000-lantern heart finale!");
-    const n = 1000;
-    const bodyG = new THREE.CylinderGeometry(0.6, 0.7, 1.2, 8);
-    const bodyM = new THREE.MeshBasicMaterial({ color: 0xffc06a, fog: false });
-    const inst = new THREE.InstancedMesh(bodyG, bodyM, n);
-    // Glow points for magical effect
-    const gp = new Float32Array(n * 3);
-    const gg = new THREE.BufferGeometry();
-    gg.setAttribute("position", new THREE.BufferAttribute(gp, 3));
-    // Create glow texture
-    const gc = document.createElement("canvas"); gc.width = gc.height = 64;
-    const gg2 = gc.getContext("2d");
-    const grad = gg2.createRadialGradient(32, 32, 2, 32, 32, 30);
-    grad.addColorStop(0, "rgba(255,200,100,1)");
-    grad.addColorStop(1, "rgba(255,150,50,0)");
-    gg2.fillStyle = grad; gg2.fillRect(0, 0, 64, 64);
-    const glowTex = new THREE.CanvasTexture(gc);
-    const glowPts = new THREE.Points(gg, new THREE.PointsMaterial({
-      map: glowTex, color: 0xffb050, size: 8, transparent: true, opacity: 0.9,
-      blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
-    }));
-    // Each lantern: start from random zone, target heart position
-    const data = [];
-    const zones = [
-      {x: 0, z: -205}, {x: 131, z: -157}, {x: 201, z: -35},
-      {x: 131, z: 157}, {x: -35, z: 201}, {x: -201, z: 35},
-      {x: -201, z: -35}, {x: -131, z: -157}, {x: -35, z: -201}
-    ];
-    for (let i = 0; i < n; i++) {
-      const zone = zones[i % 9];
-      const startX = zone.x + (Math.random() - 0.5) * 60;
-      const startZ = zone.z + (Math.random() - 0.5) * 60;
-      const target = heartPosition(i, n);
-      data.push({
-        sx: startX, sy: 2 + Math.random() * 5, sz: startZ,  // Start
-        tx: target.x, ty: target.y, tz: target.z,  // Heart target
-        delay: Math.random() * 3,  // Staggered launch
-        speed: 0.8 + Math.random() * 0.4,
-        phase: Math.random() * 6.28
-      });
-    }
-    // Add to scene - need access to scene, get from world
-    // World should have scene reference
-    this.heartInst = inst;
-    this.heartGlow = glowPts;
-    this.heartData = data;
-    this.heartT = 0;
-    // Add to scene via world object
-    if (world.scene) {
-      world.scene.add(inst);
-      world.scene.add(glowPts);
-    }
-    this.heartLanterns = true;
-    // 33rd moment: Rapunzel joins Flynn on the shore to send lanterns together
-    if (rapunzel) {
-      const boat = world.boat.group;
-      // Place Rapunzel on the shore near the boat, facing the sky
-      rapunzel.group.position.set(boat.position.x + 3, 0, boat.position.z + 2);
-      rapunzel.group.rotation.y = Math.PI;  // Face the heart
-      // Make her visible (in case she was gated)
-      rapunzel.group.visible = true;
+    try {
+      console.log("HEART: Starting 500-lantern finale");
+      const n = 500;  // 500 is plenty, less perf risk
+      const geo = new THREE.CylinderGeometry(0.8, 0.9, 1.4, 6);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffcc66, fog: false });
+      const inst = new THREE.InstancedMesh(geo, mat, n);
+      inst.frustumCulled = false;  // Always render, never cull
+      
+      // Pre-compute heart targets
+      const targets = [];
+      for (let i = 0; i < n; i++) {
+        const t = (i / n) * Math.PI * 2;
+        const hx = 16 * Math.pow(Math.sin(t), 3);
+        const hy = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+        targets.push({
+          x: -35 + hx * 4,
+          y: 85 + (hy + 3) * 3,
+          z: -201 + (Math.random()-0.5) * 15
+        });
+      }
+      
+      // Start positions: scattered across all 9 zones
+      const zones = [[0,-205],[131,-157],[201,-35],[131,157],[-35,201],[-201,35],[-201,-35],[-131,-157],[-35,-201]];
+      const starts = [];
+      const dummy = new THREE.Object3D();
+      for (let i = 0; i < n; i++) {
+        const z = zones[i % 9];
+        const sx = z[0] + (Math.random()-0.5)*80;
+        const sz = z[1] + (Math.random()-0.5)*80;
+        starts.push({ x: sx, y: 3+Math.random()*4, z: sz, delay: Math.random()*2 });
+        // Set initial matrix IMMEDIATELY so they're visible from frame 1
+        dummy.position.set(sx, 3, sz);
+        dummy.updateMatrix();
+        inst.setMatrixAt(i, dummy.matrix);
+      }
+      inst.instanceMatrix.needsUpdate = true;
+      
+      if (world.scene) {
+        world.scene.add(inst);
+        console.log("HEART: Added to scene, count=" + n);
+      } else {
+        console.error("HEART: world.scene is undefined!");
+      }
+      
+      this.heartInst = inst;
+      this.heartTargets = targets;
+      this.heartStarts = starts;
+      this.heartT = 0;
+      this.heartLanterns = true;
+      this.heartComplete = false;
+    } catch (err) {
+      console.error("HEART FAILED:", err);
     }
   },
   updateHeartFinale(dt, t) {
-    if (!this.heartData) return;
-    this.heartT += dt;
-    const duration = 15;  // 15 seconds to form heart
-    const progress = Math.min(1, this.heartT / duration);
-    // Ease in-out for magical feel
-    const e = progress < 0.5 
-      ? 4 * progress * progress * progress 
-      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-    
-    const dummy = new THREE.Object3D();
-    const pos = this.heartGlow.geometry.attributes.position;
-    
-    for (let i = 0; i < this.heartData.length; i++) {
-      const d = this.heartData[i];
-      // Delay before launch
-      const localT = Math.max(0, Math.min(1, (this.heartT - d.delay) / duration));
-      const le = localT < 0.5 
-        ? 4 * localT * localT * localT 
-        : 1 - Math.pow(-2 * localT + 2, 3) / 2;
+    if (!this.heartInst || !this.heartTargets) return;
+    try {
+      this.heartT += dt;
+      const duration = 15;
+      const progress = Math.min(1, this.heartT / duration);
+      const dummy = new THREE.Object3D();
+      const n = this.heartTargets.length;
       
-      // Rise first, then converge to heart
-      const riseH = 30 * Math.min(1, localT * 2);  // Initial rise
-      const x = d.sx + (d.tx - d.sx) * le;
-      const z = d.sz + (d.tz - d.sz) * le;
-      // Y: rise from ground, then to heart height
-      const y = d.sy + riseH * (1 - le) + (d.ty - d.sy) * le + Math.sin(t * 2 + d.phase) * 1.5;
-      
-      dummy.position.set(x, y, z);
-      dummy.updateMatrix();
-      this.heartInst.setMatrixAt(i, dummy.matrix);
-      pos.setXYZ(i, x, y + 0.8, z);
-    }
-    this.heartInst.instanceMatrix.needsUpdate = true;
-    pos.needsUpdate = true;
-    
-    // Camera: signal main.js to tilt up to sky view
-    window.__heartFinaleActive = true;
-    window.__heartProgress = progress;
-    if (progress >= 1 && !this.heartComplete) {
-      this.heartComplete = true;
-      console.log("Heart complete! Magical AF ✨");
-      if (onComplete) onComplete();
+      for (let i = 0; i < n; i++) {
+        const s = this.heartStarts[i];
+        const tgt = this.heartTargets[i];
+        const lt = Math.max(0, Math.min(1, (this.heartT - s.delay) / duration));
+        // Simple smooth lerp
+        const x = s.x + (tgt.x - s.x) * lt;
+        const z = s.z + (tgt.z - s.z) * lt;
+        const y = s.y + (tgt.y - s.y) * lt + Math.sin(t*2 + i) * 1.2;
+        dummy.position.set(x, y, z);
+        dummy.updateMatrix();
+        this.heartInst.setMatrixAt(i, dummy.matrix);
+      }
+      this.heartInst.instanceMatrix.needsUpdate = true;
+      window.__heartFinaleActive = true;
+      window.__heartProgress = progress;
+      if (progress >= 1 && !this.heartComplete) {
+        this.heartComplete = true;
+        console.log("HEART COMPLETE");
+      }
+    } catch (err) {
+      console.error("HEART UPDATE FAILED:", err);
     }
   },
   startEscort(){
