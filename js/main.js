@@ -583,9 +583,9 @@ UI.onBegin = () => {
       for (let i = 1; i <= 32; i++) found.add(i);
       refreshNPCs();
       updateGuide();
-      // Teleport to lake dock
-      const lakePos = { x: -35, z: -185 };
-      player.group.position.set(lakePos.x, 0, lakePos.z);
+      // Teleport to the lake's east shore (by the dock)
+      const lz = ZONES.find(z => z.id === 'lake');
+      player.group.position.set(lz.x + 58, 0, lz.z);
       // Start boat finale directly
       setTimeout(() => {
         console.log("Starting boat...");
@@ -723,18 +723,18 @@ function animate() {
     const px = player.group.position.x;
     const pz = player.group.position.z;
     // Camera close to boat, looking up at the 2 lanterns
-    camera.position.set(px + 3, 2.5, pz + 5);
-    camera.lookAt(px, 8, pz);  // Look up at lanterns
-  } else if (window.__heartFinaleActive) {
-    // V3: Heart finale sky view - camera tilts up to watch the heart form
-    const progress = window.__heartProgress || 0;
-    const px = player.group.position.x;
-    const pz = player.group.position.z;
-    // Camera stays near boat but tilts up
-    camera.position.set(px, 3, pz + 8);
-    // Look at heart in sky (lerp from horizon to heart)
-    const heartY = 20 + progress * 60;  // Rise to heart height
-    camera.lookAt(-35, heartY, -201);  // Heart position above lake
+    camera.position.set(px + 4, 3, pz + 6);
+    const lp = window.__twoLanternPos;
+    if (lp) camera.lookAt(lp.x, lp.y, lp.z);
+    else camera.lookAt(px, 8, pz);
+  } else if (window.__heartFinaleActive && window.__heartCamPos) {
+    // V3: Heart finale — glide out to the vantage so the whole heart fits the frame
+    const p = Math.min(1, (window.__heartProgress || 0) * 1.7);
+    const e = p * p * (3 - 2 * p);
+    if (!window.__heartCamFrom) window.__heartCamFrom = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    const f = window.__heartCamFrom, v = window.__heartCamPos, L = window.__heartCamLook;
+    camera.position.set(f.x + (v.x - f.x) * e, f.y + (v.y - f.y) * e, f.z + (v.z - f.z) * e);
+    camera.lookAt(L.x, L.y, L.z);
   } else {
     player.updateCamera(camera, dt);
   }
@@ -797,7 +797,7 @@ function animate() {
     const bp = world.boat.group.position;
     const bd = Math.hypot(p.x - bp.x, p.z - bp.z);
     if (player.riding) {
-      if (boatNearShore()) { text = "⛵ Tap to hop out"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" }; }
+      if (boatNearShore() && !lakeFinale.locked) { text = "⛵ Tap to hop out"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" }; }
     } else if (bd < 9 && found.has(32)) {
       text = "⛵ Tap to board"; wx = bp.x; wy = 3.4; wz = bp.z; target = { kind: "boat" };
     } else {

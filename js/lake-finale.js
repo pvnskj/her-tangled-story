@@ -1,13 +1,13 @@
 import * as THREE from "three";
 import {CLUES} from './clues.js?v=20261018story';
 import {clueTarget} from './navigation.js?v=20261018story';
-import {movePoint} from './world-layout.js?v=20261018story';
+import {movePoint,LAKE,ZONES} from './world-layout.js?v=20261018story';
 
 // Keep the finale in the same scene, with the original avatar and boat.
 export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}}){
  const maximus=npcs.find(n=>n.castId==='maximus'),flynn=npcs.find(n=>n.castId==='eugene'),rapunzel=npcs.find(n=>n.castId==='rapunzel');
  const dock=movePoint('lake',{x:-48,z:20}),nav=player.navigation;
- let phase='idle',horseRoute=[],flynnRoute=[],elapsed=0;
+ let phase='idle',horseRoute=[],flynnRoute=[],elapsed=0,sailFrom=null,sailSweep=0;
  function advance(n,route,speed,dt){
   let remaining=speed*dt;
   while(route.length&&remaining>0){const p=n.group.position,q=route[0],dx=q.x-p.x,dz=q.z-p.z,d=Math.hypot(dx,dz);
@@ -52,25 +52,42 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
  
  return {
   get phase(){return phase;},
-  get locked(){return phase==='boarding'||phase==='sailing';},
+  get locked(){return ['boarding','sailing','lanterns','heart'].includes(phase);},
   heartLanterns: null,
   heartT: 0,
+  // Shared soft-glow texture (radial falloff)
+  _makeGlowTex() {
+    if (this._glowTex) return this._glowTex;
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+    gr.addColorStop(0, "rgba(255,215,130,1)");
+    gr.addColorStop(0.4, "rgba(255,175,85,0.55)");
+    gr.addColorStop(1, "rgba(255,150,50,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    this._glowTex = new THREE.CanvasTexture(c);
+    return this._glowTex;
+  },
   // Their 2 lanterns - camera close-up
   startTwoLanterns() {
     const boat = world.boat.group;
+    const glowTex = this._makeGlowTex();
     this.twoLanterns = [];
     for (let i = 0; i < 2; i++) {
-      const geo = new THREE.CylinderGeometry(0.5, 0.6, 1.0, 8);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffd700, fog: false });
-      const lantern = new THREE.Mesh(geo, mat);
-      // Start in their hands (above boat)
-      lantern.position.set(
-        boat.position.x + (i === 0 ? -0.5 : 0.5),
-        2.5,
-        boat.position.z
+      const grp = new THREE.Group();
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.5, 0.6, 1.0, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffd98a, fog: false })
       );
-      if (world.scene) world.scene.add(lantern);
-      this.twoLanterns.push({ mesh: lantern, y: 2.5, speed: 3 + i * 0.5 });
+      const spr = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: glowTex, color: 0xffc06a, transparent: true, opacity: 0.95,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      spr.scale.set(6, 6, 1);
+      grp.add(mesh); grp.add(spr);
+      grp.position.set(boat.position.x + (i === 0 ? -0.7 : 0.7), 2.6, boat.position.z);
+      if (world.scene) world.scene.add(grp);
+      this.twoLanterns.push({ mesh: grp, y: 2.6, speed: 2.6 + i * 0.4 });
     }
   },
   updateTwoLanterns(dt, t, elapsed) {
@@ -78,61 +95,70 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     for (const L of this.twoLanterns) {
       L.y += L.speed * dt;
       L.mesh.position.y = L.y + Math.sin(t * 3) * 0.2;
-      // Gentle sway
       L.mesh.position.x += Math.sin(t * 2) * dt * 0.5;
     }
+    const p = this.twoLanterns[0].mesh.position;
+    window.__twoLanternPos = { x: p.x, y: p.y, z: p.z };
   },
   startHeartFinale() {
     try {
-      console.log("HEART: Starting 500-lantern finale");
-      const n = 500;  // 500 is plenty, less perf risk
-      const geo = new THREE.CylinderGeometry(0.8, 0.9, 1.4, 6);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffcc66, fog: false });
+      const n = 500;
+      const HX = LAKE.x, HZ = LAKE.z, HY = 82, S = 2.0;
+      const geo = new THREE.CylinderGeometry(0.42, 0.5, 0.95, 8);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffc06a, fog: false });
       const inst = new THREE.InstancedMesh(geo, mat, n);
-      inst.frustumCulled = false;  // Always render, never cull
-      
-      // Pre-compute heart targets
+      inst.frustumCulled = false;
+      // Glow layer — this is what makes them read as lanterns, not tiles
+      const glowTex = this._makeGlowTex();
+      const gp = new Float32Array(n * 3);
+      const gg = new THREE.BufferGeometry();
+      gg.setAttribute("position", new THREE.BufferAttribute(gp, 3));
+      const glow = new THREE.Points(gg, new THREE.PointsMaterial({
+        map: glowTex, color: 0xffb050, size: 7, transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+      }));
+      glow.frustumCulled = false;
+      // Targets: a FILLED heart (outline + interior) so the shape is unmistakable
       const targets = [];
       for (let i = 0; i < n; i++) {
-        const t = (i / n) * Math.PI * 2;
-        const hx = 16 * Math.pow(Math.sin(t), 3);
-        const hy = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
-        targets.push({
-          x: -35 + hx * 4,
-          y: 85 + (hy + 3) * 3,
-          z: -201 + (Math.random()-0.5) * 15
-        });
+        const tt = (i / n) * Math.PI * 2;
+        const ox = 16 * Math.pow(Math.sin(tt), 3);
+        const oy = 13 * Math.cos(tt) - 5 * Math.cos(2 * tt) - 2 * Math.cos(3 * tt) - Math.cos(4 * tt);
+        let px = ox, py = oy;
+        if (i % 5 >= 3) { // 40% interior fill toward centroid (0,-3)
+          const r = Math.sqrt(Math.random()) * 0.88;
+          px = ox * r; py = -3 + (oy + 3) * r;
+        }
+        targets.push({ x: HX + px * S, y: HY + (py + 3) * S, z: HZ + (Math.random() - 0.5) * 6 });
       }
-      
-      // Start positions: scattered across all 9 zones
-      const zones = [[0,-205],[131,-157],[201,-35],[131,157],[-35,201],[-201,35],[-201,-35],[-131,-157],[-35,-201]];
+      // Starts: scattered over the real nine zones
       const starts = [];
       const dummy = new THREE.Object3D();
       for (let i = 0; i < n; i++) {
-        const z = zones[i % 9];
-        const sx = z[0] + (Math.random()-0.5)*80;
-        const sz = z[1] + (Math.random()-0.5)*80;
-        starts.push({ x: sx, y: 3+Math.random()*4, z: sz, delay: Math.random()*2 });
-        // Set initial matrix IMMEDIATELY so they're visible from frame 1
-        dummy.position.set(sx, 3, sz);
+        const zn = ZONES[i % ZONES.length];
+        const sx = zn.x + (Math.random() - 0.5) * 50;
+        const sz = zn.z + (Math.random() - 0.5) * 50;
+        const sy = 3 + Math.random() * 4;
+        starts.push({ x: sx, y: sy, z: sz, delay: Math.random() * 2.5 });
+        dummy.position.set(sx, sy, sz);
         dummy.updateMatrix();
         inst.setMatrixAt(i, dummy.matrix);
+        gp[i * 3] = sx; gp[i * 3 + 1] = sy; gp[i * 3 + 2] = sz;
       }
       inst.instanceMatrix.needsUpdate = true;
-      
-      if (world.scene) {
-        world.scene.add(inst);
-        console.log("HEART: Added to scene, count=" + n);
-      } else {
-        console.error("HEART: world.scene is undefined!");
-      }
-      
+      if (world.scene) { world.scene.add(inst); world.scene.add(glow); }
       this.heartInst = inst;
+      this.heartGlow = glow;
       this.heartTargets = targets;
       this.heartStarts = starts;
       this.heartT = 0;
       this.heartLanterns = true;
       this.heartComplete = false;
+      // Camera vantage: pulled back toward the world centre so the whole heart fits the frame
+      const dcx = 0 - HX, dcz = 0 - HZ, dl = Math.hypot(dcx, dcz);
+      window.__heartCamPos = { x: HX + (dcx / dl) * 138, y: 30, z: HZ + (dcz / dl) * 138 };
+      window.__heartCamLook = { x: HX, y: HY - 2, z: HZ };
+      window.__heartCamFrom = null;
     } catch (err) {
       console.error("HEART FAILED:", err);
     }
@@ -144,27 +170,26 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
       const duration = 15;
       const progress = Math.min(1, this.heartT / duration);
       const dummy = new THREE.Object3D();
+      const pos = this.heartGlow.geometry.attributes.position;
       const n = this.heartTargets.length;
-      
       for (let i = 0; i < n; i++) {
         const s = this.heartStarts[i];
-        const tgt = this.heartTargets[i];
-        const lt = Math.max(0, Math.min(1, (this.heartT - s.delay) / duration));
-        // Simple smooth lerp
-        const x = s.x + (tgt.x - s.x) * lt;
-        const z = s.z + (tgt.z - s.z) * lt;
-        const y = s.y + (tgt.y - s.y) * lt + Math.sin(t*2 + i) * 1.2;
+        const tg = this.heartTargets[i];
+        let lt = Math.max(0, Math.min(1, (this.heartT - s.delay) / Math.max(0.1, duration - s.delay)));
+        lt = lt * lt * (3 - 2 * lt); // smoothstep
+        const x = s.x + (tg.x - s.x) * lt;
+        const z = s.z + (tg.z - s.z) * lt;
+        const y = s.y + (tg.y - s.y) * lt + Math.sin(lt * Math.PI) * 10 + Math.sin(t * 2 + i) * 0.8;
         dummy.position.set(x, y, z);
         dummy.updateMatrix();
         this.heartInst.setMatrixAt(i, dummy.matrix);
+        pos.setXYZ(i, x, y, z);
       }
       this.heartInst.instanceMatrix.needsUpdate = true;
+      pos.needsUpdate = true;
       window.__heartFinaleActive = true;
       window.__heartProgress = progress;
-      if (progress >= 1 && !this.heartComplete) {
-        this.heartComplete = true;
-        console.log("HEART COMPLETE");
-      }
+      if (progress >= 1 && !this.heartComplete) this.heartComplete = true;
     } catch (err) {
       console.error("HEART UPDATE FAILED:", err);
     }
@@ -187,7 +212,7 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
      // Teleport her near dock (she was gated)
      rapunzel.group.position.set(dock.x+2,0,dock.z+2);
    }
-   phase='boarding';onBanner('One last adventure, together ⛵');
+   phase='boarding';sailFrom=null;
   },
   update(dt,t,paused=false){
    if(paused){if(phase==='sailing'||phase==='complete')seatPassengers(t);return;}
@@ -201,26 +226,30 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
     const p=player.group.position,f=flynn.group.position;
     if(Math.hypot(p.x-dock.x,p.z-dock.z)<1.1&&Math.hypot(f.x-dock.x,f.z-dock.z)<1.2){
      phase='sailing';elapsed=0;player.autoTarget=null;player.riding=true;world.boat.riding=true;
-     player.sprite.position.y=1;world.releaseLanterns();world.setLanternBoost(true);
+     player.sprite.position.y=1;
      seatPassengers(t);
     }
    }else if(phase==='sailing'){
-    elapsed=Math.min(12,elapsed+dt);const u=elapsed/12,a=Math.PI*u,b=world.boat.group,start=world.boatPark;
-    // Ride to the MIDDLE of the lake (not a loop)
-    const midX = -35, midZ = -201;  // Lake center
-    b.position.set(
-      start.x + (midX - start.x) * u,
-      .35+Math.sin(t*2.2)*.07,
-      start.z + (midZ - start.z) * u
-    );
-    b.rotation.y=Math.atan2(midX-start.x,midZ-start.z);
+    // Ride ALONG the lake perimeter (ellipse inset from the shore) — never leaves the water
+    const b=world.boat.group,ERX=LAKE.rx-14,ERZ=LAKE.rz-12;
+    if(sailFrom===null){
+      sailFrom=Math.atan2((b.position.z-LAKE.z)/ERZ,(b.position.x-LAKE.x)/ERX);
+      const target=Math.atan2(0.766/ERZ,0.643/ERX); // perimeter point toward the world centre
+      let sweep=target-sailFrom;
+      while(sweep<0.9)sweep+=Math.PI*2;
+      while(sweep>2.6)sweep-=Math.PI*2;
+      sailSweep=sweep;
+    }
+    elapsed=Math.min(12,elapsed+dt);const u=elapsed/12;
+    const th=sailFrom+sailSweep*u;
+    const vx=-ERX*Math.sin(th),vz=ERZ*Math.cos(th);
+    b.position.set(LAKE.x+ERX*Math.cos(th),.35+Math.sin(t*2.2)*.07,LAKE.z+ERZ*Math.sin(th));
+    b.rotation.y=Math.atan2(-vz,vx);
     b.rotation.z=Math.sin(t*1.6)*.025;
     seatPassengers(t);
     if(elapsed>=12){
       phase='lanterns'; elapsed=0;
-      // They light their two lanterns!
       this.startTwoLanterns();
-      onBanner('Rapunzel and Flynn light their lanterns 🏮');
     }
    }else if(phase==='lanterns'){
     // Camera close-up on just their 2 lanterns rising
@@ -233,7 +262,6 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
       phase='heart'; elapsed=0;
       window.__twoLanternsActive = false;
       this.startHeartFinale();
-      onBanner('1000 lanterns rise to form a heart 💛');
     }
    }else if(phase==='heart'){
     seatPassengers(t);
