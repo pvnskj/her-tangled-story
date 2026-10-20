@@ -103,22 +103,40 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
   startHeartFinale() {
     try {
       const n = 500;
-      const HX = LAKE.x, HZ = LAKE.z, HY = 82, S = 2.0;
+      // Build the heart FACING THE BOAT, centred on the avatar's sightline.
+      // B = boat position; F = toward the kingdom (her view direction);
+      // R = her right. The heart hangs in the air straight ahead of her.
+      const bp = world.boat.group.position;
+      const B = { x: bp.x, z: bp.z };
+      let fx = 0 - B.x, fz = 0 - B.z;
+      const fl = Math.hypot(fx, fz); fx /= fl; fz /= fl;
+      const F = { x: fx, z: fz };
+      const R = { x: -fz, z: fx }; // screen-right for a camera looking along F (matches lookAt x-axis)
+      const S = 1.5, DIST = 95;
+      const H = { x: B.x + F.x * DIST, y: 58, z: B.z + F.z * DIST };
       const geo = new THREE.CylinderGeometry(0.42, 0.5, 0.95, 8);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffc06a, fog: false });
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false });
       const inst = new THREE.InstancedMesh(geo, mat, n);
       inst.frustumCulled = false;
-      // Glow layer — this is what makes them read as lanterns, not tiles
+      // Warm per-lantern colour variation (some deep gold, some pale honey)
+      const col = new THREE.Color();
+      for (let i = 0; i < n; i++) {
+        const w = Math.random();
+        col.setHSL(0.09 + w * 0.03, 0.95, 0.55 + w * 0.18);
+        inst.setColorAt(i, col);
+      }
+      if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+      // Glow layer — soft halos so they read as lanterns, not tiles
       const glowTex = this._makeGlowTex();
       const gp = new Float32Array(n * 3);
       const gg = new THREE.BufferGeometry();
       gg.setAttribute("position", new THREE.BufferAttribute(gp, 3));
       const glow = new THREE.Points(gg, new THREE.PointsMaterial({
-        map: glowTex, color: 0xffb050, size: 7, transparent: true, opacity: 0.9,
+        map: glowTex, color: 0xffbe78, size: 8, transparent: true, opacity: 0.9,
         blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
       }));
       glow.frustumCulled = false;
-      // Targets: a FILLED heart (outline + interior) so the shape is unmistakable
+      // Targets: a FILLED heart in the plane facing her (R = right, world-up = up)
       const targets = [];
       for (let i = 0; i < n; i++) {
         const tt = (i / n) * Math.PI * 2;
@@ -129,7 +147,12 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
           const r = Math.sqrt(Math.random()) * 0.88;
           px = ox * r; py = -3 + (oy + 3) * r;
         }
-        targets.push({ x: HX + px * S, y: HY + (py + 3) * S, z: HZ + (Math.random() - 0.5) * 6 });
+        const depth = (Math.random() - 0.5) * 5;
+        targets.push({
+          x: H.x + R.x * px * S + F.x * depth,
+          y: H.y + (py + 3) * S,
+          z: H.z + R.z * px * S + F.z * depth
+        });
       }
       // Starts: scattered over the real nine zones
       const starts = [];
@@ -154,10 +177,9 @@ export function createLakeFinale({world,player,npcs,onComplete,onBanner=()=>{}})
       this.heartT = 0;
       this.heartLanterns = true;
       this.heartComplete = false;
-      // Camera vantage: pulled back toward the world centre so the whole heart fits the frame
-      const dcx = 0 - HX, dcz = 0 - HZ, dl = Math.hypot(dcx, dcz);
-      window.__heartCamPos = { x: HX + (dcx / dl) * 138, y: 30, z: HZ + (dcz / dl) * 138 };
-      window.__heartCamLook = { x: HX, y: HY - 2, z: HZ };
+      // Camera = the avatar's POV: just behind/above the boat, looking along F at the heart
+      window.__heartCamPos = { x: B.x - F.x * 9, y: 7, z: B.z - F.z * 9 };
+      window.__heartCamLook = { x: H.x, y: H.y, z: H.z };
       window.__heartCamFrom = null;
     } catch (err) {
       console.error("HEART FAILED:", err);
