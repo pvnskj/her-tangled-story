@@ -29,7 +29,7 @@ const ORIGINAL_CLUES = [
   { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: P("15-barbie-crown.jpg"), caption: "Barbie crown, McDonald's, pure joy.",
     npc: "Hook Hand", hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
   { id: 13, zone: "tavern", x: 96, z: 52, kind: "hidden", photo: P("16-restaurant-umbrellas.jpg"), caption: "Pink dress under paper umbrellas." },
-  { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: P("19-beach-couple.jpg"), caption: "Beach kiss under the palms.",
+  { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: P("34-beach-kiss.jpg"), caption: "Beach kiss under the palms.",
     npc: "Shorty", hint: "Somethin' shiny under the bench where I nap. Don't tell the others." },
   { id: 15, zone: "tavern", x: 85, z: 50, kind: "hidden", photo: P("20-lavender-dress.jpg"), caption: "Serene in lavender, surrounded by green." },
   { id: 16, zone: "tavern", x: 93, z: 49.5, kind: "hidden", photo: P("21-desert-sand.jpg"), caption: "Kicking up desert sand." },
