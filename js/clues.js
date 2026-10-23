@@ -29,7 +29,7 @@ const ORIGINAL_CLUES = [
   { id: 12, zone: "tavern", x: 80, z: 40, kind: "villager", photo: P("15-barbie-crown.jpg"), caption: "Barbie crown, McDonald's, pure joy.",
     npc: "Hook Hand", hint: "A rain barrel out back? I hid nothin', I swear! …Or did I? Go see." },
   { id: 13, zone: "tavern", x: 96, z: 52, kind: "hidden", photo: P("16-restaurant-umbrellas.jpg"), caption: "Pink dress under paper umbrellas." },
-  { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: P("34-beach-kiss.jpg"), caption: "Beach kiss under the palms.",
+  { id: 14, zone: "tavern", x: 98, z: 40, kind: "villager", photo: P("35-field-couple.jpg"), caption: "Us, in the tall grass.",
     npc: "Shorty", hint: "Somethin' shiny under the bench where I nap. Don't tell the others." },
   { id: 15, zone: "tavern", x: 85, z: 50, kind: "hidden", photo: P("20-lavender-dress.jpg"), caption: "Serene in lavender, surrounded by green." },
   { id: 16, zone: "tavern", x: 93, z: 49.5, kind: "hidden", photo: P("21-desert-sand.jpg"), caption: "Kicking up desert sand." },
@@ -58,9 +58,9 @@ const ORIGINAL_CLUES = [
   // ---- Festival (29-33) ----
   { id: 29, zone: "festival", x: -57, z: -53, kind: "hidden", photo: P("05-mountains.jpg"), caption: "On top of the world, peace sign high." },
   { id: 30, zone: "festival", x: -40, z: -61, kind: "hidden", photo: P("07-glasses-selfie.jpg"), caption: "That confident smile." },
-  { id: 31, zone: "festival", x: -48, z: -68, kind: "animal", photo: P("31-beach-umbrella.jpg"), caption: "Yellow umbrella, beach days, love.", critter: "chameleon" },
+  { id: 31, zone: "festival", x: -48, z: -68, kind: "animal", photo: P("34-beach-kiss.jpg"), caption: "Beach kiss under the palms.", critter: "chameleon" },
   { id: 32, zone: "festival", x: -38, z: -56, kind: "hidden", photo: P("32-collage-finale.jpg"), caption: "Every version of you, in one frame." },
-  { id: 33, zone: "festival", x: -45, z: -65, kind: "finale", photo: P("06-greensaree.jpg"), caption: "The grand finale." },
+  { id: 33, zone: "festival", x: -45, z: -65, kind: "finale", photo: P("36-finale-lights.jpg"), caption: "The grand finale." },
 ];
 
 // Shared encounters give every one of the 34 characters a role in 32 clues.
