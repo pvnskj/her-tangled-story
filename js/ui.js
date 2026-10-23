@@ -289,8 +289,23 @@ export const UI = {
   },
 
   finaleModal(photo, message) {
-    el("finale-frame").innerHTML = `<img src="${photo}" alt="finale memory">`;
+    // Sequence: his message first; the final photo is revealed only when
+    // she taps the button after reading it.
+    const frame = el("finale-frame");
+    frame.innerHTML = `<img src="${photo}" alt="finale memory">`;
+    frame.classList.add("hidden");
+    frame.classList.remove("reveal");
     el("finale-message").textContent = message;
+    el("finale-replay").classList.add("hidden");
+    const rev = el("finale-reveal");
+    rev.classList.remove("hidden");
+    rev.onclick = () => {
+      rev.classList.add("hidden");
+      frame.classList.remove("hidden");
+      frame.classList.add("reveal");
+      el("finale-replay").classList.remove("hidden");
+      frame.scrollIntoView({ block: "start" });
+    };
     el("finale-modal").classList.remove("hidden");
   },
 

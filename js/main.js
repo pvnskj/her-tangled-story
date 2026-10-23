@@ -181,7 +181,7 @@ for (const n of npcs) {
 }
 const found = new Set();
 const lakeFinale=createLakeFinale({world,player,npcs,onBanner:text=>UI.banner(text),onComplete:()=>{
- modalOpen=true;UI.fanfare();const last=CLUES.at(-1);UI.finaleModal(last.photo,CONFIG.FINAL_MESSAGE);
+ modalOpen=true;UI.fanfare();UI.finaleModal(CONFIG.FINALE_PHOTO,CONFIG.FINAL_MESSAGE);
 }});
 refreshMarkers(); // show only clue 1 at the start (found is defined above)
 world.boat.group.userData.interact = { kind: "boat" };

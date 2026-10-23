@@ -149,6 +149,7 @@ body.touch #joystick.started { display: block; }
   max-height: 62vh; object-fit: contain; background: #1a0f2e;
 }
 /* dreamy memory reveal: soft fade-in with a light shimmer sweep */
+#finale-frame.reveal img { animation: memoryIn 1.1s ease-out both; }
 #photo-frame.reveal img, #photo-frame.reveal .placeholder-card {
   animation: memoryIn 1.1s ease-out both;
 }
