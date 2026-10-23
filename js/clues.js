@@ -48,10 +48,10 @@ const ORIGINAL_CLUES = [
     npc: "King Frederic", hint: "The festival stage holds the greatest treasure of all. You'll see." },
 
   // ---- Lake (24-28) ----
-  { id: 24, zone: "lake", x: -56, z: 24, kind: "reflection", photo: P("10-greensaree-print.jpg"), caption: "The green saree, captured forever." },
+  { id: 24, zone: "lake", x: -56, z: 24, kind: "reflection", photo: P("38-books-stack.jpg"), caption: "Lost in a stack of stories." },
   { id: 25, zone: "lake", x: -50, z: 16, kind: "villager", photo: P("08-whitesaree.jpg"), caption: "Grace in white and yellow blooms.",
     npc: "Lance Strongbow", hint: "The lake shows memories in its reflection. And the old boat? It remembers too." },
-  { id: 26, zone: "lake", x: -62, z: 20, kind: "boat", photo: P("28-starry-paintings.jpg"), caption: "Grace in white, glowing like starlight." },
+  { id: 26, zone: "lake", x: -62, z: 20, kind: "boat", photo: P("39-river-gown.jpg"), caption: "Grace in grey by the river." },
   { id: 27, zone: "lake", x: -62, z: 36, kind: "reflection", photo: P("29-sunset-arms.jpg"), caption: "Arms open to the sunset." },
   { id: 28, zone: "lake", x: -66, z: 24, kind: "animal", photo: P("30-water-selfie.jpg"), caption: "Sunglasses and confidence by the water.", critter: "duck" },
 

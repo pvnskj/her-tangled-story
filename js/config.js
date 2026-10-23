@@ -14,7 +14,9 @@ I don’t know why did those words come out of my mouth when we first met but th
 
 A reminder to my ferocious peppa saan from his little lamb.
 
-Love you ❤️`,
+Love you ❤️
+
+purrr on ya my Bulli myan`,
 
   // Shown after she reads the message — the very last image of the game.
   FINALE_PHOTO: "assets/photos/37-queen-finale.jpg",
