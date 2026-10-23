@@ -309,3 +309,33 @@ body.touch #joystick.started { display: block; }
 #cloud-begin-btn:active {
   transform: scale(0.95);
 }
+
+/* ---------- start screen: corona sun glow + golden dust ---------- */
+#start-overlay .panel { position: relative; z-index: 2; }
+.corona-sun {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.corona-sun::before {
+  content: ""; position: absolute; width: min(125vw, 740px); height: min(125vw, 740px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,214,110,.34) 0%, rgba(245,190,80,.14) 42%, rgba(245,190,80,0) 68%);
+}
+.corona-sun svg {
+  width: min(94vw, 600px); height: auto; opacity: .6;
+  filter: drop-shadow(0 0 26px rgba(246,199,92,.65));
+  animation: sunSpin 160s linear infinite;
+}
+@keyframes sunSpin { to { transform: rotate(360deg); } }
+.dust { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+.dust span {
+  position: absolute; bottom: -4vh; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, #ffedb3 0%, rgba(255,217,120,.9) 38%, rgba(255,190,60,0) 72%);
+  animation: dustRise linear infinite;
+}
+@keyframes dustRise {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  10% { opacity: .95; }
+  55% { opacity: .5; }
+  100% { transform: translate3d(var(--sway, 24px), -110vh, 0); opacity: 0; }
+}

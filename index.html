@@ -44,9 +44,11 @@
 
   <!-- start overlay -->
   <div id="start-overlay">
+    <div class="corona-sun" aria-hidden="true"><svg viewBox="0 0 200 200" aria-hidden="true"><defs><radialGradient id="sunGold" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffedb3"/><stop offset="70%" stop-color="#f3cd6d"/><stop offset="100%" stop-color="#dfa83e"/></radialGradient><path id="rayL" d="M0 -40 C -8 -56, 5 -70, 0 -97 C -5 -70, 8 -56, 0 -40 Z"/></defs><g fill="#e9ba4f"><use href="#rayL" transform="translate(100 100)"/><use href="#rayL" transform="translate(100 100) rotate(45)"/><use href="#rayL" transform="translate(100 100) rotate(90)"/><use href="#rayL" transform="translate(100 100) rotate(135)"/><use href="#rayL" transform="translate(100 100) rotate(180)"/><use href="#rayL" transform="translate(100 100) rotate(225)"/><use href="#rayL" transform="translate(100 100) rotate(270)"/><use href="#rayL" transform="translate(100 100) rotate(315)"/><use href="#rayL" transform="translate(100 100) rotate(22.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(67.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(112.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(157.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(202.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(247.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(292.5) scale(0.62)"/><use href="#rayL" transform="translate(100 100) rotate(337.5) scale(0.62)"/></g><circle cx="100" cy="100" r="35" fill="url(#sunGold)" stroke="#a87b1f" stroke-width="2"/><circle cx="100" cy="100" r="24" fill="none" stroke="rgba(146,102,16,.6)" stroke-width="2"/><circle cx="100" cy="100" r="5" fill="rgba(146,102,16,.55)"/></svg></div>
+    <div class="dust" id="dust" aria-hidden="true"></div>
     <div class="panel">
       <h1>Her Tangled Story</h1>
-      <p class="sub">The story of my myth my man my legend.</p>
+      <p class="sub">My Man, My Myth, My Legend</p>
       <button id="begin-btn">Begin ✨</button>
     </div>
   </div>
@@ -120,5 +122,23 @@
   </div>
 
   <script type="module" src="js/main.js?v=20261018story"></script>
+  <script>
+    // Golden dust drifting over the start screen (purely decorative).
+    (function () {
+      var box = document.getElementById("dust");
+      if (!box) return;
+      for (var i = 0; i < 42; i++) {
+        var s = document.createElement("span");
+        var size = 3 + Math.random() * 5;
+        s.style.left = (Math.random() * 100) + "%";
+        s.style.width = size + "px";
+        s.style.height = size + "px";
+        s.style.setProperty("--sway", (Math.random() * 90 - 45) + "px");
+        s.style.animationDuration = (10 + Math.random() * 10) + "s";
+        s.style.animationDelay = (-Math.random() * 18) + "s";
+        box.appendChild(s);
+      }
+    })();
+  </script>
 </body>
 </html>
