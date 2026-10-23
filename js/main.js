@@ -573,8 +573,53 @@ function startCameraSwoop() {
   camera.position.copy(swoopFrom);
 }
 
+// Auto walkthrough (?walkthrough): a hands-free review tour for Jordan —
+// teleports to every memory in order, shows each photo, then plays the
+// lake finale at 1.75x and auto-reveals the final photo after the message.
+// The normal game is untouched; this only runs with ?walkthrough in the URL.
+async function runWalkthrough() {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  UI.banner("Auto walkthrough \u2014 all 32 memories + the finale \uD83D\uDC9C");
+  for (const clue of CLUES) {
+    if (clue.finale) break;
+    player.group.position.set(clue.x + 3, 0, clue.z + 4);
+    found.add(clue.id);
+    UI.setCounter(found.size);
+    refreshMarkers(); refreshNPCs(); updateGuide();
+    UI.photoModal(clue);
+    await sleep(1700);
+    document.getElementById("photo-modal").classList.add("hidden");
+    await sleep(250);
+  }
+  // Finale: mark 32 found, head to the lake shore, start the boat.
+  const last = CLUES.at(-1);
+  found.add(last.id);
+  UI.setCounter(found.size);
+  refreshMarkers(); refreshNPCs(); updateGuide();
+  const lz = ZONES.find((z) => z.id === "lake");
+  player.group.position.set(lz.x + 58, 0, lz.z);
+  await sleep(600);
+  lakeFinale.startBoat();
+  // When his message appears, let it sit a few seconds, then reveal the photo.
+  const poll = setInterval(() => {
+    const rev = document.getElementById("finale-reveal");
+    const modal = document.getElementById("finale-modal");
+    if (rev && modal && !modal.classList.contains("hidden") && !rev.classList.contains("hidden")) {
+      clearInterval(poll);
+      setTimeout(() => rev.click(), 6000);
+    }
+  }, 500);
+  setTimeout(() => clearInterval(poll), 120000);
+}
+
 UI.onBegin = () => {
   startCameraSwoop();
+  // Auto walkthrough: ?walkthrough tours the whole game hands-free
+  if (typeof window !== 'undefined' && window.location.search.includes('walkthrough')) {
+    window.__walkthrough = true;
+    setTimeout(runWalkthrough, 4600);
+    return;
+  }
   // Quick test: ?test=finale jumps straight to lake finale
   if (typeof window !== 'undefined' && window.location.search.includes('test=finale')) {
     console.log("TEST MODE: Jumping to finale");
@@ -705,7 +750,7 @@ function animate() {
   world.setLanternBoost(!!player.riding); // the Tangled moment while rowing
   updateNPCs(dt, t, player.group.position);
   updateDiscoveries(t);
-  lakeFinale.update(dt,t,modalOpen||UI.isMapOpen());
+  lakeFinale.update(dt*(window.__walkthrough?1.75:1),t,modalOpen||UI.isMapOpen());
   // Cinematic swoop overrides normal camera during intro
   if (swoopActive) {
     swoopT += dt / 4.0;  // 4 second swoop
